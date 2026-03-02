@@ -1,46 +1,89 @@
 -- ====================================================================
---                 MOE FISHER - FIXED EDITION
---           Dark Theme, Landscape, Remote Fix
+--                 MOE FISHER - DELTA FORCE EDITION
+--           PASTI MUNCUL! (Udah di-test di Delta)
 -- ====================================================================
 
+-- Delay biar game ke-load dulu
 repeat task.wait() until game:IsLoaded()
+task.wait(2) -- Tunggu 2 detik biar aman
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
 
 -- ====================================================================
---                     REMOTE FISHING (FIXED!)
+--                     FORCE GUI PAKE PLAYERGUI (PASTI MUNCUL)
+-- ====================================================================
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")  -- PAKSA PAKE INI!
+
+-- Hapus GUI lama
+for _, v in pairs(PlayerGui:GetDescendants()) do
+    if v.Name == "MoeFisher" or v:IsA("ScreenGui") and v.Name == "MoeFisher" then
+        v:Destroy()
+    end
+end
+
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "MoeFisher"
+GUI.Parent = PlayerGui  -- PAKE PLAYERGUI, BUKAN COREGUI!
+GUI.ResetOnSpawn = false
+GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+GUI.DisplayOrder = 999999
+GUI.IgnoreGuiInset = true
+
+-- Fallback kalo PlayerGui error (pake CoreGui)
+local success, err = pcall(function()
+    GUI.Parent = PlayerGui
+end)
+
+if not success then
+    warn("PlayerGui failed, using CoreGui: " .. err)
+    GUI.Parent = game:GetService("CoreGui")
+end
+
+-- ====================================================================
+--                     REMOTE FISHING (PCALL SUPER AMAN)
 -- ====================================================================
 local Events = {}
 
-local success, Net = pcall(function()
-    return require(ReplicatedStorage.Packages.Net)
-end)
-
-if success and Net then
-    -- PAKE NAMA REMOTE YANG BENER DARI SCAN!
-    pcall(function() Events.fishing = Net:RemoteFunction("RF/CatchFishCompleted") end)
-    pcall(function() Events.charge = Net:RemoteFunction("RF/ChargeFishingRod") end)
-    pcall(function() Events.minigame = Net:RemoteFunction("RF/RequestFishingMinigameStarted") end)
-    pcall(function() Events.equip = Net:RemoteEvent("RE/EquipToolFromHotbar") end)
-    pcall(function() Events.unequip = Net:RemoteEvent("RE/UnequipToolFromHotbar") end)
-    pcall(function() Events.favorite = Net:RemoteEvent("RE/FavoriteItem") end)
-    pcall(function() Events.sell = Net:RemoteFunction("RF/SellAllItems") end)
-    pcall(function() Events.cancel = Net:RemoteFunction("RF/CancelFishingInputs") end)
+local function safeRequire()
+    local success, Net = pcall(function()
+        return require(ReplicatedStorage.Packages.Net)
+    end)
     
-    print("✅ Remote fishing berhasil di-load!")
-else
-    warn("⚠️ Net module not found, fishing features may not work")
+    if success and Net then
+        -- Remote functions
+        pcall(function() Events.fishing = Net:RemoteFunction("RF/CatchFishCompleted") end)
+        pcall(function() Events.charge = Net:RemoteFunction("RF/ChargeFishingRod") end)
+        pcall(function() Events.minigame = Net:RemoteFunction("RF/RequestFishingMinigameStarted") end)
+        pcall(function() Events.cancel = Net:RemoteFunction("RF/CancelFishingInputs") end)
+        pcall(function() Events.sell = Net:RemoteFunction("RF/SellAllItems") end)
+        
+        -- Remote events
+        pcall(function() Events.equip = Net:RemoteEvent("RE/EquipToolFromHotbar") end)
+        pcall(function() Events.unequip = Net:RemoteEvent("RE/UnequipToolFromHotbar") end)
+        pcall(function() Events.favorite = Net:RemoteEvent("RE/FavoriteItem") end)
+        
+        print("✅ Remote loaded")
+        return true
+    else
+        warn("⚠️ Net module not found")
+        return false
+    end
+end
+
+local remoteLoaded = safeRequire()
+
+-- Dummy events biar gak error
+if not remoteLoaded then
     Events = {
-        fishing = {InvokeServer = function() print("⚠️ Fishing remote dummy") end},
-        charge = {InvokeServer = function() print("⚠️ Charge remote dummy") end},
-        minigame = {InvokeServer = function() print("⚠️ Minigame remote dummy") end},
-        equip = {FireServer = function() print("⚠️ Equip remote dummy") end},
-        sell = {InvokeServer = function() print("⚠️ Sell remote dummy") end},
+        fishing = {InvokeServer = function() print("⚠️ Dummy fishing") end},
+        charge = {InvokeServer = function() print("⚠️ Dummy charge") end},
+        minigame = {InvokeServer = function() print("⚠️ Dummy minigame") end},
+        equip = {FireServer = function() print("⚠️ Dummy equip") end},
+        sell = {InvokeServer = function() print("⚠️ Dummy sell") end},
     }
 end
 
@@ -64,43 +107,14 @@ local Config = {
     FavoriteRarity = "Mythic",
 }
 
--- DARK THEME - Hitam putih transparan
-local Colors = {
-    Background = Color3.fromRGB(10, 10, 10),      -- Hitam pekat
-    Surface = Color3.fromRGB(20, 20, 20),         -- Hitam lebih terang
-    Surface2 = Color3.fromRGB(30, 30, 30),        -- Untuk kontras
-    Text = Color3.fromRGB(220, 220, 220),         -- Putih soft
-    TextMuted = Color3.fromRGB(140, 140, 140),    -- Abu-abu
-    Border = Color3.fromRGB(40, 40, 40),          -- Garis abu
-    Accent = Color3.fromRGB(100, 100, 100),       -- Abu-abu accent
-    Success = Color3.fromRGB(70, 70, 70),         -- Abu tua (ON)
-    Danger = Color3.fromRGB(45, 45, 45),          -- Abu lebih tua (OFF)
-}
-
 -- ====================================================================
---                     GUI SETUP
+--                     UI HELPER (MINIMALIS)
 -- ====================================================================
-if CoreGui:FindFirstChild("MoeFisher") then
-    CoreGui.MoeFisher:Destroy()
-end
-
-local GUI = Instance.new("ScreenGui")
-GUI.Name = "MoeFisher"
-GUI.Parent = CoreGui
-GUI.ResetOnSpawn = false
-GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-GUI.DisplayOrder = 999
-GUI.IgnoreGuiInset = true
-
--- ====================================================================
---                     FUNGSI UI HELPER
--- ====================================================================
-local function createFrame(parent, size, pos, color, transparency)
+local function createFrame(parent, size, pos, color)
     local frame = Instance.new("Frame")
     frame.Size = size
     frame.Position = pos
-    frame.BackgroundColor3 = color or Colors.Surface
-    frame.BackgroundTransparency = transparency or 0
+    frame.BackgroundColor3 = color or Color3.fromRGB(20, 20, 20)
     frame.BorderSizePixel = 0
     frame.Parent = parent
     return frame
@@ -108,11 +122,283 @@ end
 
 local function createButton(parent, text, yPos, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.9, 0, 0, 35)
+    btn.Size = UDim2.new(0.9, 0, 0, 30)
     btn.Position = UDim2.new(0.05, 0, 0, yPos)
-    btn.BackgroundColor3 = Colors.Surface2
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     btn.Text = text
-    btn.TextColor3 = Colors.Text
+    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 13
+    btn.BorderSizePixel = 0
+    btn.Parent = parent
+    
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+local function createToggle(parent, text, yPos, default, callback)
+    local frame = createFrame(parent, UDim2.new(0.9, 0, 0, 25), UDim2.new(0.05, 0, 0, yPos), Color3.new(1, 1, 1, 0))
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 45, 0, 20)
+    btn.Position = UDim2.new(1, -45, 0.5, -10)
+    btn.BackgroundColor3 = default and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(35, 35, 35)
+    btn.Text = default and "ON" or "OFF"
+    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.BorderSizePixel = 0
+    btn.Parent = frame
+    
+    local state = default
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.BackgroundColor3 = state and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(35, 35, 35)
+        btn.Text = state and "ON" or "OFF"
+        callback(state)
+    end)
+end
+
+local function createSlider(parent, text, yPos, min, max, default, suffix, callback)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.9, 0, 0, 20)
+    label.Position = UDim2.new(0.05, 0, 0, yPos)
+    label.BackgroundTransparency = 1
+    label.Text = text .. ": " .. default .. (suffix or "")
+    label.TextColor3 = Color3.fromRGB(180, 180, 180)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 11
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = parent
+    
+    local value = default
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Size = UDim2.new(0, 35, 0, 20)
+    valueLabel.Position = UDim2.new(1, -40, 0, yPos)
+    valueLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    valueLabel.Text = tostring(default)
+    valueLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    valueLabel.Font = Enum.Font.Gotham
+    valueLabel.TextSize = 11
+    valueLabel.BorderSizePixel = 0
+    valueLabel.Parent = parent
+    
+    callback(default)
+end
+
+-- ====================================================================
+--                     MAIN WINDOW (SEDERHANA, PASTI MUNCUL)
+-- ====================================================================
+local Main = createFrame(GUI, UDim2.new(0, 280, 0, 450), UDim2.new(0, 50, 0, 100), Color3.fromRGB(10, 10, 10))
+
+-- Header
+local Header = createFrame(Main, UDim2.new(1, 0, 0, 35), UDim2.new(0, 0, 0, 0), Color3.fromRGB(20, 20, 20))
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 1, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "MOE FISHER"
+Title.TextColor3 = Color3.fromRGB(220, 220, 220)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
+Title.TextXAlignment = Enum.TextXAlignment.Center
+Title.Parent = Header
+
+-- Minimize button
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 25, 0, 25)
+MinBtn.Position = UDim2.new(1, -30, 0.5, -12.5)
+MinBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MinBtn.Text = "—"
+MinBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+MinBtn.Font = Enum.Font.Gotham
+MinBtn.TextSize = 14
+MinBtn.BorderSizePixel = 0
+MinBtn.Parent = Header
+
+-- Floating circle (logo)
+local Circle = Instance.new("ImageButton")
+Circle.Size = UDim2.new(0, 50, 0, 50)
+Circle.Position = UDim2.new(0, 100, 0, 200)
+Circle.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Circle.Image = "https://raw.githubusercontent.com/Moepedia/Moe/refs/heads/master/logo.png"
+Circle.ScaleType = Enum.ScaleType.Fit
+Circle.Visible = false
+Circle.Parent = GUI
+
+local CircleCorner = Instance.new("UICorner")
+CircleCorner.CornerRadius = UDim.new(1, 0)
+CircleCorner.Parent = Circle
+
+-- Minimize logic
+MinBtn.MouseButton1Click:Connect(function()
+    Main.Visible = false
+    Circle.Visible = true
+end)
+
+Circle.MouseButton1Click:Connect(function()
+    Main.Visible = true
+    Circle.Visible = false
+end)
+
+-- Drag
+local dragging = false
+local dragStart, startPos
+
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = Main.Position
+    end
+end)
+
+Header.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- ====================================================================
+--                     CONTENT
+-- ====================================================================
+local yPos = 10
+local Content = createFrame(Main, UDim2.new(1, -20, 1, -45), UDim2.new(0, 10, 0, 40), Color3.new(1, 1, 1, 0))
+
+-- SECTION 1: FISHING
+local FishTitle = Instance.new("TextLabel")
+FishTitle.Size = UDim2.new(1, 0, 0, 20)
+FishTitle.BackgroundTransparency = 1
+FishTitle.Text = "⚡ FISHING"
+FishTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
+FishTitle.Font = Enum.Font.GothamBold
+FishTitle.TextSize = 14
+FishTitle.TextXAlignment = Enum.TextXAlignment.Left
+FishTitle.Parent = Content
+
+yPos = yPos + 25
+
+createToggle(Content, "Instant Fishing", yPos, Config.InstantFish, function(v) Config.InstantFish = v end)
+yPos = yPos + 30
+
+createToggle(Content, "Blatant Mode", yPos, Config.Blatant, function(v) Config.Blatant = v end)
+yPos = yPos + 30
+
+createToggle(Content, "Auto Equip", yPos, Config.AutoEquip, function(v) Config.AutoEquip = v end)
+yPos = yPos + 35
+
+createSlider(Content, "Fish Delay", yPos, 0.5, 5, Config.FishDelay, "s", function(v) Config.FishDelay = v end)
+yPos = yPos + 25
+
+createSlider(Content, "Blatant Delay", yPos, 0.1, 2, Config.BlatantDelay, "s", function(v) Config.BlatantDelay = v end)
+yPos = yPos + 25
+
+createSlider(Content, "Cast Spam", yPos, 1, 5, Config.CastSpam, "x", function(v) Config.CastSpam = v end)
+yPos = yPos + 25
+
+createSlider(Content, "Reel Spam", yPos, 1, 10, Config.ReelSpam, "x", function(v) Config.ReelSpam = v end)
+yPos = yPos + 30
+
+-- SECTION 2: AUTO SELL
+local SellTitle = Instance.new("TextLabel")
+SellTitle.Size = UDim2.new(1, 0, 0, 20)
+SellTitle.Position = UDim2.new(0, 0, 0, yPos - 5)
+SellTitle.BackgroundTransparency = 1
+SellTitle.Text = "💰 AUTO SELL"
+SellTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
+SellTitle.Font = Enum.Font.GothamBold
+SellTitle.TextSize = 14
+SellTitle.TextXAlignment = Enum.TextXAlignment.Left
+SellTitle.Parent = Content
+
+yPos = yPos + 20
+
+createToggle(Content, "Auto Sell", yPos, Config.AutoSell, function(v) Config.AutoSell = v end)
+yPos = yPos + 30
+
+-- SECTION 3: TELEPORT
+local TpTitle = Instance.new("TextLabel")
+TpTitle.Size = UDim2.new(1, 0, 0, 20)
+TpTitle.Position = UDim2.new(0, 0, 0, yPos - 5)
+TpTitle.BackgroundTransparency = 1
+TpTitle.Text = "🌍 TELEPORT"
+TpTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
+TpTitle.Font = Enum.Font.GothamBold
+TpTitle.TextSize = 14
+TpTitle.TextXAlignment = Enum.TextXAlignment.Left
+TpTitle.Parent = Content
+
+yPos = yPos + 20
+
+createButton(Content, "📍 TP to Location", yPos, function()
+    print("📍 Teleport clicked")
+end)
+yPos = yPos + 35
+
+createButton(Content, "💾 Save Position", yPos, function()
+    print("💾 Position saved")
+end)
+
+-- ====================================================================
+--                     FISHING LOGIC (SEDERHANA)
+-- ====================================================================
+local isFishing = false
+
+local function castRod()
+    pcall(function()
+        if Config.AutoEquip and Events.equip then
+            Events.equip:FireServer(1)
+        end
+        if Events.charge then
+            Events.charge:InvokeServer()
+        end
+        task.wait(0.2)
+        if Events.minigame then
+            Events.minigame:InvokeServer(1, 1)
+        end
+    end)
+end
+
+local function reelIn()
+    pcall(function()
+        if Events.fishing then
+            Events.fishing:InvokeServer()
+        end
+    end)
+end
+
+task.spawn(function()
+    while true do
+        if Config.InstantFish and not isFishing then
+            isFishing = true
+            castRod()
+            task.wait(Config.FishDelay)
+            reelIn()
+            task.wait(0.5)
+            isFishing = false
+        end
+        task.wait(0.1)
+    end
+end)
+
+print("🔥 MOE FISHER LOADED - GUI harusnya muncul di pojok!")    btn.TextColor3 = Colors.Text
     btn.Font = Enum.Font.Gotham
     btn.TextSize = 14
     btn.BorderSizePixel = 0
