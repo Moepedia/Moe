@@ -1,5 +1,5 @@
 -- Moe V1.0 GUI for Delta Executor
--- STRUKTUR GRID dengan pembatas vertikal & horizontal
+-- FIX: Fitur muncul ketika menu dipilih
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -14,8 +14,8 @@ gui.Parent = player:WaitForChild("PlayerGui")
 -- MAIN FRAME
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 650, 0, 350) -- Lebih besar untuk konten
-mainFrame.Position = UDim2.new(0.5, -325, 0.5, -175) -- Tengah layar
+mainFrame.Size = UDim2.new(0, 650, 0, 350)
+mainFrame.Position = UDim2.new(0.5, -325, 0.5, -175)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.2
 mainFrame.BorderSizePixel = 0
@@ -34,7 +34,7 @@ stroke.Color = Color3.new(1, 1, 1)
 stroke.Transparency = 0.2
 stroke.Parent = mainFrame
 
--- HEADER dengan LOGO (seperti di gambar)
+-- HEADER dengan LOGO
 local headerFrame = Instance.new("Frame")
 headerFrame.Name = "HeaderFrame"
 headerFrame.Size = UDim2.new(1, 0, 0, 50)
@@ -43,7 +43,7 @@ headerFrame.BackgroundTransparency = 1
 headerFrame.BorderSizePixel = 0
 headerFrame.Parent = mainFrame
 
--- Logo di header
+-- Logo
 local logoFrame = Instance.new("Frame")
 logoFrame.Name = "LogoFrame"
 logoFrame.Size = UDim2.new(0, 40, 0, 40)
@@ -63,7 +63,7 @@ local logoCorner = Instance.new("UICorner")
 logoCorner.CornerRadius = UDim.new(0, 20)
 logoCorner.Parent = logoFrame
 
--- Teks "Moe V1.0" di samping logo
+-- Teks "Moe V1.0"
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(0, 150, 1, 0)
 titleLabel.Position = UDim2.new(0, 65, 0, 0)
@@ -75,7 +75,7 @@ titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = headerFrame
 
--- GARIS HORIZONTAL (pembatas header)
+-- GARIS HORIZONTAL
 local horizontalLine = Instance.new("Frame")
 horizontalLine.Name = "HorizontalLine"
 horizontalLine.Size = UDim2.new(1, -20, 0, 1)
@@ -85,7 +85,7 @@ horizontalLine.BackgroundTransparency = 0.3
 horizontalLine.BorderSizePixel = 0
 horizontalLine.Parent = mainFrame
 
--- CONTAINER UTAMA (untuk menu kiri dan konten kanan)
+-- CONTAINER UTAMA
 local contentContainer = Instance.new("Frame")
 contentContainer.Name = "ContentContainer"
 contentContainer.Size = UDim2.new(1, -20, 1, -60)
@@ -94,7 +94,7 @@ contentContainer.BackgroundTransparency = 1
 contentContainer.BorderSizePixel = 0
 contentContainer.Parent = mainFrame
 
--- MENU KIRI (tombol Fishing, Favorite, dll)
+-- MENU KIRI
 local leftMenu = Instance.new("Frame")
 leftMenu.Name = "LeftMenu"
 leftMenu.Size = UDim2.new(0, 120, 1, 0)
@@ -111,7 +111,7 @@ menuLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 menuLayout.Padding = UDim.new(0, 8)
 menuLayout.Parent = leftMenu
 
--- GARIS VERTIKAL (pembatas menu dan konten)
+-- GARIS VERTIKAL
 local verticalLine = Instance.new("Frame")
 verticalLine.Name = "VerticalLine"
 verticalLine.Size = UDim2.new(0, 1, 1, 0)
@@ -121,7 +121,7 @@ verticalLine.BackgroundTransparency = 0.3
 verticalLine.BorderSizePixel = 0
 verticalLine.Parent = contentContainer
 
--- AREA KONTEN (untuk sub-menu/fitur)
+-- AREA KONTEN
 local contentArea = Instance.new("Frame")
 contentArea.Name = "ContentArea"
 contentArea.Size = UDim2.new(1, -140, 1, 0)
@@ -135,7 +135,7 @@ local contentCorner = Instance.new("UICorner")
 contentCorner.CornerRadius = UDim.new(0, 12)
 contentCorner.Parent = contentArea
 
--- JUDUL KONTEN (akan berubah sesuai tombol yang dipilih)
+-- JUDUL KONTEN
 local contentTitle = Instance.new("TextLabel")
 contentTitle.Name = "ContentTitle"
 contentTitle.Size = UDim2.new(1, -20, 0, 30)
@@ -148,7 +148,7 @@ contentTitle.Font = Enum.Font.GothamBold
 contentTitle.TextXAlignment = Enum.TextXAlignment.Left
 contentTitle.Parent = contentArea
 
--- Container untuk fitur (akan diisi sesuai menu)
+-- Container untuk fitur (PASTIKAN INI ADA)
 local featuresContainer = Instance.new("Frame")
 featuresContainer.Name = "FeaturesContainer"
 featuresContainer.Size = UDim2.new(1, -20, 1, -50)
@@ -156,14 +156,57 @@ featuresContainer.Position = UDim2.new(0, 10, 0, 45)
 featuresContainer.BackgroundTransparency = 1
 featuresContainer.BorderSizePixel = 0
 featuresContainer.Parent = contentArea
+featuresContainer.Visible = true  -- Pastikan visible
 
--- Layout untuk fitur (grid atau list)
+-- Layout untuk fitur
 local featuresLayout = Instance.new("UIListLayout")
 featuresLayout.FillDirection = Enum.FillDirection.Vertical
 featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 featuresLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 featuresLayout.Padding = UDim.new(0, 5)
 featuresLayout.Parent = featuresContainer
+
+-- FUNGSI MEMBUAT TOMBOL FITUR
+local function createFeatureButton(name)
+	local btn = Instance.new("TextButton")
+	btn.Name = name.."FeatureBtn"
+	btn.Size = UDim2.new(0, 150, 0, 35)
+	btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+	btn.BackgroundTransparency = 0.3
+	btn.BorderSizePixel = 0
+	btn.Text = name
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.TextScaled = true
+	btn.Font = Enum.Font.Gotham
+	btn.AutoButtonColor = false
+	btn.Parent = featuresContainer  -- Parent ke featuresContainer
+	btn.Visible = true  -- Pastikan visible
+	
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 6)
+	btnCorner.Parent = btn
+	
+	-- Hover
+	btn.MouseEnter:Connect(function()
+		btn.BackgroundTransparency = 0.1
+	end)
+	
+	btn.MouseLeave:Connect(function()
+		btn.BackgroundTransparency = 0.3
+	end)
+	
+	-- Click
+	btn.MouseButton1Click:Connect(function()
+		print(currentMenu.." - "..name.." clicked!")
+		game:GetService("StarterGui"):SetCore("SendNotification", {
+			Title = currentMenu,
+			Text = name.." activated!",
+			Duration = 1.5
+		})
+	end)
+	
+	return btn
+end
 
 -- FUNGSI MEMBUAT TOMBOL MENU KIRI
 local menuButtons = {}
@@ -200,7 +243,7 @@ local function createMenuButton(name)
 		end
 	end)
 	
-	-- Klik
+	-- KLIK MENU
 	btn.MouseButton1Click:Connect(function()
 		-- Reset semua button
 		for _, b in pairs(menuButtons) do
@@ -216,14 +259,16 @@ local function createMenuButton(name)
 		-- Update judul konten
 		contentTitle.Text = name.." Features"
 		
-		-- Hapus fitur lama
+		-- **HAPUS SEMUA FITUR LAMA**
 		for _, child in pairs(featuresContainer:GetChildren()) do
-			if child:IsA("TextButton") or child:IsA("Frame") then
+			if child:IsA("TextButton") then
 				child:Destroy()
 			end
 		end
 		
-		-- Tambah fitur sesuai menu yang dipilih
+		-- **TAMBAH FITUR BARU SESUAI MENU**
+		task.wait(0.1) -- Kasih jeda sebentar
+		
 		if name == "Fishing" then
 			createFeatureButton("Instant Fishing")
 			createFeatureButton("Blatant Mode")
@@ -247,55 +292,11 @@ local function createMenuButton(name)
 			createFeatureButton("Set Storm")
 			createFeatureButton("Set Fog")
 		end
+		
+		print("Fitur untuk "..name.." ditampilkan")
 	end)
 	
 	table.insert(menuButtons, btn)
-	return btn
-end
-
--- FUNGSI MEMBUAT TOMBOL FITUR (di area konten kanan)
-local function createFeatureButton(name)
-	local btn = Instance.new("TextButton")
-	btn.Name = name.."FeatureBtn"
-	btn.Size = UDim2.new(0, 150, 0, 35)
-	btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-	btn.BackgroundTransparency = 0.3
-	btn.BorderSizePixel = 0
-	btn.Text = name
-	btn.TextColor3 = Color3.new(1, 1, 1)
-	btn.TextScaled = true
-	btn.Font = Enum.Font.Gotham
-	btn.AutoButtonColor = false
-	btn.Parent = featuresContainer
-	
-	local btnCorner = Instance.new("UICorner")
-	btnCorner.CornerRadius = UDim.new(0, 6)
-	btnCorner.Parent = btn
-	
-	-- Hover
-	btn.MouseEnter:Connect(function()
-		btn.BackgroundTransparency = 0.1
-	end)
-	
-	btn.MouseLeave:Connect(function()
-		btn.BackgroundTransparency = 0.3
-	end)
-	
-	-- Click
-	btn.MouseButton1Click:Connect(function()
-		print(currentMenu.." - "..name.." clicked!")
-		game:GetService("StarterGui"):SetCore("SendNotification", {
-			Title = currentMenu,
-			Text = name.." activated!",
-			Duration = 1.5
-		})
-		
-		-- Efek klik
-		btn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-		task.wait(0.1)
-		btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-	end)
-	
 	return btn
 end
 
@@ -348,4 +349,13 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
 	end
 end)
 
-print("Moe V1.0 GUI - STRUKTUR GRID dengan pembatas!")
+-- KLIK FISHING SECARA OTOMATIS SAAT PERTAMA KALI JALAN (biar langsung keliatan fiturnya)
+task.wait(0.5)
+for _, btn in pairs(leftMenu:GetChildren()) do
+	if btn:IsA("TextButton") and btn.Name == "FishingMenuBtn" then
+		btn.MouseButton1Click:Fire()
+		break
+	end
+end
+
+print("Moe V1.0 GUI - FIX: Fitur sekarang muncul!")
