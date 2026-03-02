@@ -1,5 +1,5 @@
 -- Moe V1.0 GUI for Delta Executor
--- Perbaikan tata letak sesuai screenshot
+-- Persis seperti gambar yang Anda kirim (5 tombol)
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -11,51 +11,49 @@ gui.DisplayOrder = 999
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama - UKURAN DIPERBESAR dan POSISI DI TENGAH
+-- Frame utama - UKURAN untuk 5 tombol
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 850, 0, 180) -- Lebih lebar dan tinggi
-mainFrame.Position = UDim2.new(0.5, -425, 0.5, -90) -- TENGAH LAYAR
+mainFrame.Size = UDim2.new(0, 600, 0, 120) -- Landscape untuk 5 tombol
+mainFrame.Position = UDim2.new(0.5, -300, 0.8, -60) -- Bawah tengah
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.3
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = gui
 
--- Rounded corners
+-- Rounded corners (biar gak terlalu kotak)
 local corners = Instance.new("UICorner")
-corners.CornerRadius = UDim.new(0, 20)
+corners.CornerRadius = UDim.new(0, 16)
 corners.Parent = mainFrame
 
--- Border putih
+-- Border putih tipis
 local stroke = Instance.new("UIStroke")
 stroke.Thickness = 1.5
 stroke.Color = Color3.new(1, 1, 1)
 stroke.Transparency = 0.2
 stroke.Parent = mainFrame
 
--- Layout GRID untuk tata letak seperti screenshot
-local gridLayout = Instance.new("UIGridLayout")
-gridLayout.FillDirection = Enum.FillDirection.Horizontal
-gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-gridLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-gridLayout.CellSize = UDim2.new(0, 90, 0, 70) -- Ukuran cell untuk tombol
-gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
-gridLayout.StartCorner = Enum.StartCorner.TopLeft
-gridLayout.Parent = mainFrame
+-- Layout horizontal (kesamping) untuk 5 tombol
+local layout = Instance.new("UIListLayout")
+layout.FillDirection = Enum.FillDirection.Horizontal
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Center
+layout.Padding = UDim.new(0, 15)
+layout.Parent = mainFrame
 
 local padding = Instance.new("UIPadding")
-padding.PaddingLeft = UDim.new(0, 20)
-padding.PaddingRight = UDim.new(0, 20)
-padding.PaddingTop = UDim.new(0, 15)
-padding.PaddingBottom = UDim.new(0, 15)
+padding.PaddingLeft = UDim.new(0, 15)
+padding.PaddingRight = UDim.new(0, 15)
+padding.PaddingTop = UDim.new(0, 10)
+padding.PaddingBottom = UDim.new(0, 10)
 padding.Parent = mainFrame
 
--- LOGO di pojok kiri atas (seperti di screenshot)
+-- LOGO (kiri)
 local logoFrame = Instance.new("Frame")
 logoFrame.Name = "LogoFrame"
 logoFrame.Size = UDim2.new(0, 50, 0, 50)
-logoFrame.Position = UDim2.new(0, 15, 0, 10)
+logoFrame.Position = UDim2.new(0, 10, 0.5, -25) -- Kiri tengah
 logoFrame.BackgroundTransparency = 1
 logoFrame.BorderSizePixel = 0
 logoFrame.Parent = mainFrame
@@ -72,18 +70,19 @@ local logoCorner = Instance.new("UICorner")
 logoCorner.CornerRadius = UDim.new(0, 25)
 logoCorner.Parent = logoFrame
 
--- Daftar tombol sesuai screenshot
-local buttons = {
-	"Gift", "+Smile", "Rods", "Items", "Store",
-	"Eel", "Fish", "Boney", "Tobey", "El"
-}
+-- Stroke untuk logo
+local logoStroke = Instance.new("UIStroke")
+logoStroke.Thickness = 1
+logoStroke.Color = Color3.new(1, 1, 1)
+logoStroke.Transparency = 0.3
+logoStroke.Parent = logoFrame
 
 -- Fungsi buat tombol
 local function createButton(name)
 	local btnFrame = Instance.new("Frame")
 	btnFrame.Name = name.."Btn"
-	btnFrame.Size = UDim2.new(0, 90, 0, 70)
-	btnFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+	btnFrame.Size = UDim2.new(0, 85, 0, 80) -- Ukuran tombol
+	btnFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
 	btnFrame.BackgroundTransparency = 0.2
 	btnFrame.BorderSizePixel = 0
 	btnFrame.Parent = mainFrame
@@ -95,7 +94,7 @@ local function createButton(name)
 	local btnStroke = Instance.new("UIStroke")
 	btnStroke.Thickness = 1
 	btnStroke.Color = Color3.new(1, 1, 1)
-	btnStroke.Transparency = 0.7
+	btnStroke.Transparency = 0.6
 	btnStroke.Parent = btnFrame
 	
 	local txt = Instance.new("TextLabel")
@@ -110,26 +109,28 @@ local function createButton(name)
 	-- Hover effect
 	btnFrame.MouseEnter:Connect(function()
 		btnFrame.BackgroundTransparency = 0
-		btnStroke.Transparency = 0.4
+		btnStroke.Transparency = 0.3
 	end)
 	
 	btnFrame.MouseLeave:Connect(function()
 		btnFrame.BackgroundTransparency = 0.2
-		btnStroke.Transparency = 0.7
+		btnStroke.Transparency = 0.6
 	end)
 	
 	-- Klik effect
 	btnFrame.MouseButton1Click:Connect(function()
-		print(name.." clicked!")
+		print(name.." button clicked!")
 	end)
 	
 	return btnFrame
 end
 
--- Buat semua tombol
-for i, btnName in ipairs(buttons) do
-	createButton(btnName)
-end
+-- Buat 5 tombol sesuai gambar: Fishing, Favorite, Shop, Teleport, Weather
+createButton("Fishing")
+createButton("Favorite")
+createButton("Shop")
+createButton("Teleport")
+createButton("Weather")
 
 -- Fungsi drag GUI
 local dragging = false
@@ -173,4 +174,4 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
 	end
 end)
 
-print("Moe V1.0 GUI - Tata Letak Baru!")
+print("Moe V1.0 GUI - 5 Tombol (Fishing, Favorite, Shop, Teleport, Weather)")
