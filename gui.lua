@@ -1,5 +1,5 @@
--- Moe V1.0 GUI for FISH IT - Complete Edition
--- Dengan dropdown Weather dan semua fitur lengkap
+-- Moe V1.0 GUI for FISH IT - COMPLETE EDITION
+-- Dengan fitur Instant Fishing, Blatant Mode, Auto Perfect, dll
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -32,11 +32,14 @@ local TeleportLocations = {
 -- ===== VARIABEL GLOBAL UNTUK SETTINGAN =====
 local Settings = {
     Fishing = {
-        InstantFishing = {Enabled = false, Delay = 0.5},
+        InstantFishing = {
+            Enabled = false, 
+            CastDelay = 1.5,    -- Delay cast (lempar pancing)
+            CatchDelay = 0.8     -- Delay catch (tarik ikan)
+        },
         BlatantMode = {Enabled = false},
         AutoPerfect = {Enabled = false},
         AutoSell = {Enabled = false, Delay = 3, Mode = "All"},
-        AutoSellNow = {Enabled = false},
         AutoFavorite = {Enabled = false, Mode = "Name"}
     }
 }
@@ -45,15 +48,18 @@ local Settings = {
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local function getRemote(name)
+    -- Cari di ReplicatedStorage langsung
     local remote = ReplicatedStorage:FindFirstChild(name)
     if remote then return remote end
     
+    -- Cari di folder RE (Remote Events)
     local reFolder = ReplicatedStorage:FindFirstChild("RE")
     if reFolder then
         remote = reFolder:FindFirstChild(name)
         if remote then return remote end
     end
     
+    -- Cari di folder RF (Remote Functions)
     local rfFolder = ReplicatedStorage:FindFirstChild("RF")
     if rfFolder then
         remote = rfFolder:FindFirstChild(name)
@@ -80,23 +86,35 @@ local function protectedCall(func, ...)
     return result
 end
 
--- ===== REMOTE REFERENCES =====
+-- ===== REMOTE REFERENCES UNTUK FISH IT =====
 local Remote = {
-    StartFishing = getRemote("StartFishing") or getRemote("RF/StartFishing"),
-    CatchFish = getRemote("CatchFishCompleted") or getRemote("RF/CatchFishCompleted"),
-    FishingMinigame = getRemote("FishingMinigameChanged") or getRemote("RE/FishingMinigameChanged"),
-    SellAll = getRemote("SellAllItems") or getRemote("RF/SellAllItems"),
-    SellItem = getRemote("SellItem") or getRemote("RF/SellItem"),
-    Favorite = getRemote("FavoriteItem") or getRemote("RE/FavoriteItem"),
-    Unfavorite = getRemote("FavoriteStateChanged") or getRemote("RE/FavoriteStateChanged"),
-    Weather = getRemote("WeatherCommand") or getRemote("RE/WeatherCommand")
+    -- Fishing
+    StartFishing = getRemote("RF/StartFishing") or getRemote("StartFishing"),
+    CatchFish = getRemote("RF/CatchFishCompleted") or getRemote("CatchFishCompleted"),
+    FishingMinigame = getRemote("RE/FishingMinigameChanged") or getRemote("FishingMinigameChanged"),
+    FishingStopped = getRemote("RE/FishingStopped") or getRemote("FishingStopped"),
+    FishCaught = getRemote("RE/FishCaught") or getRemote("FishCaught"),
+    
+    -- Sell
+    SellAll = getRemote("RF/SellAllItems") or getRemote("SellAllItems"),
+    SellItem = getRemote("RF/SellItem") or getRemote("SellItem"),
+    
+    -- Favorite
+    Favorite = getRemote("RE/FavoriteItem") or getRemote("FavoriteItem"),
+    Unfavorite = getRemote("RE/FavoriteStateChanged") or getRemote("FavoriteStateChanged"),
+    
+    -- Weather
+    Weather = getRemote("RE/WeatherCommand") or getRemote("WeatherCommand"),
+    
+    -- Teleport
+    SubmarineTP = getRemote("RE/SubmarineTP") or getRemote("RF/SubmarineTP2") or getRemote("SubmarineTP2")
 }
 
 -- ===== MAIN FRAME =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 850, 0, 550)
-mainFrame.Position = UDim2.new(0.5, -425, 0.5, -275)
+mainFrame.Size = UDim2.new(0, 950, 0, 650) -- Diperbesar
+mainFrame.Position = UDim2.new(0.5, -475, 0.5, -325)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
@@ -176,6 +194,13 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 8)
 minCorner.Parent = minButton
 
+minButton.MouseEnter:Connect(function()
+    minButton.BackgroundTransparency = 0.1
+end)
+minButton.MouseLeave:Connect(function()
+    minButton.BackgroundTransparency = 0.3
+end)
+
 -- ===== TOMBOL CLOSE =====
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
@@ -194,6 +219,13 @@ closeButton.Parent = headerFrame
 local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeButton
+
+closeButton.MouseEnter:Connect(function()
+    closeButton.BackgroundTransparency = 0.1
+end)
+closeButton.MouseLeave:Connect(function()
+    closeButton.BackgroundTransparency = 0.3
+end)
 
 -- ===== FLOATING LOGO =====
 local floatingLogo = Instance.new("Frame")
@@ -300,6 +332,7 @@ contentArea.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
 contentArea.BackgroundTransparency = 0.3
 contentArea.BorderSizePixel = 0
 contentArea.Parent = contentContainer
+contentArea.ZIndex = 1
 
 local contentCorner = Instance.new("UICorner")
 contentCorner.CornerRadius = UDim.new(0, 12)
@@ -331,6 +364,7 @@ featuresScrollingFrame.ScrollBarImageTransparency = 0.5
 featuresScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 featuresScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 featuresScrollingFrame.Parent = contentArea
+featuresScrollingFrame.ZIndex = 2
 
 -- CONTAINER FITUR DI DALAM SCROLLING FRAME
 local featuresContainer = Instance.new("Frame")
@@ -340,6 +374,7 @@ featuresContainer.BackgroundTransparency = 1
 featuresContainer.BorderSizePixel = 0
 featuresContainer.Parent = featuresScrollingFrame
 featuresContainer.AutomaticSize = Enum.AutomaticSize.Y
+featuresContainer.ZIndex = 2
 
 -- LAYOUT VERTIKAL untuk fitur
 local featuresLayout = Instance.new("UIListLayout")
@@ -357,6 +392,7 @@ local function createDropdown(parent, title, options, default, callback)
     frame.BackgroundTransparency = 1
     frame.BorderSizePixel = 0
     frame.Parent = parent
+    frame.ZIndex = 5
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, 0, 0, 20)
@@ -367,6 +403,7 @@ local function createDropdown(parent, title, options, default, callback)
     label.Font = Enum.Font.GothamBold
     label.TextSize = 14
     label.Parent = frame
+    label.ZIndex = 5
     
     local dropdownBtn = Instance.new("TextButton")
     dropdownBtn.Name = "DropdownBtn"
@@ -381,6 +418,7 @@ local function createDropdown(parent, title, options, default, callback)
     dropdownBtn.TextSize = 14
     dropdownBtn.AutoButtonColor = false
     dropdownBtn.Parent = frame
+    dropdownBtn.ZIndex = 5
     
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 6)
@@ -396,6 +434,7 @@ local function createDropdown(parent, title, options, default, callback)
     dropdownFrame.Visible = false
     dropdownFrame.Parent = frame
     dropdownFrame.ZIndex = 10
+    dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
     
     local dropdownCorner = Instance.new("UICorner")
     dropdownCorner.CornerRadius = UDim.new(0, 6)
@@ -441,8 +480,13 @@ local function createDropdown(parent, title, options, default, callback)
     
     dropdownBtn.MouseButton1Click:Connect(function()
         dropdownFrame.Visible = not dropdownFrame.Visible
-        local count = #options
-        dropdownFrame.Size = UDim2.new(1, 0, 0, count * 32 + 4)
+        
+        -- Tutup dropdown lain
+        for _, child in pairs(parent:GetDescendants()) do
+            if child:IsA("Frame") and child.Name == "DropdownFrame" and child ~= dropdownFrame then
+                child.Visible = false
+            end
+        end
     end)
     
     return dropdownBtn
@@ -563,6 +607,7 @@ local function createButton(parent, title, callback)
     btn.TextSize = 14
     btn.AutoButtonColor = false
     btn.Parent = parent
+    btn.ZIndex = 3
     
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 8)
@@ -618,6 +663,67 @@ local function createSeparator(parent, text)
     labelCorner.Parent = label
 end
 
+-- ===== LOOP UTAMA UNTUK FITUR AUTO FISHING =====
+spawn(function()
+    local lastCast = 0
+    local lastCatch = 0
+    local lastBlatantCatch = 0
+    
+    while task.wait(0.1) do
+        protectedCall(function()
+            local currentTime = tick()
+            
+            -- INSTANT FISHING: Auto cast + auto catch dengan delay terpisah
+            if Settings.Fishing.InstantFishing.Enabled then
+                -- Auto Cast
+                if Remote.StartFishing and currentTime - lastCast >= Settings.Fishing.InstantFishing.CastDelay then
+                    Remote.StartFishing:FireServer()
+                    lastCast = currentTime
+                end
+                
+                -- Auto Catch (langsung catch tanpa nunggu)
+                if Remote.CatchFish and currentTime - lastCatch >= Settings.Fishing.InstantFishing.CatchDelay then
+                    Remote.CatchFish:FireServer()
+                    lastCatch = currentTime
+                end
+            end
+            
+            -- BLATANT MODE: Bypass minigame + catch beruntun
+            if Settings.Fishing.BlatantMode.Enabled then
+                if Remote.FishingMinigame then
+                    -- Bypass minigame (selalu success)
+                    Remote.FishingMinigame:FireServer(true)
+                end
+                
+                -- Catch beruntun (4-5 notif) setiap 2 detik
+                if Remote.CatchFish and currentTime - lastBlatantCatch >= 2 then
+                    for i = 1, 5 do
+                        Remote.CatchFish:FireServer()
+                        task.wait(0.05) -- jeda kecil biar ga overload
+                    end
+                    lastBlatantCatch = currentTime
+                    
+                    -- Notifikasi visual
+                    if math.random(1, 5) == 1 then -- Kadang-kadang aja biar ga spam
+                        notify("Blatant Mode", "5x Catch Burst!", 1)
+                    end
+                end
+            end
+            
+            -- AUTO PERFECT: Selalu perfect catch (dijalankan terpisah)
+            if Settings.Fishing.AutoPerfect.Enabled and Remote.FishingMinigame then
+                Remote.FishingMinigame:FireServer(true) -- true = perfect
+            end
+            
+            -- AUTO SELL dengan delay
+            if Settings.Fishing.AutoSell.Enabled and Remote.SellAll then
+                task.wait(Settings.Fishing.AutoSell.Delay)
+                Remote.SellAll:FireServer()
+            end
+        end)
+    end
+end)
+
 -- ===== FUNGSI TELEPORT =====
 local function safeTeleportToLocation(locationName)
     protectedCall(function()
@@ -670,9 +776,8 @@ end
 
 local function safeTeleportToIsland()
     protectedCall(function()
-        local teleportRemote = getRemote("SubmarineTP") or getRemote("RE/SubmarineTP") or getRemote("RF/SubmarineTP2")
-        if teleportRemote then
-            teleportRemote:FireServer("MainIsland")
+        if Remote.SubmarineTP then
+            Remote.SubmarineTP:FireServer("MainIsland")
             notify("Teleport", "Teleported to Island (via remote)", 2)
         else
             safeTeleportToLocation("Spawn")
@@ -745,36 +850,6 @@ local function setWeather(weatherType)
     end)
 end
 
--- ===== LOOP UTAMA UNTUK FITUR AUTO =====
-spawn(function()
-    while task.wait(0.1) do
-        protectedCall(function()
-            -- Instant Fishing
-            if Settings.Fishing.InstantFishing.Enabled and Remote.StartFishing then
-                task.wait(Settings.Fishing.InstantFishing.Delay)
-                Remote.StartFishing:FireServer()
-            end
-            
-            -- Blatant Mode
-            if Settings.Fishing.BlatantMode.Enabled and Remote.FishingMinigame and Remote.CatchFish then
-                Remote.FishingMinigame:FireServer(true)
-                Remote.CatchFish:FireServer()
-            end
-            
-            -- Auto Perfect Fishing
-            if Settings.Fishing.AutoPerfect.Enabled and Remote.FishingMinigame then
-                Remote.FishingMinigame:FireServer(true)
-            end
-            
-            -- Auto Sell dengan delay
-            if Settings.Fishing.AutoSell.Enabled and Remote.SellAll then
-                task.wait(Settings.Fishing.AutoSell.Delay)
-                Remote.SellAll:FireServer()
-            end
-        end)
-    end
-end)
-
 -- ===== KONTEN FISHING =====
 local function createFishingContent()
     for _, child in pairs(featuresContainer:GetChildren()) do
@@ -783,35 +858,63 @@ local function createFishingContent()
         end
     end
     
-    createToggle(featuresContainer, "Instant Fishing", Settings.Fishing.InstantFishing.Enabled, function(state)
+    -- INSTANT FISHING
+    createToggle(featuresContainer, "🎣 Instant Fishing", Settings.Fishing.InstantFishing.Enabled, function(state)
         Settings.Fishing.InstantFishing.Enabled = state
         notify("Fishing", "Instant Fishing "..(state and "ON" or "OFF"))
     end)
     
-    createDelayInput(featuresContainer, "Delay (seconds)", Settings.Fishing.InstantFishing.Delay, function(val)
-        Settings.Fishing.InstantFishing.Delay = val
+    -- Delay untuk Instant Fishing
+    createDelayInput(featuresContainer, "Cast Delay (s)", Settings.Fishing.InstantFishing.CastDelay, function(val)
+        Settings.Fishing.InstantFishing.CastDelay = val
     end)
     
-    createSeparator(featuresContainer, "Fishing Modes")
+    createDelayInput(featuresContainer, "Catch Delay (s)", Settings.Fishing.InstantFishing.CatchDelay, function(val)
+        Settings.Fishing.InstantFishing.CatchDelay = val
+    end)
     
-    createToggle(featuresContainer, "Blatant Mode", Settings.Fishing.BlatantMode.Enabled, function(state)
+    createSeparator(featuresContainer, "⚡ BLATANT MODE")
+    
+    -- BLATANT MODE
+    createToggle(featuresContainer, "🔥 Blatant Mode", Settings.Fishing.BlatantMode.Enabled, function(state)
         Settings.Fishing.BlatantMode.Enabled = state
-        notify("Fishing", "Blatant Mode "..(state and "ON" or "OFF"))
+        if state then
+            notify("Fishing", "Blatant Mode ON - 5x catch burst!")
+        else
+            notify("Fishing", "Blatant Mode OFF")
+        end
     end)
     
-    createToggle(featuresContainer, "Auto Perfect Fishing", Settings.Fishing.AutoPerfect.Enabled, function(state)
+    -- Info Blatant Mode
+    local infoLabel = Instance.new("TextLabel")
+    infoLabel.Size = UDim2.new(1, -20, 0, 40)
+    infoLabel.Position = UDim2.new(0, 10, 0, 0)
+    infoLabel.BackgroundTransparency = 1
+    infoLabel.Text = "• Bypass minigame\n• 5x catch burst setiap 2 detik"
+    infoLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    infoLabel.Font = Enum.Font.Gotham
+    infoLabel.TextSize = 12
+    infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+    infoLabel.TextYAlignment = Enum.TextYAlignment.Top
+    infoLabel.Parent = featuresContainer
+    
+    createSeparator(featuresContainer, "✨ AUTO PERFECT")
+    
+    -- AUTO PERFECT
+    createToggle(featuresContainer, "🏆 Auto Perfect", Settings.Fishing.AutoPerfect.Enabled, function(state)
         Settings.Fishing.AutoPerfect.Enabled = state
         notify("Fishing", "Auto Perfect "..(state and "ON" or "OFF"))
     end)
     
-    createSeparator(featuresContainer, "Auto Sell")
+    createSeparator(featuresContainer, "💰 AUTO SELL")
     
-    createToggle(featuresContainer, "Auto Sell", Settings.Fishing.AutoSell.Enabled, function(state)
+    -- AUTO SELL
+    createToggle(featuresContainer, "💰 Auto Sell", Settings.Fishing.AutoSell.Enabled, function(state)
         Settings.Fishing.AutoSell.Enabled = state
         notify("Fishing", "Auto Sell "..(state and "ON" or "OFF"))
     end)
     
-    createDelayInput(featuresContainer, "Sell Delay", Settings.Fishing.AutoSell.Delay, function(val)
+    createDelayInput(featuresContainer, "Sell Delay (s)", Settings.Fishing.AutoSell.Delay, function(val)
         Settings.Fishing.AutoSell.Delay = val
     end)
     
@@ -827,9 +930,9 @@ local function createFishingContent()
         end
     end)
     
-    createSeparator(featuresContainer, "Auto Favorite")
+    createSeparator(featuresContainer, "⭐ AUTO FAVORITE")
     
-    createToggle(featuresContainer, "Auto Favorite", Settings.Fishing.AutoFavorite.Enabled, function(state)
+    createToggle(featuresContainer, "⭐ Auto Favorite", Settings.Fishing.AutoFavorite.Enabled, function(state)
         Settings.Fishing.AutoFavorite.Enabled = state
         notify("Fishing", "Auto Favorite "..(state and "ON" or "OFF"))
     end)
@@ -848,21 +951,21 @@ local function createFavoriteContent()
         end
     end
     
-    createButton(featuresContainer, "Add to Favorite", function()
+    createButton(featuresContainer, "⭐ Add to Favorite", function()
         if Remote.Favorite then
             Remote.Favorite:FireServer()
             notify("Favorite", "Added to favorites")
         end
     end)
     
-    createButton(featuresContainer, "Remove from Favorite", function()
+    createButton(featuresContainer, "❌ Remove from Favorite", function()
         if Remote.Unfavorite then
             Remote.Unfavorite:FireServer(false)
             notify("Favorite", "Removed from favorites")
         end
     end)
     
-    createButton(featuresContainer, "Favorite List", function()
+    createButton(featuresContainer, "📋 Favorite List", function()
         notify("Favorite", "Check console (F9)")
         print("Favorite List - Feature coming soon")
     end)
@@ -876,28 +979,28 @@ local function createShopContent()
         end
     end
     
-    createButton(featuresContainer, "Auto Buy", function()
-        local purchase = getRemote("PurchaseMarketItem") or getRemote("RF/PurchaseMarketItem")
+    createButton(featuresContainer, "🛒 Auto Buy", function()
+        local purchase = getRemote("RF/PurchaseMarketItem") or getRemote("PurchaseMarketItem")
         if purchase then
             purchase:FireServer("Bait", 5)
             notify("Shop", "Auto Buy activated")
         end
     end)
     
-    createButton(featuresContainer, "Quick Sell", function()
+    createButton(featuresContainer, "💰 Quick Sell", function()
         if Remote.SellItem then
             Remote.SellItem:FireServer()
             notify("Shop", "Quick Sell")
         end
     end)
     
-    createButton(featuresContainer, "Price Checker", function()
+    createButton(featuresContainer, "🏷️ Price Checker", function()
         notify("Shop", "Check console (F9)")
         print("Price Checker - Feature coming soon")
     end)
     
-    createButton(featuresContainer, "Bulk Purchase", function()
-        local purchase = getRemote("PurchaseMarketItem") or getRemote("RF/PurchaseMarketItem")
+    createButton(featuresContainer, "📦 Bulk Purchase", function()
+        local purchase = getRemote("RF/PurchaseMarketItem") or getRemote("PurchaseMarketItem")
         if purchase then
             purchase:FireServer("Bait", 50)
             notify("Shop", "Bulk purchased 50 Bait")
@@ -920,7 +1023,7 @@ local function createTeleportContent()
     end
     table.sort(locations)
     
-    createDropdown(featuresContainer, "Pilih Lokasi", locations, "Spawn", function(opt)
+    createDropdown(featuresContainer, "📍 Pilih Lokasi", locations, "Spawn", function(opt)
         safeTeleportToLocation(opt)
     end)
     
@@ -928,34 +1031,30 @@ local function createTeleportContent()
     createButton(featuresContainer, "🏝️ Teleport ke Island", safeTeleportToIsland)
     
     -- Dropdown Player
-    local function updatePlayerDropdown()
-        local players = {}
-        for _, plr in pairs(game.Players:GetPlayers()) do
-            if plr ~= player then
-                table.insert(players, plr.Name)
-            end
-        end
-        table.sort(players)
-        
-        if #players > 0 then
-            createDropdown(featuresContainer, "Pilih Player", players, players[1], function(opt)
-                safeTeleportToPlayer(opt)
-            end)
-        else
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(1, 0, 0, 40)
-            label.BackgroundTransparency = 1
-            label.Text = "Tidak ada player lain"
-            label.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-            label.Font = Enum.Font.Gotham
-            label.TextSize = 14
-            label.Parent = featuresContainer
+    local players = {}
+    for _, plr in pairs(game.Players:GetPlayers()) do
+        if plr ~= player then
+            table.insert(players, plr.Name)
         end
     end
+    table.sort(players)
     
-    updatePlayerDropdown()
+    if #players > 0 then
+        createDropdown(featuresContainer, "👤 Pilih Player", players, players[1], function(opt)
+            safeTeleportToPlayer(opt)
+        end)
+    else
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 0, 40)
+        label.BackgroundTransparency = 1
+        label.Text = "Tidak ada player lain"
+        label.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 14
+        label.Parent = featuresContainer
+    end
     
-    createSeparator(featuresContainer, "Save / Load")
+    createSeparator(featuresContainer, "💾 Save / Load")
     
     createButton(featuresContainer, "💾 Save Location", function()
         local char = player.Character
@@ -988,12 +1087,12 @@ local function createWeatherContent()
     
     local weatherOptions = {"Clear", "Rain", "Storm", "Fog", "Night", "Day"}
     
-    createDropdown(featuresContainer, "Pilih Cuaca", weatherOptions, "Clear", function(opt)
+    createDropdown(featuresContainer, "☁️ Pilih Cuaca", weatherOptions, "Clear", function(opt)
         setWeather(opt)
     end)
     
     -- Tambah button cepat untuk masing-masing cuaca
-    createSeparator(featuresContainer, "Quick Access")
+    createSeparator(featuresContainer, "⚡ Quick Access")
     
     for _, weather in ipairs(weatherOptions) do
         createButton(featuresContainer, "☁️ "..weather, function()
@@ -1061,7 +1160,7 @@ createMenuButton("Fishing", createFishingContent)
 createMenuButton("Favorite", createFavoriteContent)
 createMenuButton("Shop", createShopContent)
 createMenuButton("Teleport", createTeleportContent)
-createMenuButton("Weather", createWeatherContent)  -- Sekarang pakai dropdown!
+createMenuButton("Weather", createWeatherContent)
 
 -- DRAG GUI
 local dragging = false
@@ -1112,5 +1211,11 @@ for _, btn in pairs(leftMenu:GetChildren()) do
     end
 end
 
-print("Moe V1.0 GUI for FISH IT - Complete Edition Loaded!")
-print("Weather dropdown siap digunakan!")
+print("=== MOE V1.0 GUI for FISH IT ===")
+print("✅ Instant Fishing - dengan delay terpisah")
+print("✅ Blatant Mode - 5x catch burst setiap 2 detik")
+print("✅ Auto Perfect - selalu perfect catch")
+print("✅ Auto Sell - dengan mode filter")
+print("✅ Teleport - 14 lokasi + NPC + Player")
+print("✅ Weather - dropdown cuaca")
+print("✅ GUI Size: 950x650")
