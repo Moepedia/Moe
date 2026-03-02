@@ -1,6 +1,5 @@
--- Moe V1.0 GUI for FISH IT - FIXED VERSION
--- Ukuran kembali ke 850x550 seperti awal
--- Fix: Error Fire, Fitur dobel, Auto fishing tidak jalan
+-- Moe V1.0 GUI for FISH IT - FINAL FIX
+-- Fix: Error Fire, Button dobel, Instant Fishing & Blatant Mode
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -33,8 +32,8 @@ local TeleportLocations = {
 -- ===== VARIABEL GLOBAL UNTUK SETTINGAN =====
 local Settings = {
     Fishing = {
-        InstantFishing = {Enabled = false, CastDelay = 1.5, CatchDelay = 0.8},
-        BlatantMode = {Enabled = false},
+        InstantFishing = {Enabled = false, CastDelay = 1.5, CatchDelay = 0.5},
+        BlatantMode = {Enabled = false, BurstCount = 5, BurstDelay = 2},
         AutoPerfect = {Enabled = false},
         AutoSell = {Enabled = false, Delay = 3, Mode = "All"},
         AutoFavorite = {Enabled = false, Mode = "Name"}
@@ -93,7 +92,7 @@ local Remote = {
     SubmarineTP = getRemote("RE/SubmarineTP") or getRemote("RF/SubmarineTP2")
 }
 
--- ===== LOOP AUTO FISHING (DI LUAR AGAR JALAN TERUS) =====
+-- ===== LOOP AUTO FISHING =====
 spawn(function()
     local lastCast = 0
     local lastCatch = 0
@@ -103,34 +102,34 @@ spawn(function()
         protectedCall(function()
             local currentTime = tick()
             
-            -- INSTANT FISHING
+            -- INSTANT FISHING: Auto cast + auto catch tanpa reel
             if Settings.Fishing.InstantFishing.Enabled then
+                -- Auto Cast
                 if Remote.StartFishing and currentTime - lastCast >= Settings.Fishing.InstantFishing.CastDelay then
                     Remote.StartFishing:FireServer()
                     lastCast = currentTime
-                    print("🎣 Casting...")
                 end
                 
+                -- Auto Catch (langsung catch tanpa reel)
                 if Remote.CatchFish and currentTime - lastCatch >= Settings.Fishing.InstantFishing.CatchDelay then
                     Remote.CatchFish:FireServer()
                     lastCatch = currentTime
-                    print("🎣 Catching...")
                 end
             end
             
-            -- BLATANT MODE
+            -- BLATANT MODE: Bypass minigame + catch beruntun
             if Settings.Fishing.BlatantMode.Enabled then
                 if Remote.FishingMinigame then
-                    Remote.FishingMinigame:FireServer(true)
+                    Remote.FishingMinigame:FireServer(true) -- Bypass minigame
                 end
                 
-                if Remote.CatchFish and currentTime - lastBlatant >= 2 then
-                    for i = 1, 5 do
+                -- Catch beruntun setiap BurstDelay detik
+                if Remote.CatchFish and currentTime - lastBlatant >= Settings.Fishing.BlatantMode.BurstDelay then
+                    for i = 1, Settings.Fishing.BlatantMode.BurstCount do
                         Remote.CatchFish:FireServer()
                         task.wait(0.05)
                     end
                     lastBlatant = currentTime
-                    print("⚡ Blatant Mode: 5x catch burst")
                 end
             end
             
@@ -143,13 +142,12 @@ spawn(function()
             if Settings.Fishing.AutoSell.Enabled and Remote.SellAll then
                 task.wait(Settings.Fishing.AutoSell.Delay)
                 Remote.SellAll:FireServer()
-                print("💰 Auto Sell")
             end
         end)
     end
 end)
 
--- ===== MAIN FRAME (UKURAN KEMBALI KE 850x550) =====
+-- ===== MAIN FRAME =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 850, 0, 550)
@@ -746,23 +744,10 @@ local function safeTeleportToPlayer(targetPlayerName)
             if not char then return end
         end
         
-        local targetPlayer = nil
-        if targetPlayerName then
-            targetPlayer = game.Players:FindFirstChild(targetPlayerName)
-        else
-            for _, plr in pairs(game.Players:GetPlayers()) do
-                if plr ~= player then
-                    targetPlayer = plr
-                    break
-                end
-            end
-        end
-        
+        local targetPlayer = game.Players:FindFirstChild(targetPlayerName)
         if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
             char.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0)
             notify("Teleport", "Teleported to "..targetPlayer.Name, 2)
-        else
-            notify("Teleport", "Player not found or invalid", 1)
         end
     end)
 end
@@ -799,7 +784,7 @@ local function setWeather(weatherType)
     end)
 end
 
--- ===== KONTEN PER MENU (DIPISAH AGAR TIDAK DOBEL) =====
+-- ===== FUNGSI CLEAR FEATURES =====
 local function clearFeatures()
     for _, child in pairs(featuresContainer:GetChildren()) do
         if child:IsA("Frame") then
@@ -808,10 +793,11 @@ local function clearFeatures()
     end
 end
 
--- FISHING CONTENT
+-- ===== KONTEN FISHING =====
 local function createFishingContent()
     clearFeatures()
     
+    -- Instant Fishing
     createToggle(featuresContainer, "🎣 Instant Fishing", Settings.Fishing.InstantFishing.Enabled, function(state)
         Settings.Fishing.InstantFishing.Enabled = state
         notify("Fishing", "Instant Fishing "..(state and "ON" or "OFF"))
@@ -827,16 +813,25 @@ local function createFishingContent()
     
     createSeparator(featuresContainer, "⚡ BLATANT MODE")
     
+    -- Blatant Mode
     createToggle(featuresContainer, "🔥 Blatant Mode", Settings.Fishing.BlatantMode.Enabled, function(state)
         Settings.Fishing.BlatantMode.Enabled = state
         notify("Fishing", "Blatant Mode "..(state and "ON" or "OFF"))
+    end)
+    
+    createDelayInput(featuresContainer, "Burst Delay (s)", Settings.Fishing.BlatantMode.BurstDelay, function(val)
+        Settings.Fishing.BlatantMode.BurstDelay = val
+    end)
+    
+    createDelayInput(featuresContainer, "Burst Count", Settings.Fishing.BlatantMode.BurstCount, function(val)
+        Settings.Fishing.BlatantMode.BurstCount = math.floor(val)
     end)
     
     local infoLabel = Instance.new("TextLabel")
     infoLabel.Size = UDim2.new(1, -20, 0, 40)
     infoLabel.Position = UDim2.new(0, 10, 0, 0)
     infoLabel.BackgroundTransparency = 1
-    infoLabel.Text = "• Bypass minigame\n• 5x catch burst setiap 2 detik"
+    infoLabel.Text = "• Bypass minigame\n• Catch beruntun tanpa reel"
     infoLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
     infoLabel.Font = Enum.Font.Gotham
     infoLabel.TextSize = 12
@@ -887,7 +882,7 @@ local function createFishingContent()
     end)
 end
 
--- FAVORITE CONTENT
+-- ===== KONTEN FAVORITE =====
 local function createFavoriteContent()
     clearFeatures()
     
@@ -911,7 +906,7 @@ local function createFavoriteContent()
     end)
 end
 
--- SHOP CONTENT
+-- ===== KONTEN SHOP =====
 local function createShopContent()
     clearFeatures()
     
@@ -944,7 +939,7 @@ local function createShopContent()
     end)
 end
 
--- TELEPORT CONTENT
+-- ===== KONTEN TELEPORT =====
 local function createTeleportContent()
     clearFeatures()
     
@@ -1007,7 +1002,7 @@ local function createTeleportContent()
     end)
 end
 
--- WEATHER CONTENT
+-- ===== KONTEN WEATHER =====
 local function createWeatherContent()
     clearFeatures()
     
@@ -1127,7 +1122,7 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
     end
 end)
 
--- AUTO-CLICK FISHING (FIXED: PAKE :Fire() BUKAN .Fire())
+-- AUTO-CLICK FISHING (FIXED)
 task.wait(0.5)
 for _, btn in pairs(leftMenu:GetChildren()) do
     if btn:IsA("TextButton") and btn.Name == "FishingMenuBtn" then
@@ -1136,8 +1131,9 @@ for _, btn in pairs(leftMenu:GetChildren()) do
     end
 end
 
-print("=== MOE V1.0 GUI FIXED ===")
-print("✅ Ukuran kembali 850x550")
-print("✅ Fitur tidak dobel")
-print("✅ Instant Fishing & Blatant Mode jalan")
-print("✅ Error Fire diperbaiki")
+print("=== MOE V1.0 GUI FINAL FIX ===")
+print("✅ Instant Fishing: Auto cast + auto catch tanpa reel")
+print("✅ Blatant Mode: Bypass minigame + catch beruntun")
+print("✅ Delay bisa diatur manual")
+print("✅ Button tidak dobel")
+print("✅ Error Fire fixed di line 1134")
