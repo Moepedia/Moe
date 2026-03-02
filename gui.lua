@@ -1,7 +1,6 @@
 -- Moe V1.0 GUI for Delta Executor
--- Single file, with logo included
+-- Perbaikan tata letak sesuai screenshot
 
--- Membuat GUI
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local gui = Instance.new("ScreenGui")
@@ -12,78 +11,79 @@ gui.DisplayOrder = 999
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama (background transparan)
+-- Frame utama - UKURAN DIPERBESAR dan POSISI DI TENGAH
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 650, 0, 140) -- Landscape
-mainFrame.Position = UDim2.new(0.5, -325, 0.8, -70)
+mainFrame.Size = UDim2.new(0, 850, 0, 180) -- Lebih lebar dan tinggi
+mainFrame.Position = UDim2.new(0.5, -425, 0.5, -90) -- TENGAH LAYAR
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
-mainFrame.BackgroundTransparency = 0.35
+mainFrame.BackgroundTransparency = 0.3
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = gui
 
 -- Rounded corners
 local corners = Instance.new("UICorner")
-corners.CornerRadius = UDim.new(0, 16)
+corners.CornerRadius = UDim.new(0, 20)
 corners.Parent = mainFrame
 
--- Border putih tipis
+-- Border putih
 local stroke = Instance.new("UIStroke")
-stroke.Thickness = 1.2
+stroke.Thickness = 1.5
 stroke.Color = Color3.new(1, 1, 1)
-stroke.Transparency = 0.3
+stroke.Transparency = 0.2
 stroke.Parent = mainFrame
 
--- Layout horizontal untuk isi
-local layout = Instance.new("UIListLayout")
-layout.FillDirection = Enum.FillDirection.Horizontal
-layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-layout.VerticalAlignment = Enum.VerticalAlignment.Center
-layout.Padding = UDim.new(0, 12)
-layout.Parent = mainFrame
+-- Layout GRID untuk tata letak seperti screenshot
+local gridLayout = Instance.new("UIGridLayout")
+gridLayout.FillDirection = Enum.FillDirection.Horizontal
+gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+gridLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+gridLayout.CellSize = UDim2.new(0, 90, 0, 70) -- Ukuran cell untuk tombol
+gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
+gridLayout.StartCorner = Enum.StartCorner.TopLeft
+gridLayout.Parent = mainFrame
 
 local padding = Instance.new("UIPadding")
-padding.PaddingLeft = UDim.new(0, 15)
-padding.PaddingRight = UDim.new(0, 15)
-padding.PaddingTop = UDim.new(0, 10)
-padding.PaddingBottom = UDim.new(0, 10)
+padding.PaddingLeft = UDim.new(0, 20)
+padding.PaddingRight = UDim.new(0, 20)
+padding.PaddingTop = UDim.new(0, 15)
+padding.PaddingBottom = UDim.new(0, 15)
 padding.Parent = mainFrame
 
--- LOGO (sekarang dengan ID asli)
+-- LOGO di pojok kiri atas (seperti di screenshot)
 local logoFrame = Instance.new("Frame")
 logoFrame.Name = "LogoFrame"
-logoFrame.Size = UDim2.new(0, 60, 0, 60)
-logoFrame.Position = UDim2.new(0, 10, 0.5, -30)
+logoFrame.Size = UDim2.new(0, 50, 0, 50)
+logoFrame.Position = UDim2.new(0, 15, 0, 10)
 logoFrame.BackgroundTransparency = 1
 logoFrame.BorderSizePixel = 0
 logoFrame.Parent = mainFrame
+logoFrame.ZIndex = 10
 
 local logo = Instance.new("ImageLabel")
 logo.Size = UDim2.new(1, 0, 1, 0)
 logo.BackgroundTransparency = 1
-logo.Image = "rbxassetid://115935586997848" -- ID logo dari Anda
+logo.Image = "rbxassetid://115935586997848"
 logo.ScaleType = Enum.ScaleType.Fit
 logo.Parent = logoFrame
 
--- Efek bulat untuk logo
 local logoCorner = Instance.new("UICorner")
-logoCorner.CornerRadius = UDim.new(0, 30)
+logoCorner.CornerRadius = UDim.new(0, 25)
 logoCorner.Parent = logoFrame
 
--- Stroke tipis untuk logo biar keliatan
-local logoStroke = Instance.new("UIStroke")
-logoStroke.Thickness = 1
-logoStroke.Color = Color3.new(1, 1, 1)
-logoStroke.Transparency = 0.4
-logoStroke.Parent = logoFrame
+-- Daftar tombol sesuai screenshot
+local buttons = {
+	"Gift", "+Smile", "Rods", "Items", "Store",
+	"Eel", "Fish", "Boney", "Tobey", "El"
+}
 
 -- Fungsi buat tombol
 local function createButton(name)
 	local btnFrame = Instance.new("Frame")
 	btnFrame.Name = name.."Btn"
-	btnFrame.Size = UDim2.new(0, 85, 0, 100)
-	btnFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
+	btnFrame.Size = UDim2.new(0, 90, 0, 70)
+	btnFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
 	btnFrame.BackgroundTransparency = 0.2
 	btnFrame.BorderSizePixel = 0
 	btnFrame.Parent = mainFrame
@@ -95,7 +95,7 @@ local function createButton(name)
 	local btnStroke = Instance.new("UIStroke")
 	btnStroke.Thickness = 1
 	btnStroke.Color = Color3.new(1, 1, 1)
-	btnStroke.Transparency = 0.6
+	btnStroke.Transparency = 0.7
 	btnStroke.Parent = btnFrame
 	
 	local txt = Instance.new("TextLabel")
@@ -110,9 +110,70 @@ local function createButton(name)
 	-- Hover effect
 	btnFrame.MouseEnter:Connect(function()
 		btnFrame.BackgroundTransparency = 0
-		btnStroke.Transparency = 0.3
+		btnStroke.Transparency = 0.4
 	end)
 	
+	btnFrame.MouseLeave:Connect(function()
+		btnFrame.BackgroundTransparency = 0.2
+		btnStroke.Transparency = 0.7
+	end)
+	
+	-- Klik effect
+	btnFrame.MouseButton1Click:Connect(function()
+		print(name.." clicked!")
+	end)
+	
+	return btnFrame
+end
+
+-- Buat semua tombol
+for i, btnName in ipairs(buttons) do
+	createButton(btnName)
+end
+
+-- Fungsi drag GUI
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	mainFrame.Position = UDim2.new(
+		startPos.X.Scale, 
+		startPos.X.Offset + delta.X, 
+		startPos.Y.Scale, 
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+mainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+
+print("Moe V1.0 GUI - Tata Letak Baru!")	
 	btnFrame.MouseLeave:Connect(function()
 		btnFrame.BackgroundTransparency = 0.2
 		btnStroke.Transparency = 0.6
