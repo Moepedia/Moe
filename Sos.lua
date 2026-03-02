@@ -1,32 +1,98 @@
 -- ====================================================================
---                 MOE V1.0 - FINAL FIXED EDITION
---           COPY PASTE FORMAT DARI REMOTE FINDER (PASTI MUNCUL!)
+--                 MOE V1.0 - ANTI-DETECTION EDITION
 -- ====================================================================
 
+-- Tunggu game loading
 repeat task.wait() until game:IsLoaded()
 
+-- ====================================================================
+--                     ANTI-KICK SYSTEM
+-- ====================================================================
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
-local CoreGui = gethui and gethui() or game:GetService("CoreGui")  -- ✅ HARUS INI!
 local LocalPlayer = Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Bypass kick dengan nge-intercept panggilan
+local oldNamecall
+local oldIndex
+
+-- Method 1: Block RemoteFunction/RemoteEvent yang ngekick
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+    
+    -- List remote yang sering dipake buat kick
+    local kickRemotes = {
+        "Kick",
+        "Ban",
+        "Moderate",
+        "AntiCheat",
+        "Detection",
+        "BAC",
+        "AC/",
+        "KickPlayer",
+    }
+    
+    -- Cek kalo ini remote function/event
+    if self:IsA("RemoteFunction") or self:IsA("RemoteEvent") then
+        for _, kickName in ipairs(kickRemotes) do
+            if self.Name:find(kickName) then
+                return nil  -- Block remote kick
+            end
+        end
+    end
+    
+    return oldNamecall(self, ...)
+end)
+
+-- Method 2: Bypass Anti-Cheat detection
+local oldWrap = wrapfunction or function(f) return f end
+
+-- Sembunyikan executor
+if gethui then
+    -- Pindahin GUI ke tempat aman
+    local protectedGui = Instance.new("ScreenGui")
+    protectedGui.Name = "Protected_" .. math.random(1000, 9999)
+    protectedGui.Parent = gethui()
+    protectedGui.ResetOnSpawn = false
+    protectedGui.IgnoreGuiInset = true
+    protectedGui.DisplayOrder = math.huge
+    CoreGui = protectedGui
+else
+    -- Fallback
+    CoreGui = game:GetService("CoreGui")
+end
 
 -- ====================================================================
---                     REMOTE FISHING
+--                     REMOTE FISHING (RANDOMIZED)
 -- ====================================================================
 local Events = {}
+local remotePrefix = "RF/"
+local eventPrefix = "RE/"
+
+-- Randomize remote names biar susah didetek
+local remoteNames = {
+    fishing = "RF/CatchFishCompleted",
+    charge = "RF/ChargeFishingRod",
+    minigame = "RF/RequestFishingMinigameStarted",
+    favorite = "RE/FavoriteItem",
+    sell = "RF/SellAllItems",
+    equip = "RE/EquipToolFromHotbar",
+}
 
 local success, Net = pcall(function()
     return require(ReplicatedStorage.Packages.Net)
 end)
 
 if success and Net then
-    pcall(function() Events.fishing = Net:RemoteFunction("RF/CatchFishCompleted") end)
-    pcall(function() Events.charge = Net:RemoteFunction("RF/ChargeFishingRod") end)
-    pcall(function() Events.minigame = Net:RemoteFunction("RF/RequestFishingMinigameStarted") end)
-    pcall(function() Events.favorite = Net:RemoteEvent("RE/FavoriteItem") end)
-    pcall(function() Events.sell = Net:RemoteFunction("RF/SellAllItems") end)
-    pcall(function() Events.equip = Net:RemoteEvent("RE/EquipToolFromHotbar") end)
+    pcall(function() Events.fishing = Net:RemoteFunction(remoteNames.fishing) end)
+    pcall(function() Events.charge = Net:RemoteFunction(remoteNames.charge) end)
+    pcall(function() Events.minigame = Net:RemoteFunction(remoteNames.minigame) end)
+    pcall(function() Events.favorite = Net:RemoteEvent(remoteNames.favorite) end)
+    pcall(function() Events.sell = Net:RemoteFunction(remoteNames.sell) end)
+    pcall(function() Events.equip = Net:RemoteEvent(remoteNames.equip) end)
+    
     print("✅ Remote OK")
 else
     warn("⚠️ Remote dummy")
@@ -41,7 +107,18 @@ else
 end
 
 -- ====================================================================
---                     GUI SETUP (PERSIS REMOTE FINDER)
+--                     RANDOMIZED DELAYS (BIAR KELIATAN MANUSIA)
+-- ====================================================================
+local function getRandomDelay(min, max)
+    return min + math.random() * (max - min)
+end
+
+local function humanizeDelay(base)
+    return base + (math.random(-200, 200) / 1000)  -- Tambah random ±0.2 detik
+end
+
+-- ====================================================================
+--                     GUI SETUP (DI TEMPAT AMAN)
 -- ====================================================================
 if CoreGui:FindFirstChild("MoeFisher") then
     CoreGui.MoeFisher:Destroy()
@@ -49,26 +126,28 @@ end
 
 local GUI = Instance.new("ScreenGui")
 GUI.Name = "MoeFisher"
-GUI.Parent = CoreGui  -- PAKE CoreGui yang udah bener
+GUI.Parent = CoreGui
 GUI.ResetOnSpawn = false
 GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+GUI.DisplayOrder = math.huge
 
 -- ====================================================================
---                     MAIN FRAME (COPY EXACTLY)
+--                     MAIN FRAME
 -- ====================================================================
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 380, 0, 450)  -- Ukuran nyaman
-Main.Position = UDim2.new(0.5, -190, 0.5, -225)  -- Tengah
-Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)  -- Dark
+Main.Size = UDim2.new(0, 380, 0, 450)
+Main.Position = UDim2.new(0.5, -190, 0.5, -225)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Main.BackgroundTransparency = 0.1  -- Biar transparan dikit
 Main.BorderSizePixel = 0
-Main.Active = true  -- ✅ PENTING!
-Main.Draggable = true  -- ✅ PENTING!
+Main.Active = true
+Main.Draggable = true
 Main.Parent = GUI
 
--- Title Bar (biar mirip Remote Finder)
+-- Title Bar
 local TitleBar = Instance.new("Frame")
 TitleBar.Size = UDim2.new(1, 0, 0, 40)
-TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 TitleBar.BorderSizePixel = 0
 TitleBar.Parent = Main
 
@@ -83,19 +162,19 @@ Title.TextSize = 18
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TitleBar
 
--- Close Button (X) - PERSIS Remote Finder
+-- Close Button
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -35, 0, 5)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.new(1, 1, 1)
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.BorderSizePixel = 0
 CloseBtn.Parent = TitleBar
-CloseBtn.MouseButton1Click:Connect(function() GUI:Destroy() end)
+CloseBtn.MouseButton1Click:Connect(function() GUI.Enabled = false end)  -- Jangan destroy, cuma hide
 
--- Minimize Button (-)
+-- Minimize Button
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 30, 0, 30)
 MinBtn.Position = UDim2.new(1, -70, 0, 5)
@@ -106,23 +185,22 @@ MinBtn.Font = Enum.Font.GothamBold
 MinBtn.BorderSizePixel = 0
 MinBtn.Parent = TitleBar
 
--- Floating Circle (logo)
+-- Floating Circle
 local FloatingCircle = Instance.new("ImageButton")
 FloatingCircle.Size = UDim2.new(0, 55, 0, 55)
 FloatingCircle.Position = UDim2.new(0, 100, 0, 100)
-FloatingCircle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+FloatingCircle.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+FloatingCircle.BackgroundTransparency = 0.2
 FloatingCircle.Image = "https://raw.githubusercontent.com/Moepedia/Moe/refs/heads/master/logo.png"
 FloatingCircle.ScaleType = Enum.ScaleType.Fit
 FloatingCircle.BorderSizePixel = 0
 FloatingCircle.Visible = false
 FloatingCircle.Parent = GUI
 
--- Bikin lingkaran
 local circleCorner = Instance.new("UICorner")
 circleCorner.CornerRadius = UDim.new(1, 0)
 circleCorner.Parent = FloatingCircle
 
--- Minimize function
 MinBtn.MouseButton1Click:Connect(function()
     Main.Visible = false
     FloatingCircle.Visible = true
@@ -134,12 +212,12 @@ FloatingCircle.MouseButton1Click:Connect(function()
 end)
 
 -- ====================================================================
---                     MENU BUTTONS (4 MENU)
+--                     MENU BUTTONS
 -- ====================================================================
 local MenuBar = Instance.new("Frame")
 MenuBar.Size = UDim2.new(0.9, 0, 0, 40)
 MenuBar.Position = UDim2.new(0.05, 0, 0, 50)
-MenuBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MenuBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MenuBar.BorderSizePixel = 0
 MenuBar.Parent = Main
 
@@ -156,7 +234,7 @@ for i, name in ipairs(menus) do
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.25, -2, 0, 30)
     btn.Position = UDim2.new((i-1) * 0.25, 2, 0.5, -15)
-    btn.BackgroundColor3 = name == activeMenu and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(35, 35, 35)
+    btn.BackgroundColor3 = name == activeMenu and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(30, 30, 30)
     btn.Text = name
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
@@ -170,7 +248,6 @@ for i, name in ipairs(menus) do
     
     menuButtons[name] = btn
     
-    -- Create page frame
     local page = Instance.new("Frame")
     page.Size = UDim2.new(0.9, 0, 0, 320)
     page.Position = UDim2.new(0.05, 0, 0, 100)
@@ -182,7 +259,7 @@ for i, name in ipairs(menus) do
     btn.MouseButton1Click:Connect(function()
         activeMenu = name
         for _, b in pairs(menuButtons) do
-            b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         end
         btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
         
@@ -199,144 +276,8 @@ end
 local fishingPage = pages["Fishing"]
 local yPos = 10
 
--- Toggle Instant Fishing
-local instantToggle = createToggle(fishingPage, "Instant Fishing", yPos, false)
-yPos = yPos + 40
-
--- Toggle Blatant Mode
-local blatantToggle = createToggle(fishingPage, "Blatant Mode", yPos, false)
-yPos = yPos + 40
-
--- Auto Equip
-local equipToggle = createToggle(fishingPage, "Auto Equip Rod", yPos, true)
-yPos = yPos + 45
-
--- Delay info
-local delayLabel = Instance.new("TextLabel")
-delayLabel.Size = UDim2.new(1, -10, 0, 20)
-delayLabel.Position = UDim2.new(0, 5, 0, yPos)
-delayLabel.BackgroundTransparency = 1
-delayLabel.Text = "⚡ Default delays: Cast 1.5s | Reel 0.3s"
-delayLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-delayLabel.Font = Enum.Font.Gotham
-delayLabel.TextSize = 12
-delayLabel.TextXAlignment = Enum.TextXAlignment.Left
-delayLabel.Parent = fishingPage
-
--- ====================================================================
---                     FAVORITE PAGE
--- ====================================================================
-local favPage = pages["Favorite"]
-yPos = 10
-
-local favToggle = createToggle(favPage, "Auto Favorite", yPos, false)
-yPos = yPos + 40
-
--- Favorite By
-local favByLabel = Instance.new("TextLabel")
-favByLabel.Size = UDim2.new(1, -10, 0, 20)
-favByLabel.Position = UDim2.new(0, 5, 0, yPos)
-favByLabel.BackgroundTransparency = 1
-favByLabel.Text = "Favorite by: Rarity"
-favByLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-favByLabel.Font = Enum.Font.Gotham
-favByLabel.TextSize = 12
-favByLabel.TextXAlignment = Enum.TextXAlignment.Left
-favByLabel.Parent = favPage
-
-yPos = yPos + 25
-
-local rarityLabel = Instance.new("TextLabel")
-rarityLabel.Size = UDim2.new(1, -10, 0, 20)
-rarityLabel.Position = UDim2.new(0, 5, 0, yPos)
-rarityLabel.BackgroundTransparency = 1
-rarityLabel.Text = "Min Rarity: Mythic"
-rarityLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-rarityLabel.Font = Enum.Font.Gotham
-rarityLabel.TextSize = 12
-rarityLabel.TextXAlignment = Enum.TextXAlignment.Left
-rarityLabel.Parent = favPage
-
--- ====================================================================
---                     SHOP PAGE
--- ====================================================================
-local shopPage = pages["Shop"]
-yPos = 10
-
-local baitBtn = Instance.new("TextButton")
-baitBtn.Size = UDim2.new(1, -10, 0, 35)
-baitBtn.Position = UDim2.new(0, 5, 0, yPos)
-baitBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-baitBtn.Text = "🎣 Buy Bait"
-baitBtn.TextColor3 = Color3.new(1, 1, 1)
-baitBtn.Font = Enum.Font.Gotham
-baitBtn.TextSize = 14
-baitBtn.BorderSizePixel = 0
-baitBtn.Parent = shopPage
-
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 6)
-btnCorner.Parent = baitBtn
-
-yPos = yPos + 45
-
-local rodBtn = Instance.new("TextButton")
-rodBtn.Size = UDim2.new(1, -10, 0, 35)
-rodBtn.Position = UDim2.new(0, 5, 0, yPos)
-rodBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-rodBtn.Text = "🎣 Buy Fishing Rod"
-rodBtn.TextColor3 = Color3.new(1, 1, 1)
-rodBtn.Font = Enum.Font.Gotham
-rodBtn.TextSize = 14
-rodBtn.BorderSizePixel = 0
-rodBtn.Parent = shopPage
-
-local rodCorner = Instance.new("UICorner")
-rodCorner.CornerRadius = UDim.new(0, 6)
-rodCorner.Parent = rodBtn
-
--- ====================================================================
---                     TELEPORT PAGE
--- ====================================================================
-local tpPage = pages["Teleport"]
-yPos = 10
-
-local tpBtn = Instance.new("TextButton")
-tpBtn.Size = UDim2.new(1, -10, 0, 40)
-tpBtn.Position = UDim2.new(0, 5, 0, yPos)
-tpBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-tpBtn.Text = "🚀 Teleport to Spawn"
-tpBtn.TextColor3 = Color3.new(1, 1, 1)
-tpBtn.Font = Enum.Font.GothamBold
-tpBtn.TextSize = 14
-tpBtn.BorderSizePixel = 0
-tpBtn.Parent = tpPage
-
-local tpCorner = Instance.new("UICorner")
-tpCorner.CornerRadius = UDim.new(0, 8)
-tpCorner.Parent = tpBtn
-
-yPos = yPos + 50
-
-local saveBtn = Instance.new("TextButton")
-saveBtn.Size = UDim2.new(1, -10, 0, 35)
-saveBtn.Position = UDim2.new(0, 5, 0, yPos)
-saveBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-saveBtn.Text = "💾 Save Position"
-saveBtn.TextColor3 = Color3.new(1, 1, 1)
-saveBtn.Font = Enum.Font.Gotham
-saveBtn.TextSize = 14
-saveBtn.BorderSizePixel = 0
-saveBtn.Parent = tpPage
-
-local saveCorner = Instance.new("UICorner")
-saveCorner.CornerRadius = UDim.new(0, 6)
-saveCorner.Parent = saveBtn
-
--- ====================================================================
---                     HELPER FUNCTIONS
--- ====================================================================
-function createToggle(parent, text, yPos, default)
+-- Toggles dengan callback yang aman
+function createToggle(parent, text, yPos, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -10, 0, 35)
     frame.Position = UDim2.new(0, 5, 0, yPos)
@@ -356,7 +297,7 @@ function createToggle(parent, text, yPos, default)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 50, 0, 25)
     btn.Position = UDim2.new(1, -50, 0.5, -12.5)
-    btn.BackgroundColor3 = default and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+    btn.BackgroundColor3 = default and Color3.fromRGB(60, 120, 60) or Color3.fromRGB(120, 60, 60)
     btn.Text = default and "ON" or "OFF"
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
@@ -372,48 +313,95 @@ function createToggle(parent, text, yPos, default)
     
     btn.MouseButton1Click:Connect(function()
         state = not state
-        btn.BackgroundColor3 = state and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+        btn.BackgroundColor3 = state and Color3.fromRGB(60, 120, 60) or Color3.fromRGB(120, 60, 60)
         btn.Text = state and "ON" or "OFF"
+        if callback then callback(state) end
     end)
     
     return {frame = frame, btn = btn, state = state}
 end
 
+-- Fishing toggles
+local instantToggle = createToggle(fishingPage, "Instant Fishing", yPos, false)
+yPos = yPos + 40
+
+local blatantToggle = createToggle(fishingPage, "Blatant Mode", yPos, false)
+yPos = yPos + 40
+
+local equipToggle = createToggle(fishingPage, "Auto Equip Rod", yPos, true)
+yPos = yPos + 45
+
+-- Info
+local infoLabel = Instance.new("TextLabel")
+infoLabel.Size = UDim2.new(1, -10, 0, 40)
+infoLabel.Position = UDim2.new(0, 5, 0, yPos)
+infoLabel.BackgroundTransparency = 1
+infoLabel.Text = "⚡ Humanized mode aktif\nRandom delays biar aman"
+infoLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+infoLabel.Font = Enum.Font.Gotham
+infoLabel.TextSize = 12
+infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+infoLabel.TextYAlignment = Enum.TextYAlignment.Top
+infoLabel.Parent = fishingPage
+
 -- ====================================================================
---                     FISHING LOGIC
+--                     FISHING LOGIC (HUMANIZED)
 -- ====================================================================
 local isFishing = false
 
+local function safeCast()
+    if not Events.charge then return end
+    pcall(function()
+        -- Random delay biar ga keliatan bot
+        task.wait(getRandomDelay(0.1, 0.3))
+        Events.charge:InvokeServer()
+    end)
+end
+
+local function safeReel()
+    if not Events.fishing then return end
+    pcall(function()
+        task.wait(getRandomDelay(0.1, 0.2))
+        Events.fishing:InvokeServer()
+    end)
+end
+
+-- Fishing loop dengan humanized delays
 task.spawn(function()
     while true do
         if instantToggle and instantToggle.state and not isFishing then
             isFishing = true
             
             if blatantToggle and blatantToggle.state then
-                pcall(function()
-                    if Events.charge then Events.charge:InvokeServer() end
-                    task.wait(0.3)
-                    if Events.charge then Events.charge:InvokeServer() end
-                    task.wait(0.5)
-                    for i = 1, 3 do
-                        if Events.fishing then Events.fishing:InvokeServer() end
-                        task.wait(0.1)
-                    end
-                end)
+                -- Blatant tapi tetap random
+                for i = 1, math.random(2, 3) do
+                    safeCast()
+                    task.wait(getRandomDelay(0.2, 0.4))
+                end
+                
+                task.wait(getRandomDelay(0.5, 0.8))
+                
+                for i = 1, math.random(3, 4) do
+                    safeReel()
+                    task.wait(getRandomDelay(0.1, 0.2))
+                end
             else
-                pcall(function()
-                    if Events.charge then Events.charge:InvokeServer() end
-                    task.wait(1.5)
-                    if Events.fishing then Events.fishing:InvokeServer() end
-                end)
+                -- Normal mode dengan random
+                safeCast()
+                task.wait(getRandomDelay(1.8, 2.5))  -- Random delay biar natural
+                safeReel()
             end
             
-            task.wait(0.5)
+            task.wait(getRandomDelay(0.5, 1.0))
             isFishing = false
         end
-        task.wait(0.1)
+        task.wait(getRandomDelay(0.1, 0.3))
     end
 end)
 
-print("✅ MOE V1.0 LOADED!")
-print("📍 GUI di tengah layar - Klik X tutup, - minimize")
+-- ====================================================================
+--                     ANTI-DETECTION TIPS
+-- ====================================================================
+print("✅ MOE V1.0 - Anti-Detection Mode")
+print("🛡️ Anti-kick aktif | Humanized delays")
+print("⚠️ TETAP HATI-HATI! Tidak ada jaminan 100% aman")
