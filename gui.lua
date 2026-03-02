@@ -1,842 +1,455 @@
--- Moe V1.0 GUI for FISH IT Game
--- Semua fitur dengan remote events yang tepat
+-- Moe V1.0 GUI for FISH IT - Teleport Features Complete
+-- Dengan semua lokasi dari list Anda
 
-local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
-local gui = Instance.new("ScreenGui")
-gui.Name = "MoeGUI"
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.DisplayOrder = 999
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = player:WaitForChild("PlayerGui")
+-- ===== DATA LOKASI TELEPORT =====
+local TeleportLocations = {
+    ["Spawn"] = CFrame.new(45.2788086, 252.562927, 2987.10913, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Sisyphus Statue"] = CFrame.new(-3728.21606, -135.074417, -1012.12744, -0.977224171, 7.74980258e-09, -0.212209702, 1.566994e-08, 1, -3.5640408e-08, 0.212209702, -3.81539813e-08, -0.977224171),
+    ["Coral Reefs"] = CFrame.new(-3114.78198, 1.32066584, 2237.52295, -0.304758579, 1.6556676e-08, -0.952429652, -8.50574935e-08, 1, 4.46003305e-08, 0.952429652, 9.46036067e-08, -0.304758579),
+    ["Esoteric Depths"] = CFrame.new(3248.37109, -1301.53027, 1403.82727, -0.920208454, 7.76270355e-08, 0.391428679, 4.56261056e-08, 1, -9.10549289e-08, -0.391428679, -6.5930152e-08, -0.920208454),
+    ["Crater Island"] = CFrame.new(1016.49072, 20.0919304, 5069.27295, 0.838976264, 3.30379857e-09, -0.544168055, 2.63538391e-09, 1, 1.01344115e-08, 0.544168055, -9.93662219e-09, 0.838976264),
+    ["Lost Isle"] = CFrame.new(-3618.15698, 240.836655, -1317.45801, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Weather Machine"] = CFrame.new(-1488.51196, 83.1732635, 1876.30298, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+    ["Tropical Grove"] = CFrame.new(-2095.34106, 197.199997, 3718.08008),
+    ["Mount Hallow"] = CFrame.new(2136.62305, 78.9163895, 3272.50439, -0.977613986, -1.77645827e-08, 0.210406482, -2.42338203e-08, 1, -2.81680421e-08, -0.210406482, -3.26364251e-08, -0.977613986),
+    ["Treasure Room"] = CFrame.new(-3606.34985, -266.57373, -1580.97339, 0.998743415, 1.12141152e-13, -0.0501160324, -1.56847693e-13, 1, -8.88127842e-13, 0.0501160324, 8.94872392e-13, 0.998743415),
+    ["Kohana"] = CFrame.new(-663.904236, 3.04580712, 718.796875, -0.100799225, -2.14183729e-08, -0.994906783, -1.12300391e-08, 1, -2.03902459e-08, 0.994906783, 9.11752096e-09, -0.100799225),
+    ["Underground Cellar"] = CFrame.new(2109.52148, -94.1875076, -708.609131, 0.418592364, 3.34794485e-08, -0.908174217, -5.24141512e-08, 1, 1.27060247e-08, 0.908174217, 4.22825366e-08, 0.418592364),
+    ["Ancient Jungle"] = CFrame.new(1831.71362, 6.62499952, -299.279175, 0.213522509, 1.25553285e-07, -0.976938128, -4.32026184e-08, 1, 1.19074642e-07, 0.976938128, 1.67811702e-08, 0.213522509),
+    ["Sacred Temple"] = CFrame.new(1466.92151, -21.8750591, -622.835693, -0.764787138, 8.14444334e-09, 0.644283056, 2.31097452e-08, 1, 1.4791004e-08, -0.644283056, 2.6201187e-08, -0.764787138)
+}
 
--- ===== MAIN FRAME =====
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 750, 0, 450)
-mainFrame.Position = UDim2.new(0.5, -375, 0.5, -225)
-mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
-mainFrame.BackgroundTransparency = 0.15
-mainFrame.BorderSizePixel = 0
-mainFrame.ClipsDescendants = true
-mainFrame.Parent = gui
-mainFrame.Visible = true
-
--- Rounded corners
-local corners = Instance.new("UICorner")
-corners.CornerRadius = UDim.new(0, 20)
-corners.Parent = mainFrame
-
--- Border putih
-local stroke = Instance.new("UIStroke")
-stroke.Thickness = 1.5
-stroke.Color = Color3.new(1, 1, 1)
-stroke.Transparency = 0.2
-stroke.Parent = mainFrame
-
--- ===== HEADER =====
-local headerFrame = Instance.new("Frame")
-headerFrame.Name = "HeaderFrame"
-headerFrame.Size = UDim2.new(1, 0, 0, 50)
-headerFrame.Position = UDim2.new(0, 0, 0, 0)
-headerFrame.BackgroundTransparency = 1
-headerFrame.BorderSizePixel = 0
-headerFrame.Parent = mainFrame
-
--- Logo
-local logoFrame = Instance.new("Frame")
-logoFrame.Name = "LogoFrame"
-logoFrame.Size = UDim2.new(0, 40, 0, 40)
-logoFrame.Position = UDim2.new(0, 15, 0.5, -20)
-logoFrame.BackgroundTransparency = 1
-logoFrame.BorderSizePixel = 0
-logoFrame.Parent = headerFrame
-
-local logo = Instance.new("ImageLabel")
-logo.Size = UDim2.new(1, 0, 1, 0)
-logo.BackgroundTransparency = 1
-logo.Image = "rbxassetid://115935586997848"
-logo.ScaleType = Enum.ScaleType.Fit
-logo.Parent = logoFrame
-
-local logoCorner = Instance.new("UICorner")
-logoCorner.CornerRadius = UDim.new(0, 20)
-logoCorner.Parent = logoFrame
-
--- Teks "Moe V1.0"
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(0, 150, 1, 0)
-titleLabel.Position = UDim2.new(0, 65, 0, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "Moe V1.0"
-titleLabel.TextColor3 = Color3.new(1, 1, 1)
-titleLabel.TextScaled = true
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Parent = headerFrame
-
--- ===== TOMBOL MINIMIZE =====
-local minButton = Instance.new("TextButton")
-minButton.Name = "MinimizeButton"
-minButton.Size = UDim2.new(0, 30, 0, 30)
-minButton.Position = UDim2.new(1, -70, 0.5, -15)
-minButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-minButton.BackgroundTransparency = 0.3
-minButton.BorderSizePixel = 0
-minButton.Text = "—"
-minButton.TextColor3 = Color3.new(1, 1, 1)
-minButton.TextScaled = true
-minButton.Font = Enum.Font.GothamBold
-minButton.AutoButtonColor = false
-minButton.Parent = headerFrame
-
-local minCorner = Instance.new("UICorner")
-minCorner.CornerRadius = UDim.new(0, 8)
-minCorner.Parent = minButton
-
--- ===== TOMBOL CLOSE =====
-local closeButton = Instance.new("TextButton")
-closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -35, 0.5, -15)
-closeButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-closeButton.BackgroundTransparency = 0.3
-closeButton.BorderSizePixel = 0
-closeButton.Text = "X"
-closeButton.TextColor3 = Color3.new(1, 1, 1)
-closeButton.TextScaled = true
-closeButton.Font = Enum.Font.GothamBold
-closeButton.AutoButtonColor = false
-closeButton.Parent = headerFrame
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
-closeCorner.Parent = closeButton
-
--- ===== FLOATING LOGO =====
-local floatingLogo = Instance.new("Frame")
-floatingLogo.Name = "FloatingLogo"
-floatingLogo.Size = UDim2.new(0, 60, 0, 60)
-floatingLogo.Position = UDim2.new(0.9, -30, 0.9, -30)
-floatingLogo.BackgroundTransparency = 1
-floatingLogo.BorderSizePixel = 0
-floatingLogo.Parent = gui
-floatingLogo.Visible = false
-floatingLogo.ZIndex = 1000
-
-local floatLogoImg = Instance.new("ImageLabel")
-floatLogoImg.Size = UDim2.new(1, 0, 1, 0)
-floatLogoImg.BackgroundTransparency = 1
-floatLogoImg.Image = "rbxassetid://115935586997848"
-floatLogoImg.ScaleType = Enum.ScaleType.Fit
-floatLogoImg.Parent = floatingLogo
-
-local floatLogoCorner = Instance.new("UICorner")
-floatLogoCorner.CornerRadius = UDim.new(0, 30)
-floatLogoCorner.Parent = floatingLogo
-
-local floatStroke = Instance.new("UIStroke")
-floatStroke.Thickness = 1.5
-floatStroke.Color = Color3.new(1, 1, 1)
-floatStroke.Transparency = 0.2
-floatStroke.Parent = floatingLogo
-
-local floatButton = Instance.new("TextButton")
-floatButton.Name = "FloatButton"
-floatButton.Size = UDim2.new(1, 0, 1, 0)
-floatButton.BackgroundTransparency = 1
-floatButton.BorderSizePixel = 0
-floatButton.Text = ""
-floatButton.Parent = floatingLogo
-
--- ===== FUNGSI MINIMIZE/RESTORE =====
-local function minimize()
-    mainFrame.Visible = false
-    floatingLogo.Visible = true
-end
-
-local function restore()
-    mainFrame.Visible = true
-    floatingLogo.Visible = false
-end
-
-minButton.MouseButton1Click:Connect(minimize)
-floatButton.MouseButton1Click:Connect(restore)
-closeButton.MouseButton1Click:Connect(function()
-    gui:Destroy()
-end)
-
--- GARIS HORIZONTAL
-local horizontalLine = Instance.new("Frame")
-horizontalLine.Name = "HorizontalLine"
-horizontalLine.Size = UDim2.new(1, -20, 0, 1)
-horizontalLine.Position = UDim2.new(0, 10, 0, 50)
-horizontalLine.BackgroundColor3 = Color3.new(1, 1, 1)
-horizontalLine.BackgroundTransparency = 0.3
-horizontalLine.BorderSizePixel = 0
-horizontalLine.Parent = mainFrame
-
--- CONTAINER UTAMA
-local contentContainer = Instance.new("Frame")
-contentContainer.Name = "ContentContainer"
-contentContainer.Size = UDim2.new(1, -20, 1, -60)
-contentContainer.Position = UDim2.new(0, 10, 0, 55)
-contentContainer.BackgroundTransparency = 1
-contentContainer.BorderSizePixel = 0
-contentContainer.Parent = mainFrame
-
--- MENU KIRI
-local leftMenu = Instance.new("Frame")
-leftMenu.Name = "LeftMenu"
-leftMenu.Size = UDim2.new(0, 120, 1, 0)
-leftMenu.Position = UDim2.new(0, 0, 0, 0)
-leftMenu.BackgroundTransparency = 1
-leftMenu.BorderSizePixel = 0
-leftMenu.Parent = contentContainer
-
-local menuLayout = Instance.new("UIListLayout")
-menuLayout.FillDirection = Enum.FillDirection.Vertical
-menuLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-menuLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-menuLayout.Padding = UDim.new(0, 8)
-menuLayout.Parent = leftMenu
-
--- GARIS VERTIKAL
-local verticalLine = Instance.new("Frame")
-verticalLine.Name = "VerticalLine"
-verticalLine.Size = UDim2.new(0, 1, 1, 0)
-verticalLine.Position = UDim2.new(0, 130, 0, 0)
-verticalLine.BackgroundColor3 = Color3.new(1, 1, 1)
-verticalLine.BackgroundTransparency = 0.3
-verticalLine.BorderSizePixel = 0
-verticalLine.Parent = contentContainer
-
--- AREA KONTEN
-local contentArea = Instance.new("Frame")
-contentArea.Name = "ContentArea"
-contentArea.Size = UDim2.new(1, -140, 1, 0)
-contentArea.Position = UDim2.new(0, 140, 0, 0)
-contentArea.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-contentArea.BackgroundTransparency = 0.3
-contentArea.BorderSizePixel = 0
-contentArea.Parent = contentContainer
-
-local contentCorner = Instance.new("UICorner")
-contentCorner.CornerRadius = UDim.new(0, 12)
-contentCorner.Parent = contentArea
-
--- JUDUL KONTEN
-local contentTitle = Instance.new("TextLabel")
-contentTitle.Name = "ContentTitle"
-contentTitle.Size = UDim2.new(1, -20, 0, 30)
-contentTitle.Position = UDim2.new(0, 10, 0, 10)
-contentTitle.BackgroundTransparency = 1
-contentTitle.Text = "Pilih menu di samping"
-contentTitle.TextColor3 = Color3.new(1, 1, 1)
-contentTitle.TextScaled = true
-contentTitle.Font = Enum.Font.GothamBold
-contentTitle.TextXAlignment = Enum.TextXAlignment.Left
-contentTitle.Parent = contentArea
-
--- CONTAINER FITUR
-local featuresContainer = Instance.new("Frame")
-featuresContainer.Name = "FeaturesContainer"
-featuresContainer.Size = UDim2.new(1, -20, 1, -50)
-featuresContainer.Position = UDim2.new(0, 10, 0, 45)
-featuresContainer.BackgroundTransparency = 1
-featuresContainer.BorderSizePixel = 0
-featuresContainer.Parent = contentArea
-
--- LAYOUT VERTIKAL untuk fitur
-local featuresLayout = Instance.new("UIListLayout")
-featuresLayout.FillDirection = Enum.FillDirection.Vertical
-featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-featuresLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-featuresLayout.Padding = UDim.new(0, 10)
-featuresLayout.Parent = featuresContainer
-
--- ===== FUNGSI GET REMOTE UNTUK FISH IT =====
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local function getRemote(name)
-    -- Cari di ReplicatedStorage langsung
-    local remote = ReplicatedStorage:FindFirstChild(name)
-    if remote then return remote end
-    
-    -- Cari di folder RE (Remote Events)
-    local reFolder = ReplicatedStorage:FindFirstChild("RE")
-    if reFolder then
-        remote = reFolder:FindFirstChild(name)
-        if remote then return remote end
+-- ===== FUNGSI TELEPORT =====
+local function teleportToLocation(locationName)
+    local player = game.Players.LocalPlayer
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        notify("Teleport", "Character not found", 1)
+        return
     end
     
-    -- Cari di folder RF (Remote Functions)
-    local rfFolder = ReplicatedStorage:FindFirstChild("RF")
-    if rfFolder then
-        remote = rfFolder:FindFirstChild(name)
-        if remote then return remote end
-    end
-    
-    -- Cari di semua folder
-    for _, folder in pairs(ReplicatedStorage:GetChildren()) do
-        if folder:IsA("Folder") then
-            remote = folder:FindFirstChild(name)
-            if remote then return remote end
-        end
-    end
-    
-    return nil
-end
-
--- ===== FITUR FISHING UNTUK FISH IT =====
-local function instantFishing()
-    print("[Fishing] Instant Fishing activated")
-    
-    -- Untuk Fish It, biasanya pake remote ini
-    local castRod = getRemote("StartFishing") or getRemote("RF/StartFishing")
-    local catchFish = getRemote("CatchFishCompleted") or getRemote("RF/CatchFishCompleted")
-    
-    if castRod then
-        spawn(function()
-            while wait(0.5) do
-                castRod:FireServer()
-                if catchFish then
-                    wait(0.1)
-                    catchFish:FireServer()
-                end
-            end
-        end)
-        notify("Fishing", "Instant Fishing ON")
+    local cframe = TeleportLocations[locationName]
+    if cframe then
+        char.HumanoidRootPart.CFrame = cframe
+        notify("Teleport", "Teleported to "..locationName, 2)
     else
-        warn("Remote StartFishing tidak ditemukan")
+        notify("Teleport", "Location not found", 1)
     end
 end
 
-local function blatantMode()
-    print("[Fishing] Blatant Mode activated")
-    
-    -- Skip minigame fishing
-    local skipMinigame = getRemote("FishingMinigameChanged") or getRemote("RE/FishingMinigameChanged")
-    local catchFish = getRemote("CatchFishCompleted") or getRemote("RF/CatchFishCompleted")
-    
-    if skipMinigame and catchFish then
-        spawn(function()
-            while wait(0.1) do
-                skipMinigame:FireServer(true)
-                catchFish:FireServer()
-            end
-        end)
-        notify("Fishing", "Blatant Mode ON")
-    end
-end
-
-local function autoSell()
-    print("[Fishing] Auto Sell activated")
-    
-    local sellAll = getRemote("SellAllItems") or getRemote("RF/SellAllItems")
-    local sellItem = getRemote("SellItem") or getRemote("RF/SellItem")
-    
-    if sellAll then
-        spawn(function()
-            while wait(3) do
-                sellAll:FireServer()
-            end
-        end)
-        notify("Fishing", "Auto Sell ON")
-    elseif sellItem then
-        spawn(function()
-            while wait(3) do
-                sellItem:FireServer()
-            end
-        end)
-        notify("Fishing", "Auto Sell ON")
-    end
-end
-
-local function autoCast()
-    print("[Fishing] Auto Cast activated")
-    
-    local castRod = getRemote("StartFishing") or getRemote("RF/StartFishing")
-    
-    if castRod then
-        spawn(function()
-            while wait(1.5) do
-                castRod:FireServer()
-            end
-        end)
-        notify("Fishing", "Auto Cast ON")
-    end
-end
-
-local function autoReel()
-    print("[Fishing] Auto Reel activated")
-    
-    local reelIn = getRemote("StopFishing") or getRemote("RE/FishingStopped") or getRemote("CatchFishCompleted")
-    
-    if reelIn then
-        spawn(function()
-            while wait(0.5) do
-                reelIn:FireServer()
-            end
-        end)
-        notify("Fishing", "Auto Reel ON")
-    end
-end
-
-local function fishFinder()
-    print("[Fishing] Fish Finder activated")
-    
-    local findFish = getRemote("FishingCircleParticipantsChanged") or getRemote("RE/FishingCircleParticipantsChanged")
-    
-    if findFish then
-        findFish:FireServer()
-        notify("Fishing", "Fish Finder activated")
-    end
-end
-
--- ===== FITUR FAVORITE UNTUK FISH IT =====
-local function addToFavorite()
-    print("[Favorite] Add to Favorite")
-    
-    local favorite = getRemote("FavoriteItem") or getRemote("RE/FavoriteItem")
-    
-    if favorite then
-        -- Favorite item yang sedang dipegang atau item terakhir
-        favorite:FireServer()
-        notify("Favorite", "Added to favorites")
-    end
-end
-
-local function removeFromFavorite()
-    print("[Favorite] Remove from Favorite")
-    
-    local unfavorite = getRemote("FavoriteStateChanged") or getRemote("RE/FavoriteStateChanged")
-    
-    if unfavorite then
-        unfavorite:FireServer(false)
-        notify("Favorite", "Removed from favorites")
-    end
-end
-
-local function favoriteList()
-    print("[Favorite] Show Favorite List")
-    
-    local getFav = getRemote("FunctionGet") or getRemote("GetFavorites")
-    
-    if getFav and getFav:IsA("RemoteFunction") then
-        local favorites = getFav:InvokeServer("GetFavorites")
-        print("Favorites:", favorites)
-        notify("Favorite", "Check console (F9)")
-    end
-end
-
--- ===== FITUR SHOP UNTUK FISH IT =====
-local function autoBuy()
-    print("[Shop] Auto Buy activated")
-    
-    local purchase = getRemote("PurchaseMarketItem") or getRemote("RF/PurchaseMarketItem") or getRemote("PurchaseBait")
-    
-    if purchase then
-        spawn(function()
-            while wait(5) do
-                -- Beli bait
-                purchase:FireServer("Bait", 5)
-            end
-        end)
-        notify("Shop", "Auto Buy ON")
-    end
-end
-
-local function quickSell()
-    print("[Shop] Quick Sell activated")
-    
-    local sell = getRemote("SellItem") or getRemote("RF/SellItem")
-    
-    if sell then
-        sell:FireServer()
-        notify("Shop", "Item sold")
-    end
-end
-
-local function priceChecker()
-    print("[Shop] Price Checker activated")
-    
-    local getPrice = getRemote("GetProductPrice") or getRemote("FunctionGetProductPrice")
-    
-    if getPrice and getPrice:IsA("RemoteFunction") then
-        local price = getPrice:InvokeServer("Bait")
-        print("Price for Bait:", price)
-        notify("Shop", "Check console (F9)")
-    end
-end
-
-local function bulkPurchase()
-    print("[Shop] Bulk Purchase activated")
-    
-    local purchase = getRemote("PurchaseMarketItem") or getRemote("RF/PurchaseMarketItem")
-    
-    if purchase then
-        purchase:FireServer("Bait", 50)
-        notify("Shop", "Bulk purchased 50 Bait")
-    end
-end
-
--- ===== FITUR TELEPORT UNTUK FISH IT =====
 local function teleportToNPC()
-    print("[Teleport] Teleport to NPC")
-    
-    -- Cari NPC di workspace
     for _, npc in pairs(workspace:GetDescendants()) do
-        if npc:IsA("Model") and npc:FindFirstChild("Humanoid") and (npc.Name:find("NPC") or npc.Name:find("Merchant")) then
+        if npc:IsA("Model") and npc:FindFirstChild("Humanoid") and (npc.Name:find("NPC") or npc.Name:find("Merchant") or npc.Name:find("Trader")) then
             local char = player.Character
             if char and char:FindFirstChild("HumanoidRootPart") then
                 local npcPos = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("Head")
                 if npcPos then
                     char.HumanoidRootPart.CFrame = npcPos.CFrame + Vector3.new(0, 5, 0)
-                    notify("Teleport", "Teleported to "..npc.Name)
+                    notify("Teleport", "Teleported to "..npc.Name, 2)
                     return
                 end
             end
         end
     end
+    notify("Teleport", "No NPC found", 1)
 end
 
 local function teleportToIsland()
-    print("[Teleport] Teleport to Island")
-    
-    -- Fish It punya remote teleport
-    local teleport = getRemote("SubmarineTP") or getRemote("RE/SubmarineTP") or getRemote("RF/SubmarineTP2")
-    
-    if teleport then
-        teleport:FireServer("MainIsland")
-        notify("Teleport", "Teleported to Island")
+    -- Coba pake remote game dulu
+    local teleportRemote = getRemote("SubmarineTP") or getRemote("RE/SubmarineTP") or getRemote("RF/SubmarineTP2")
+    if teleportRemote then
+        teleportRemote:FireServer("MainIsland")
+        notify("Teleport", "Teleported to Island (via remote)", 2)
+    else
+        -- Fallback ke lokasi yang sudah ditentukan
+        teleportToLocation("Spawn")
     end
 end
 
-local function teleportToPlayer()
-    print("[Teleport] Teleport to Player")
-    
-    -- Cari player lain
-    for _, plr in pairs(game.Players:GetPlayers()) do
-        if plr ~= player then
-            if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    char.HumanoidRootPart.CFrame = plr.Character.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0)
-                    notify("Teleport", "Teleported to "..plr.Name)
-                    return
-                end
+local function teleportToPlayer(targetPlayerName)
+    local targetPlayer = nil
+    if targetPlayerName then
+        targetPlayer = game.Players:FindFirstChild(targetPlayerName)
+    else
+        -- Cari player pertama selain diri sendiri
+        for _, plr in pairs(game.Players:GetPlayers()) do
+            if plr ~= game.Players.LocalPlayer then
+                targetPlayer = plr
+                break
             end
         end
     end
-end
-
-local function saveLocation()
-    print("[Teleport] Location saved")
     
-    local char = player.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        _G.SavedLocation = char.HumanoidRootPart.CFrame
-        notify("Teleport", "Location saved")
-    end
-end
-
-local function loadLocation()
-    print("[Teleport] Loading saved location")
-    
-    if _G.SavedLocation then
-        local char = player.Character
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local char = game.Players.LocalPlayer.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = _G.SavedLocation
-            notify("Teleport", "Location loaded")
+            char.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0)
+            notify("Teleport", "Teleported to "..targetPlayer.Name, 2)
+            return true
         end
-    else
-        notify("Teleport", "No location saved")
     end
+    notify("Teleport", "Player not found", 1)
+    return false
 end
 
--- ===== FITUR WEATHER UNTUK FISH IT =====
-local function setClear()
-    print("[Weather] Set Clear")
+-- ===== DROPDOWN UNTUK PILIH LOKASI =====
+local function createLocationDropdown(parent)
+    local frame = Instance.new("Frame")
+    frame.Name = "LocationDropdownFrame"
+    frame.Size = UDim2.new(1, 0, 0, 70)
+    frame.BackgroundTransparency = 1
+    frame.BorderSizePixel = 0
+    frame.Parent = parent
     
-    local weather = getRemote("WeatherCommand") or getRemote("RE/WeatherCommand")
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = "Pilih Lokasi Teleport"
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 14
+    label.Parent = frame
     
-    if weather then
-        weather:FireServer("Clear")
-        notify("Weather", "Set to Clear")
-    else
-        -- Fallback ke Lighting
-        game:GetService("Lighting").ClockTime = 12
-        game:GetService("Lighting").Brightness = 1
-        notify("Weather", "Set to Clear (local)")
-    end
-end
-
-local function setRain()
-    print("[Weather] Set Rain")
-    
-    local weather = getRemote("WeatherCommand") or getRemote("RE/WeatherCommand")
-    
-    if weather then
-        weather:FireServer("Rain")
-        notify("Weather", "Set to Rain")
-    end
-end
-
-local function setStorm()
-    print("[Weather] Set Storm")
-    
-    local weather = getRemote("WeatherCommand") or getRemote("RE/WeatherCommand")
-    
-    if weather then
-        weather:FireServer("Storm")
-        notify("Weather", "Set to Storm")
-    end
-end
-
-local function setFog()
-    print("[Weather] Set Fog")
-    
-    local weather = getRemote("WeatherCommand") or getRemote("RE/WeatherCommand")
-    
-    if weather then
-        weather:FireServer("Fog")
-        notify("Weather", "Set to Fog")
-    else
-        game:GetService("Lighting").FogEnd = 50
-        notify("Weather", "Set to Fog (local)")
-    end
-end
-
-local function setNight()
-    print("[Weather] Set Night")
-    
-    game:GetService("Lighting").ClockTime = 0
-    game:GetService("Lighting").Brightness = 0.3
-    notify("Weather", "Set to Night")
-end
-
-local function setDay()
-    print("[Weather] Set Day")
-    
-    game:GetService("Lighting").ClockTime = 12
-    game:GetService("Lighting").Brightness = 1
-    notify("Weather", "Set to Day")
-end
-
--- ===== FUNGSI NOTIFIKASI =====
-local function notify(title, text)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = title,
-        Text = text,
-        Duration = 2
-    })
-end
-
--- ===== FUNGSI MEMBUAT TOMBOL FITUR =====
-local function createFeatureButton(name, callback)
-    local featureFrame = Instance.new("Frame")
-    featureFrame.Name = name.."Frame"
-    featureFrame.Size = UDim2.new(1, 0, 0, 50)
-    featureFrame.BackgroundColor3 = Color3.new(0.18, 0.18, 0.18)
-    featureFrame.BackgroundTransparency = 0.2
-    featureFrame.BorderSizePixel = 0
-    featureFrame.Parent = featuresContainer
-    
-    local frameCorner = Instance.new("UICorner")
-    frameCorner.CornerRadius = UDim.new(0, 10)
-    frameCorner.Parent = featureFrame
-    
-    local frameStroke = Instance.new("UIStroke")
-    frameStroke.Thickness = 1
-    frameStroke.Color = Color3.new(1, 1, 1)
-    frameStroke.Transparency = 0.7
-    frameStroke.Parent = featureFrame
-    
-    local btn = Instance.new("TextButton")
-    btn.Name = name.."FeatureBtn"
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.BorderSizePixel = 0
-    btn.Text = "  "..name
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.TextScaled = true
-    btn.Font = Enum.Font.Gotham
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    btn.AutoButtonColor = false
-    btn.Parent = featureFrame
-    
-    btn.MouseEnter:Connect(function()
-        featureFrame.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
-        featureFrame.BackgroundTransparency = 0.1
-        frameStroke.Transparency = 0.4
-    end)
-    
-    btn.MouseLeave:Connect(function()
-        featureFrame.BackgroundColor3 = Color3.new(0.18, 0.18, 0.18)
-        featureFrame.BackgroundTransparency = 0.2
-        frameStroke.Transparency = 0.7
-    end)
-    
-    btn.MouseButton1Click:Connect(function()
-        featureFrame.BackgroundColor3 = Color3.new(0.35, 0.35, 0.35)
-        task.wait(0.1)
-        featureFrame.BackgroundColor3 = Color3.new(0.18, 0.18, 0.18)
-        
-        if callback then
-            callback()
-        else
-            warn("No callback for "..name)
-        end
-    end)
-    
-    return featureFrame
-end
-
--- ===== FUNGSI MEMBUAT TOMBOL MENU =====
-local menuButtons = {}
-local currentMenu = nil
-
-local function createMenuButton(name)
-    local btn = Instance.new("TextButton")
-    btn.Name = name.."MenuBtn"
-    btn.Size = UDim2.new(0, 100, 0, 40)
-    btn.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-    btn.BackgroundTransparency = 0.3
-    btn.BorderSizePixel = 0
-    btn.Text = name
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.TextScaled = true
-    btn.Font = Enum.Font.GothamBold
-    btn.AutoButtonColor = false
-    btn.Parent = leftMenu
+    local dropdownBtn = Instance.new("TextButton")
+    dropdownBtn.Name = "LocationDropdownBtn"
+    dropdownBtn.Size = UDim2.new(1, 0, 0, 35)
+    dropdownBtn.Position = UDim2.new(0, 0, 0, 25)
+    dropdownBtn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    dropdownBtn.BackgroundTransparency = 0.3
+    dropdownBtn.BorderSizePixel = 0
+    dropdownBtn.Text = "Pilih Lokasi"
+    dropdownBtn.TextColor3 = Color3.new(1, 1, 1)
+    dropdownBtn.Font = Enum.Font.Gotham
+    dropdownBtn.TextSize = 14
+    dropdownBtn.AutoButtonColor = false
+    dropdownBtn.Parent = frame
     
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    btnCorner.Parent = btn
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = dropdownBtn
     
-    btn.MouseEnter:Connect(function()
-        if currentMenu ~= name then
-            btn.BackgroundTransparency = 0.1
-        end
+    local dropdownFrame = Instance.new("Frame")
+    dropdownFrame.Name = "LocationDropdownList"
+    dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
+    dropdownFrame.Position = UDim2.new(0, 0, 0, 62)
+    dropdownFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    dropdownFrame.BackgroundTransparency = 0.1
+    dropdownFrame.BorderSizePixel = 0
+    dropdownFrame.Visible = false
+    dropdownFrame.Parent = frame
+    dropdownFrame.ZIndex = 10
+    
+    local dropdownCorner = Instance.new("UICorner")
+    dropdownCorner.CornerRadius = UDim.new(0, 6)
+    dropdownCorner.Parent = dropdownFrame
+    
+    local dropdownLayout = Instance.new("UIListLayout")
+    dropdownLayout.FillDirection = Enum.FillDirection.Vertical
+    dropdownLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    dropdownLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+    dropdownLayout.Padding = UDim.new(0, 2)
+    dropdownLayout.Parent = dropdownFrame
+    
+    -- Buat opsi dari TeleportLocations
+    local locations = {}
+    for name, _ in pairs(TeleportLocations) do
+        table.insert(locations, name)
+    end
+    table.sort(locations)
+    
+    for _, locName in ipairs(locations) do
+        local optBtn = Instance.new("TextButton")
+        optBtn.Name = locName.."Option"
+        optBtn.Size = UDim2.new(1, 0, 0, 30)
+        optBtn.BackgroundTransparency = 1
+        optBtn.BorderSizePixel = 0
+        optBtn.Text = "  "..locName
+        optBtn.TextColor3 = Color3.new(1, 1, 1)
+        optBtn.TextXAlignment = Enum.TextXAlignment.Left
+        optBtn.Font = Enum.Font.Gotham
+        optBtn.TextSize = 14
+        optBtn.AutoButtonColor = false
+        optBtn.Parent = dropdownFrame
+        optBtn.ZIndex = 11
+        
+        optBtn.MouseEnter:Connect(function()
+            optBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+            optBtn.BackgroundTransparency = 0.3
+        end)
+        
+        optBtn.MouseLeave:Connect(function()
+            optBtn.BackgroundTransparency = 1
+        end)
+        
+        optBtn.MouseButton1Click:Connect(function()
+            dropdownBtn.Text = locName
+            dropdownFrame.Visible = false
+            teleportToLocation(locName)
+        end)
+    end
+    
+    dropdownBtn.MouseButton1Click:Connect(function()
+        dropdownFrame.Visible = not dropdownFrame.Visible
+        local count = #locations
+        dropdownFrame.Size = UDim2.new(1, 0, 0, count * 32 + 4)
     end)
     
-    btn.MouseLeave:Connect(function()
-        if currentMenu ~= name then
-            btn.BackgroundTransparency = 0.3
-        end
-    end)
+    return dropdownBtn
+end
+
+-- ===== DROPDOWN UNTUK PILIH PLAYER =====
+local function createPlayerDropdown(parent)
+    local frame = Instance.new("Frame")
+    frame.Name = "PlayerDropdownFrame"
+    frame.Size = UDim2.new(1, 0, 0, 70)
+    frame.BackgroundTransparency = 1
+    frame.BorderSizePixel = 0
+    frame.Parent = parent
     
-    btn.MouseButton1Click:Connect(function()
-        for _, b in pairs(menuButtons) do
-            b.BackgroundTransparency = 0.3
-            b.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-        end
-        
-        btn.BackgroundTransparency = 0
-        btn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
-        currentMenu = name
-        contentTitle.Text = name.." Features"
-        
-        -- Hapus fitur lama
-        for _, child in pairs(featuresContainer:GetChildren()) do
-            if child:IsA("Frame") then
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = "Pilih Player Tujuan"
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 14
+    label.Parent = frame
+    
+    local dropdownBtn = Instance.new("TextButton")
+    dropdownBtn.Name = "PlayerDropdownBtn"
+    dropdownBtn.Size = UDim2.new(1, 0, 0, 35)
+    dropdownBtn.Position = UDim2.new(0, 0, 0, 25)
+    dropdownBtn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    dropdownBtn.BackgroundTransparency = 0.3
+    dropdownBtn.BorderSizePixel = 0
+    dropdownBtn.Text = "Pilih Player"
+    dropdownBtn.TextColor3 = Color3.new(1, 1, 1)
+    dropdownBtn.Font = Enum.Font.Gotham
+    dropdownBtn.TextSize = 14
+    dropdownBtn.AutoButtonColor = false
+    dropdownBtn.Parent = frame
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = dropdownBtn
+    
+    local dropdownFrame = Instance.new("Frame")
+    dropdownFrame.Name = "PlayerDropdownList"
+    dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
+    dropdownFrame.Position = UDim2.new(0, 0, 0, 62)
+    dropdownFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    dropdownFrame.BackgroundTransparency = 0.1
+    dropdownFrame.BorderSizePixel = 0
+    dropdownFrame.Visible = false
+    dropdownFrame.Parent = frame
+    dropdownFrame.ZIndex = 10
+    
+    local dropdownCorner = Instance.new("UICorner")
+    dropdownCorner.CornerRadius = UDim.new(0, 6)
+    dropdownCorner.Parent = dropdownFrame
+    
+    local dropdownLayout = Instance.new("UIListLayout")
+    dropdownLayout.FillDirection = Enum.FillDirection.Vertical
+    dropdownLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    dropdownLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+    dropdownLayout.Padding = UDim.new(0, 2)
+    dropdownLayout.Parent = dropdownFrame
+    
+    -- Fungsi untuk update daftar player
+    local function updatePlayerList()
+        -- Hapus semua opsi lama
+        for _, child in pairs(dropdownFrame:GetChildren()) do
+            if child:IsA("TextButton") then
                 child:Destroy()
             end
         end
         
-        -- Tambah fitur baru sesuai menu
-        if name == "Fishing" then
-            createFeatureButton("Instant Fishing", instantFishing)
-            createFeatureButton("Blatant Mode", blatantMode)
-            createFeatureButton("Auto Sell", autoSell)
-            createFeatureButton("Auto Cast", autoCast)
-            createFeatureButton("Auto Reel", autoReel)
-            createFeatureButton("Fish Finder", fishFinder)
-        elseif name == "Favorite" then
-            createFeatureButton("Add to Favorite", addToFavorite)
-            createFeatureButton("Remove from Favorite", removeFromFavorite)
-            createFeatureButton("Favorite List", favoriteList)
-        elseif name == "Shop" then
-            createFeatureButton("Auto Buy", autoBuy)
-            createFeatureButton("Quick Sell", quickSell)
-            createFeatureButton("Price Checker", priceChecker)
-            createFeatureButton("Bulk Purchase", bulkPurchase)
-        elseif name == "Teleport" then
-            createFeatureButton("Teleport to NPC", teleportToNPC)
-            createFeatureButton("Teleport to Island", teleportToIsland)
-            createFeatureButton("Teleport to Player", teleportToPlayer)
-            createFeatureButton("Save Location", saveLocation)
-            createFeatureButton("Load Location", loadLocation)
-        elseif name == "Weather" then
-            createFeatureButton("Set Clear", setClear)
-            createFeatureButton("Set Rain", setRain)
-            createFeatureButton("Set Storm", setStorm)
-            createFeatureButton("Set Fog", setFog)
-            createFeatureButton("Set Night", setNight)
-            createFeatureButton("Set Day", setDay)
+        -- Tambah player baru
+        local players = {}
+        for _, plr in pairs(game.Players:GetPlayers()) do
+            if plr ~= game.Players.LocalPlayer then
+                table.insert(players, plr.Name)
+            end
+        end
+        table.sort(players)
+        
+        for _, plrName in ipairs(players) do
+            local optBtn = Instance.new("TextButton")
+            optBtn.Name = plrName.."Option"
+            optBtn.Size = UDim2.new(1, 0, 0, 30)
+            optBtn.BackgroundTransparency = 1
+            optBtn.BorderSizePixel = 0
+            optBtn.Text = "  "..plrName
+            optBtn.TextColor3 = Color3.new(1, 1, 1)
+            optBtn.TextXAlignment = Enum.TextXAlignment.Left
+            optBtn.Font = Enum.Font.Gotham
+            optBtn.TextSize = 14
+            optBtn.AutoButtonColor = false
+            optBtn.Parent = dropdownFrame
+            optBtn.ZIndex = 11
+            
+            optBtn.MouseEnter:Connect(function()
+                optBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+                optBtn.BackgroundTransparency = 0.3
+            end)
+            
+            optBtn.MouseLeave:Connect(function()
+                optBtn.BackgroundTransparency = 1
+            end)
+            
+            optBtn.MouseButton1Click:Connect(function()
+                dropdownBtn.Text = plrName
+                dropdownFrame.Visible = false
+                teleportToPlayer(plrName)
+            end)
+        end
+        
+        -- Update ukuran dropdown
+        local count = #players
+        dropdownFrame.Size = UDim2.new(1, 0, 0, count * 32 + 4)
+    end
+    
+    -- Update setiap ada player yang join/leave
+    game.Players.PlayerAdded:Connect(updatePlayerList)
+    game.Players.PlayerRemoving:Connect(updatePlayerList)
+    
+    dropdownBtn.MouseButton1Click:Connect(function()
+        updatePlayerList() -- Update sebelum muncul
+        dropdownFrame.Visible = not dropdownFrame.Visible
+    end)
+    
+    return dropdownBtn
+end
+
+-- ===== KONTEN TELEPORT =====
+local function createTeleportContent()
+    -- Hapus konten lama
+    for _, child in pairs(featuresContainer:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+    
+    -- Separator
+    local sep1 = Instance.new("Frame")
+    sep1.Size = UDim2.new(1, 0, 0, 20)
+    sep1.BackgroundTransparency = 1
+    sep1.BorderSizePixel = 0
+    sep1.Parent = featuresContainer
+    
+    -- Dropdown Lokasi (dari list yang diberikan)
+    createLocationDropdown(featuresContainer)
+    
+    -- Button Teleport ke NPC
+    createButton(featuresContainer, "🚶 Teleport ke NPC", teleportToNPC)
+    
+    -- Button Teleport ke Island (via remote)
+    createButton(featuresContainer, "🏝️ Teleport ke Island", teleportToIsland)
+    
+    -- Dropdown Player
+    createPlayerDropdown(featuresContainer)
+    
+    -- Button Refresh Player List
+    createButton(featuresContainer, "🔄 Refresh Player List", function()
+        -- Trigger update dropdown dengan cara buka tutup
+        local dropdown = featuresContainer:FindFirstChild("PlayerDropdownFrame")
+        if dropdown then
+            local btn = dropdown:FindFirstChild("PlayerDropdownBtn")
+            if btn then
+                btn.MouseButton1Click:Fire()
+                task.wait(0.1)
+                btn.MouseButton1Click:Fire()
+            end
+        end
+        notify("Teleport", "Player list refreshed", 1)
+    end)
+    
+    -- Separator untuk Save/Load
+    local sep2 = Instance.new("Frame")
+    sep2.Size = UDim2.new(1, 0, 0, 20)
+    sep2.BackgroundTransparency = 1
+    sep2.BorderSizePixel = 0
+    sep2.Parent = featuresContainer
+    
+    local saveLabel = Instance.new("TextLabel")
+    saveLabel.Size = UDim2.new(1, 0, 0, 30)
+    saveLabel.BackgroundTransparency = 1
+    saveLabel.Text = "📍 Save / Load Location"
+    saveLabel.TextColor3 = Color3.new(1, 1, 1)
+    saveLabel.Font = Enum.Font.GothamBold
+    saveLabel.TextSize = 16
+    saveLabel.Parent = featuresContainer
+    
+    -- Button Save Location
+    createButton(featuresContainer, "💾 Save Current Location", function()
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            _G.SavedLocation = char.HumanoidRootPart.CFrame
+            notify("Teleport", "Location saved!", 1)
         end
     end)
     
-    table.insert(menuButtons, btn)
-    return btn
-end
-
--- BUAT TOMBOL MENU
-createMenuButton("Fishing")
-createMenuButton("Favorite")
-createMenuButton("Shop")
-createMenuButton("Teleport")
-createMenuButton("Weather")
-
--- DRAG GUI
-local dragging = false
-local dragInput, dragStart, startPos
-
-local function update(input)
-    local delta = input.Position - dragStart
-    mainFrame.Position = UDim2.new(
-        startPos.X.Scale, 
-        startPos.X.Offset + delta.X, 
-        startPos.Y.Scale, 
-        startPos.Y.Offset + delta.Y
-    )
-end
-
-mainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
+    -- Button Load Location
+    createButton(featuresContainer, "📂 Load Saved Location", function()
+        if _G.SavedLocation then
+            local char = game.Players.LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = _G.SavedLocation
+                notify("Teleport", "Location loaded!", 1)
             end
-        end)
+        else
+            notify("Teleport", "No location saved", 1)
+        end
+    end)
+    
+    -- Daftar Semua Lokasi (untuk referensi)
+    local sep3 = Instance.new("Frame")
+    sep3.Size = UDim2.new(1, 0, 0, 20)
+    sep3.BackgroundTransparency = 1
+    sep3.BorderSizePixel = 0
+    sep3.Parent = featuresContainer
+    
+    local listLabel = Instance.new("TextLabel")
+    listLabel.Size = UDim2.new(1, 0, 0, 30)
+    listLabel.BackgroundTransparency = 1
+    listLabel.Text = "📋 Daftar Semua Lokasi:"
+    listLabel.TextColor3 = Color3.new(1, 1, 1)
+    listLabel.Font = Enum.Font.GothamBold
+    listLabel.TextSize = 14
+    listLabel.TextXAlignment = Enum.TextXAlignment.Left
+    listLabel.Parent = featuresContainer
+    
+    -- Tampilkan daftar lokasi dalam grid
+    local locations = {}
+    for name, _ in pairs(TeleportLocations) do
+        table.insert(locations, name)
     end
-end)
-
-mainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
-    end
-end)
-
--- Auto-click Fishing
-task.wait(0.5)
-for _, btn in pairs(leftMenu:GetChildren()) do
-    if btn:IsA("TextButton") and btn.Name == "FishingMenuBtn" then
-        btn.MouseButton1Click:Fire()
-        break
+    table.sort(locations)
+    
+    local listFrame = Instance.new("Frame")
+    listFrame.Size = UDim2.new(1, 0, 0, #locations * 25)
+    listFrame.BackgroundTransparency = 1
+    listFrame.BorderSizePixel = 0
+    listFrame.Parent = featuresContainer
+    
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.FillDirection = Enum.FillDirection.Vertical
+    listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    listLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+    listLayout.Padding = UDim.new(0, 2)
+    listLayout.Parent = listFrame
+    
+    for _, locName in ipairs(locations) do
+        local locLabel = Instance.new("TextLabel")
+        locLabel.Size = UDim2.new(1, 0, 0, 20)
+        locLabel.BackgroundTransparency = 1
+        locLabel.Text = "  • "..locName
+        locLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+        locLabel.Font = Enum.Font.Gotham
+        locLabel.TextSize = 12
+        locLabel.TextXAlignment = Enum.TextXAlignment.Left
+        locLabel.Parent = listFrame
     end
 end
-
-print("Moe V1.0 GUI for FISH IT - Loaded!")
