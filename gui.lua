@@ -1,5 +1,5 @@
 -- Moe V1.0 GUI for Delta Executor
--- FIX: Fitur muncul ketika menu dipilih
+-- Fitur dalam kotak rapi dengan rounded corners
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -14,8 +14,8 @@ gui.Parent = player:WaitForChild("PlayerGui")
 -- MAIN FRAME
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 650, 0, 350)
-mainFrame.Position = UDim2.new(0.5, -325, 0.5, -175)
+mainFrame.Size = UDim2.new(0, 700, 0, 400) -- Lebih besar dikit
+mainFrame.Position = UDim2.new(0.5, -350, 0.5, -200)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.2
 mainFrame.BorderSizePixel = 0
@@ -156,48 +156,77 @@ featuresContainer.Position = UDim2.new(0, 10, 0, 45)
 featuresContainer.BackgroundTransparency = 1
 featuresContainer.BorderSizePixel = 0
 featuresContainer.Parent = contentArea
-featuresContainer.Visible = true  -- Pastikan visible
+featuresContainer.Visible = true
 
--- Layout untuk fitur
-local featuresLayout = Instance.new("UIListLayout")
-featuresLayout.FillDirection = Enum.FillDirection.Vertical
-featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-featuresLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-featuresLayout.Padding = UDim.new(0, 5)
-featuresLayout.Parent = featuresContainer
+-- GRID LAYOUT untuk fitur (biar rapi 2 kolom)
+local featuresGrid = Instance.new("UIGridLayout")
+featuresGrid.FillDirection = Enum.FillDirection.Horizontal
+featuresGrid.HorizontalAlignment = Enum.HorizontalAlignment.Left
+featuresGrid.VerticalAlignment = Enum.VerticalAlignment.Top
+featuresGrid.CellSize = UDim2.new(0, 160, 0, 50) -- Ukuran kotak fitur
+featuresGrid.CellPadding = UDim2.new(0, 10, 0, 10) -- Jarak antar kotak
+featuresGrid.StartCorner = Enum.StartCorner.TopLeft
+featuresGrid.Parent = featuresContainer
 
--- FUNGSI MEMBUAT TOMBOL FITUR
+-- FUNGSI MEMBUAT TOMBOL FITUR (dengan kotak)
 local function createFeatureButton(name)
+	-- Frame luar (kotaknya)
+	local featureFrame = Instance.new("Frame")
+	featureFrame.Name = name.."Frame"
+	featureFrame.Size = UDim2.new(0, 160, 0, 50)
+	featureFrame.BackgroundColor3 = Color3.new(0.18, 0.18, 0.18)
+	featureFrame.BackgroundTransparency = 0.2
+	featureFrame.BorderSizePixel = 0
+	featureFrame.Parent = featuresContainer
+	
+	-- Rounded corners untuk kotak (biar gak terlalu kotak)
+	local frameCorner = Instance.new("UICorner")
+	frameCorner.CornerRadius = UDim.new(0, 10) -- 10px radius
+	frameCorner.Parent = featureFrame
+	
+	-- Stroke putih tipis di kotak
+	local frameStroke = Instance.new("UIStroke")
+	frameStroke.Thickness = 1
+	frameStroke.Color = Color3.new(1, 1, 1)
+	frameStroke.Transparency = 0.7
+	frameStroke.Parent = featureFrame
+	
+	-- Tombol di dalam frame (memenuhi seluruh frame)
 	local btn = Instance.new("TextButton")
 	btn.Name = name.."FeatureBtn"
-	btn.Size = UDim2.new(0, 150, 0, 35)
-	btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-	btn.BackgroundTransparency = 0.3
+	btn.Size = UDim2.new(1, 0, 1, 0)
+	btn.BackgroundTransparency = 1 -- Transparan, biar frame yang keliatan
 	btn.BorderSizePixel = 0
-	btn.Text = name
+	btn.Text = "  "..name  -- Kasih spasi biar gak nempel kiri
 	btn.TextColor3 = Color3.new(1, 1, 1)
 	btn.TextScaled = true
 	btn.Font = Enum.Font.Gotham
+	btn.TextXAlignment = Enum.TextXAlignment.Left -- Rata kiri
 	btn.AutoButtonColor = false
-	btn.Parent = featuresContainer  -- Parent ke featuresContainer
-	btn.Visible = true  -- Pastikan visible
+	btn.Parent = featureFrame
 	
-	local btnCorner = Instance.new("UICorner")
-	btnCorner.CornerRadius = UDim.new(0, 6)
-	btnCorner.Parent = btn
-	
-	-- Hover
+	-- Hover effect (frame yang berubah)
 	btn.MouseEnter:Connect(function()
-		btn.BackgroundTransparency = 0.1
+		featureFrame.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+		featureFrame.BackgroundTransparency = 0.1
+		frameStroke.Transparency = 0.4
 	end)
 	
 	btn.MouseLeave:Connect(function()
-		btn.BackgroundTransparency = 0.3
+		featureFrame.BackgroundColor3 = Color3.new(0.18, 0.18, 0.18)
+		featureFrame.BackgroundTransparency = 0.2
+		frameStroke.Transparency = 0.7
 	end)
 	
-	-- Click
+	-- Click effect
 	btn.MouseButton1Click:Connect(function()
 		print(currentMenu.." - "..name.." clicked!")
+		
+		-- Efek klik (frame kedap kedip)
+		featureFrame.BackgroundColor3 = Color3.new(0.35, 0.35, 0.35)
+		task.wait(0.1)
+		featureFrame.BackgroundColor3 = Color3.new(0.18, 0.18, 0.18)
+		
 		game:GetService("StarterGui"):SetCore("SendNotification", {
 			Title = currentMenu,
 			Text = name.." activated!",
@@ -205,7 +234,7 @@ local function createFeatureButton(name)
 		})
 	end)
 	
-	return btn
+	return featureFrame
 end
 
 -- FUNGSI MEMBUAT TOMBOL MENU KIRI
@@ -259,38 +288,46 @@ local function createMenuButton(name)
 		-- Update judul konten
 		contentTitle.Text = name.." Features"
 		
-		-- **HAPUS SEMUA FITUR LAMA**
+		-- HAPUS SEMUA FITUR LAMA
 		for _, child in pairs(featuresContainer:GetChildren()) do
-			if child:IsA("TextButton") then
+			if child:IsA("Frame") then
 				child:Destroy()
 			end
 		end
 		
-		-- **TAMBAH FITUR BARU SESUAI MENU**
-		task.wait(0.1) -- Kasih jeda sebentar
+		-- TAMBAH FITUR BARU SESUAI MENU
+		task.wait(0.1)
 		
 		if name == "Fishing" then
 			createFeatureButton("Instant Fishing")
 			createFeatureButton("Blatant Mode")
 			createFeatureButton("Auto Sell")
 			createFeatureButton("Auto Cast")
+			createFeatureButton("Auto Reel")
+			createFeatureButton("Fish Finder")
 		elseif name == "Favorite" then
 			createFeatureButton("Add to Favorite")
 			createFeatureButton("Remove from Favorite")
 			createFeatureButton("Favorite List")
+			createFeatureButton("Auto Favorite")
 		elseif name == "Shop" then
 			createFeatureButton("Auto Buy")
 			createFeatureButton("Quick Sell")
 			createFeatureButton("Price Checker")
+			createFeatureButton("Bulk Purchase")
 		elseif name == "Teleport" then
 			createFeatureButton("Teleport to NPC")
 			createFeatureButton("Teleport to Island")
 			createFeatureButton("Teleport to Player")
+			createFeatureButton("Save Location")
+			createFeatureButton("Load Location")
 		elseif name == "Weather" then
 			createFeatureButton("Set Clear")
 			createFeatureButton("Set Rain")
 			createFeatureButton("Set Storm")
 			createFeatureButton("Set Fog")
+			createFeatureButton("Set Night")
+			createFeatureButton("Set Day")
 		end
 		
 		print("Fitur untuk "..name.." ditampilkan")
@@ -349,7 +386,7 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
 	end
 end)
 
--- KLIK FISHING SECARA OTOMATIS SAAT PERTAMA KALI JALAN (biar langsung keliatan fiturnya)
+-- KLIK FISHING SECARA OTOMATIS
 task.wait(0.5)
 for _, btn in pairs(leftMenu:GetChildren()) do
 	if btn:IsA("TextButton") and btn.Name == "FishingMenuBtn" then
@@ -358,4 +395,4 @@ for _, btn in pairs(leftMenu:GetChildren()) do
 	end
 end
 
-print("Moe V1.0 GUI - FIX: Fitur sekarang muncul!")
+print("Moe V1.0 GUI - Fitur dalam kotak rapi!")
