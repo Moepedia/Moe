@@ -1,5 +1,5 @@
 -- Moe V1.0 GUI for Delta Executor
--- Fitur dalam kotak rapi dengan rounded corners
+-- Fitur dalam kotak vertikal + Tombol Close & Minimize
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -11,16 +11,17 @@ gui.DisplayOrder = 999
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- MAIN FRAME
+-- ===== MAIN FRAME =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 700, 0, 400) -- Lebih besar dikit
-mainFrame.Position = UDim2.new(0.5, -350, 0.5, -200)
+mainFrame.Size = UDim2.new(0, 700, 0, 450)
+mainFrame.Position = UDim2.new(0.5, -350, 0.5, -225)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
-mainFrame.BackgroundTransparency = 0.2
+mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = gui
+mainFrame.Visible = true -- Awalnya visible
 
 -- Rounded corners
 local corners = Instance.new("UICorner")
@@ -34,7 +35,7 @@ stroke.Color = Color3.new(1, 1, 1)
 stroke.Transparency = 0.2
 stroke.Parent = mainFrame
 
--- HEADER dengan LOGO
+-- ===== HEADER dengan LOGO dan TOMBOL =====
 local headerFrame = Instance.new("Frame")
 headerFrame.Name = "HeaderFrame"
 headerFrame.Size = UDim2.new(1, 0, 0, 50)
@@ -75,6 +76,114 @@ titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = headerFrame
 
+-- ===== TOMBOL MINIMIZE =====
+local minButton = Instance.new("TextButton")
+minButton.Name = "MinimizeButton"
+minButton.Size = UDim2.new(0, 30, 0, 30)
+minButton.Position = UDim2.new(1, -70, 0.5, -15)
+minButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+minButton.BackgroundTransparency = 0.3
+minButton.BorderSizePixel = 0
+minButton.Text = "—"
+minButton.TextColor3 = Color3.new(1, 1, 1)
+minButton.TextScaled = true
+minButton.Font = Enum.Font.GothamBold
+minButton.AutoButtonColor = false
+minButton.Parent = headerFrame
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 8)
+minCorner.Parent = minButton
+
+-- Hover minimize
+minButton.MouseEnter:Connect(function()
+	minButton.BackgroundTransparency = 0.1
+end)
+minButton.MouseLeave:Connect(function()
+	minButton.BackgroundTransparency = 0.3
+end)
+
+-- ===== TOMBOL CLOSE =====
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0.5, -15)
+closeButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+closeButton.BackgroundTransparency = 0.3
+closeButton.BorderSizePixel = 0
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.new(1, 1, 1)
+closeButton.TextScaled = true
+closeButton.Font = Enum.Font.GothamBold
+closeButton.AutoButtonColor = false
+closeButton.Parent = headerFrame
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = closeButton
+
+-- Hover close
+closeButton.MouseEnter:Connect(function()
+	closeButton.BackgroundTransparency = 0.1
+end)
+closeButton.MouseLeave:Connect(function()
+	closeButton.BackgroundTransparency = 0.3
+end)
+
+-- ===== FLOATING LOGO (untuk minimized) =====
+local floatingLogo = Instance.new("Frame")
+floatingLogo.Name = "FloatingLogo"
+floatingLogo.Size = UDim2.new(0, 60, 0, 60)
+floatingLogo.Position = UDim2.new(0.9, -30, 0.9, -30) -- Pojok kanan bawah
+floatingLogo.BackgroundTransparency = 1
+floatingLogo.BorderSizePixel = 0
+floatingLogo.Parent = gui
+floatingLogo.Visible = false -- Awalnya hidden
+floatingLogo.ZIndex = 1000
+
+local floatLogoImg = Instance.new("ImageLabel")
+floatLogoImg.Size = UDim2.new(1, 0, 1, 0)
+floatLogoImg.BackgroundTransparency = 1
+floatLogoImg.Image = "rbxassetid://115935586997848"
+floatLogoImg.ScaleType = Enum.ScaleType.Fit
+floatLogoImg.Parent = floatingLogo
+
+local floatLogoCorner = Instance.new("UICorner")
+floatLogoCorner.CornerRadius = UDim.new(0, 30)
+floatLogoCorner.Parent = floatingLogo
+
+local floatStroke = Instance.new("UIStroke")
+floatStroke.Thickness = 1.5
+floatStroke.Color = Color3.new(1, 1, 1)
+floatStroke.Transparency = 0.2
+floatStroke.Parent = floatingLogo
+
+-- Floating logo bisa diklik untuk restore
+local floatButton = Instance.new("TextButton")
+floatButton.Name = "FloatButton"
+floatButton.Size = UDim2.new(1, 0, 1, 0)
+floatButton.BackgroundTransparency = 1
+floatButton.BorderSizePixel = 0
+floatButton.Text = ""
+floatButton.Parent = floatingLogo
+
+-- ===== FUNGSI MINIMIZE/RESTORE =====
+local function minimize()
+	mainFrame.Visible = false
+	floatingLogo.Visible = true
+end
+
+local function restore()
+	mainFrame.Visible = true
+	floatingLogo.Visible = false
+end
+
+minButton.MouseButton1Click:Connect(minimize)
+floatButton.MouseButton1Click:Connect(restore)
+closeButton.MouseButton1Click:Connect(function()
+	gui:Destroy() -- Close GUI
+end)
+
 -- GARIS HORIZONTAL
 local horizontalLine = Instance.new("Frame")
 horizontalLine.Name = "HorizontalLine"
@@ -103,7 +212,6 @@ leftMenu.BackgroundTransparency = 1
 leftMenu.BorderSizePixel = 0
 leftMenu.Parent = contentContainer
 
--- Layout vertikal untuk menu
 local menuLayout = Instance.new("UIListLayout")
 menuLayout.FillDirection = Enum.FillDirection.Vertical
 menuLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -113,6 +221,275 @@ menuLayout.Parent = leftMenu
 
 -- GARIS VERTIKAL
 local verticalLine = Instance.new("Frame")
+verticalLine.Name = "VerticalLine"
+verticalLine.Size = UDim2.new(0, 1, 1, 0)
+verticalLine.Position = UDim2.new(0, 130, 0, 0)
+verticalLine.BackgroundColor3 = Color3.new(1, 1, 1)
+verticalLine.BackgroundTransparency = 0.3
+verticalLine.BorderSizePixel = 0
+verticalLine.Parent = contentContainer
+
+-- AREA KONTEN
+local contentArea = Instance.new("Frame")
+contentArea.Name = "ContentArea"
+contentArea.Size = UDim2.new(1, -140, 1, 0)
+contentArea.Position = UDim2.new(0, 140, 0, 0)
+contentArea.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+contentArea.BackgroundTransparency = 0.3
+contentArea.BorderSizePixel = 0
+contentArea.Parent = contentContainer
+
+local contentCorner = Instance.new("UICorner")
+contentCorner.CornerRadius = UDim.new(0, 12)
+contentCorner.Parent = contentArea
+
+-- JUDUL KONTEN
+local contentTitle = Instance.new("TextLabel")
+contentTitle.Name = "ContentTitle"
+contentTitle.Size = UDim2.new(1, -20, 0, 30)
+contentTitle.Position = UDim2.new(0, 10, 0, 10)
+contentTitle.BackgroundTransparency = 1
+contentTitle.Text = "Pilih menu di samping"
+contentTitle.TextColor3 = Color3.new(1, 1, 1)
+contentTitle.TextScaled = true
+contentTitle.Font = Enum.Font.GothamBold
+contentTitle.TextXAlignment = Enum.TextXAlignment.Left
+contentTitle.Parent = contentArea
+
+-- CONTAINER FITUR (VERTIKAL)
+local featuresContainer = Instance.new("Frame")
+featuresContainer.Name = "FeaturesContainer"
+featuresContainer.Size = UDim2.new(1, -20, 1, -50)
+featuresContainer.Position = UDim2.new(0, 10, 0, 45)
+featuresContainer.BackgroundTransparency = 1
+featuresContainer.BorderSizePixel = 0
+featuresContainer.Parent = contentArea
+
+-- LAYOUT VERTIKAL untuk fitur (berjejer ke bawah)
+local featuresLayout = Instance.new("UIListLayout")
+featuresLayout.FillDirection = Enum.FillDirection.Vertical
+featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+featuresLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+featuresLayout.Padding = UDim.new(0, 8) -- Jarak antar kotak
+featuresLayout.Parent = featuresContainer
+
+-- FUNGSI MEMBUAT TOMBOL FITUR (kotak vertikal)
+local function createFeatureButton(name)
+	-- Frame kotak fitur
+	local featureFrame = Instance.new("Frame")
+	featureFrame.Name = name.."Frame"
+	featureFrame.Size = UDim2.new(0, 250, 0, 45) -- Lebar 250, tinggi 45
+	featureFrame.BackgroundColor3 = Color3.new(0.18, 0.18, 0.18)
+	featureFrame.BackgroundTransparency = 0.2
+	featureFrame.BorderSizePixel = 0
+	featureFrame.Parent = featuresContainer
+	
+	-- Rounded corners
+	local frameCorner = Instance.new("UICorner")
+	frameCorner.CornerRadius = UDim.new(0, 10)
+	frameCorner.Parent = featureFrame
+	
+	-- Stroke putih tipis
+	local frameStroke = Instance.new("UIStroke")
+	frameStroke.Thickness = 1
+	frameStroke.Color = Color3.new(1, 1, 1)
+	frameStroke.Transparency = 0.7
+	frameStroke.Parent = featureFrame
+	
+	-- Garis atas putus-putus? (opsional, biar kayak contoh: ---------------)
+	local topLine = Instance.new("Frame")
+	topLine.Name = "TopLine"
+	topLine.Size = UDim2.new(1, -20, 0, 1)
+	topLine.Position = UDim2.new(0, 10, 0, 0)
+	topLine.BackgroundColor3 = Color3.new(1, 1, 1)
+	topLine.BackgroundTransparency = 0.5
+	topLine.BorderSizePixel = 0
+	topLine.Parent = featureFrame
+	
+	-- Tombol di dalam frame
+	local btn = Instance.new("TextButton")
+	btn.Name = name.."FeatureBtn"
+	btn.Size = UDim2.new(1, 0, 1, 0)
+	btn.BackgroundTransparency = 1
+	btn.BorderSizePixel = 0
+	btn.Text = "  "..name
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.TextScaled = true
+	btn.Font = Enum.Font.Gotham
+	btn.TextXAlignment = Enum.TextXAlignment.Left
+	btn.AutoButtonColor = false
+	btn.Parent = featureFrame
+	
+	-- Hover effect
+	btn.MouseEnter:Connect(function()
+		featureFrame.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+		featureFrame.BackgroundTransparency = 0.1
+		frameStroke.Transparency = 0.4
+	end)
+	
+	btn.MouseLeave:Connect(function()
+		featureFrame.BackgroundColor3 = Color3.new(0.18, 0.18, 0.18)
+		featureFrame.BackgroundTransparency = 0.2
+		frameStroke.Transparency = 0.7
+	end)
+	
+	-- Click
+	btn.MouseButton1Click:Connect(function()
+		print(currentMenu.." - "..name.." clicked!")
+		featureFrame.BackgroundColor3 = Color3.new(0.35, 0.35, 0.35)
+		task.wait(0.1)
+		featureFrame.BackgroundColor3 = Color3.new(0.18, 0.18, 0.18)
+		
+		game:GetService("StarterGui"):SetCore("SendNotification", {
+			Title = currentMenu,
+			Text = name.." activated!",
+			Duration = 1.5
+		})
+	end)
+	
+	return featureFrame
+end
+
+-- FUNGSI MEMBUAT TOMBOL MENU KIRI
+local menuButtons = {}
+local currentMenu = nil
+
+local function createMenuButton(name)
+	local btn = Instance.new("TextButton")
+	btn.Name = name.."MenuBtn"
+	btn.Size = UDim2.new(0, 100, 0, 40)
+	btn.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+	btn.BackgroundTransparency = 0.3
+	btn.BorderSizePixel = 0
+	btn.Text = name
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.TextScaled = true
+	btn.Font = Enum.Font.GothamBold
+	btn.AutoButtonColor = false
+	btn.Parent = leftMenu
+	
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 8)
+	btnCorner.Parent = btn
+	
+	btn.MouseEnter:Connect(function()
+		if currentMenu ~= name then
+			btn.BackgroundTransparency = 0.1
+		end
+	end)
+	
+	btn.MouseLeave:Connect(function()
+		if currentMenu ~= name then
+			btn.BackgroundTransparency = 0.3
+		end
+	end)
+	
+	btn.MouseButton1Click:Connect(function()
+		for _, b in pairs(menuButtons) do
+			b.BackgroundTransparency = 0.3
+			b.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+		end
+		
+		btn.BackgroundTransparency = 0
+		btn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+		currentMenu = name
+		contentTitle.Text = name.." Features"
+		
+		-- Hapus fitur lama
+		for _, child in pairs(featuresContainer:GetChildren()) do
+			if child:IsA("Frame") then
+				child:Destroy()
+			end
+		end
+		
+		-- Tambah fitur baru (VERTIKAL)
+		if name == "Fishing" then
+			createFeatureButton("Instant Fishing")
+			createFeatureButton("Blatant Mode")
+			createFeatureButton("Auto Sell")
+			createFeatureButton("Auto Cast")
+			createFeatureButton("Auto Reel")
+		elseif name == "Favorite" then
+			createFeatureButton("Add to Favorite")
+			createFeatureButton("Remove from Favorite")
+			createFeatureButton("Favorite List")
+		elseif name == "Shop" then
+			createFeatureButton("Auto Buy")
+			createFeatureButton("Quick Sell")
+			createFeatureButton("Price Checker")
+		elseif name == "Teleport" then
+			createFeatureButton("Teleport to NPC")
+			createFeatureButton("Teleport to Island")
+			createFeatureButton("Teleport to Player")
+		elseif name == "Weather" then
+			createFeatureButton("Set Clear")
+			createFeatureButton("Set Rain")
+			createFeatureButton("Set Storm")
+			createFeatureButton("Set Fog")
+		end
+	end)
+	
+	table.insert(menuButtons, btn)
+	return btn
+end
+
+-- BUAT TOMBOL MENU
+createMenuButton("Fishing")
+createMenuButton("Favorite")
+createMenuButton("Shop")
+createMenuButton("Teleport")
+createMenuButton("Weather")
+
+-- DRAG GUI
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	mainFrame.Position = UDim2.new(
+		startPos.X.Scale, 
+		startPos.X.Offset + delta.X, 
+		startPos.Y.Scale, 
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+mainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+
+-- Auto-click Fishing
+task.wait(0.5)
+for _, btn in pairs(leftMenu:GetChildren()) do
+	if btn:IsA("TextButton") and btn.Name == "FishingMenuBtn" then
+		btn.MouseButton1Click:Fire()
+		break
+	end
+end
+
+print("Moe V1.0 GUI - Dengan tombol Close & Minimize (logo floating)!")local verticalLine = Instance.new("Frame")
 verticalLine.Name = "VerticalLine"
 verticalLine.Size = UDim2.new(0, 1, 1, 0)
 verticalLine.Position = UDim2.new(0, 130, 0, 0)
