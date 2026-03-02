@@ -1,5 +1,5 @@
 -- Moe V1.0 GUI for Delta Executor
--- Persis seperti gambar yang Anda kirim (5 tombol)
+-- Fix: Menggunakan TextButton, bukan Frame
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -11,30 +11,30 @@ gui.DisplayOrder = 999
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama - UKURAN untuk 5 tombol
+-- Frame utama
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 600, 0, 120) -- Landscape untuk 5 tombol
-mainFrame.Position = UDim2.new(0.5, -300, 0.8, -60) -- Bawah tengah
+mainFrame.Size = UDim2.new(0, 600, 0, 120)
+mainFrame.Position = UDim2.new(0.5, -300, 0.8, -60)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.3
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.Parent = gui
 
--- Rounded corners (biar gak terlalu kotak)
+-- Rounded corners
 local corners = Instance.new("UICorner")
 corners.CornerRadius = UDim.new(0, 16)
 corners.Parent = mainFrame
 
--- Border putih tipis
+-- Border putih
 local stroke = Instance.new("UIStroke")
 stroke.Thickness = 1.5
 stroke.Color = Color3.new(1, 1, 1)
 stroke.Transparency = 0.2
 stroke.Parent = mainFrame
 
--- Layout horizontal (kesamping) untuk 5 tombol
+-- Layout horizontal
 local layout = Instance.new("UIListLayout")
 layout.FillDirection = Enum.FillDirection.Horizontal
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -49,15 +49,14 @@ padding.PaddingTop = UDim.new(0, 10)
 padding.PaddingBottom = UDim.new(0, 10)
 padding.Parent = mainFrame
 
--- LOGO (kiri)
+-- LOGO
 local logoFrame = Instance.new("Frame")
 logoFrame.Name = "LogoFrame"
 logoFrame.Size = UDim2.new(0, 50, 0, 50)
-logoFrame.Position = UDim2.new(0, 10, 0.5, -25) -- Kiri tengah
+logoFrame.Position = UDim2.new(0, 10, 0.5, -25)
 logoFrame.BackgroundTransparency = 1
 logoFrame.BorderSizePixel = 0
 logoFrame.Parent = mainFrame
-logoFrame.ZIndex = 10
 
 local logo = Instance.new("ImageLabel")
 logo.Size = UDim2.new(1, 0, 1, 0)
@@ -70,62 +69,65 @@ local logoCorner = Instance.new("UICorner")
 logoCorner.CornerRadius = UDim.new(0, 25)
 logoCorner.Parent = logoFrame
 
--- Stroke untuk logo
 local logoStroke = Instance.new("UIStroke")
 logoStroke.Thickness = 1
 logoStroke.Color = Color3.new(1, 1, 1)
 logoStroke.Transparency = 0.3
 logoStroke.Parent = logoFrame
 
--- Fungsi buat tombol
+-- Fungsi buat tombol (SEKARANG PAKAI TEXTBUTTON)
 local function createButton(name)
-	local btnFrame = Instance.new("Frame")
-	btnFrame.Name = name.."Btn"
-	btnFrame.Size = UDim2.new(0, 85, 0, 80) -- Ukuran tombol
-	btnFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
-	btnFrame.BackgroundTransparency = 0.2
-	btnFrame.BorderSizePixel = 0
-	btnFrame.Parent = mainFrame
+	local btn = Instance.new("TextButton")
+	btn.Name = name.."Btn"
+	btn.Size = UDim2.new(0, 85, 0, 80)
+	btn.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
+	btn.BackgroundTransparency = 0.2
+	btn.BorderSizePixel = 0
+	btn.Text = name  -- TextButton punya properti Text
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.TextScaled = true
+	btn.Font = Enum.Font.GothamBold
+	btn.AutoButtonColor = false  -- Matikan efek klik default Roblox
+	btn.Parent = mainFrame
 	
+	-- Rounded corners untuk button
 	local btnCorner = Instance.new("UICorner")
 	btnCorner.CornerRadius = UDim.new(0, 12)
-	btnCorner.Parent = btnFrame
+	btnCorner.Parent = btn
 	
+	-- Stroke untuk button
 	local btnStroke = Instance.new("UIStroke")
 	btnStroke.Thickness = 1
 	btnStroke.Color = Color3.new(1, 1, 1)
 	btnStroke.Transparency = 0.6
-	btnStroke.Parent = btnFrame
-	
-	local txt = Instance.new("TextLabel")
-	txt.Size = UDim2.new(1, 0, 1, 0)
-	txt.BackgroundTransparency = 1
-	txt.Text = name
-	txt.TextColor3 = Color3.new(1, 1, 1)
-	txt.TextScaled = true
-	txt.Font = Enum.Font.GothamBold
-	txt.Parent = btnFrame
+	btnStroke.Parent = btn
 	
 	-- Hover effect
-	btnFrame.MouseEnter:Connect(function()
-		btnFrame.BackgroundTransparency = 0
+	btn.MouseEnter:Connect(function()
+		btn.BackgroundTransparency = 0
 		btnStroke.Transparency = 0.3
 	end)
 	
-	btnFrame.MouseLeave:Connect(function()
-		btnFrame.BackgroundTransparency = 0.2
+	btn.MouseLeave:Connect(function()
+		btn.BackgroundTransparency = 0.2
 		btnStroke.Transparency = 0.6
 	end)
 	
-	-- Klik effect
-	btnFrame.MouseButton1Click:Connect(function()
+	-- KLICK EVENT (ini yang bener untuk TextButton)
+	btn.MouseButton1Click:Connect(function()
 		print(name.." button clicked!")
+		-- Tambahin notifikasi biar keliatan
+		game:GetService("StarterGui"):SetCore("SendNotification", {
+			Title = "Moe V1.0",
+			Text = name.." clicked!",
+			Duration = 1
+		})
 	end)
 	
-	return btnFrame
+	return btn
 end
 
--- Buat 5 tombol sesuai gambar: Fishing, Favorite, Shop, Teleport, Weather
+-- Buat 5 tombol
 createButton("Fishing")
 createButton("Favorite")
 createButton("Shop")
@@ -174,4 +176,4 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
 	end
 end)
 
-print("Moe V1.0 GUI - 5 Tombol (Fishing, Favorite, Shop, Teleport, Weather)")
+print("Moe V1.0 GUI - Fixed dengan TextButton")
