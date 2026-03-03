@@ -1,5 +1,5 @@
--- Moe V1.0 GUI for FISH IT - FINAL WORKING VERSION (FIXED)
--- Dengan path remote yang benar dari folder Packages
+-- Moe V1.0 GUI for FISH IT - ULTIMATE FIXED VERSION
+-- Menghapus semua operasi string yang berpotensi error
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -29,55 +29,55 @@ local TeleportLocations = {
     "Sacred Temple"
 }
 
--- ===== DATA BAIT (HARGA SAJA) =====
-local BaitData = {
-    {name = "Starter Bait", price = "Free"},
-    {name = "Topwater Bait", price = "100$"},
-    {name = "Luck Bait", price = "1,000$"},
-    {name = "Midnight Bait", price = "3,000$"},
-    {name = "Nature Bait", price = "83,500$"},
-    {name = "Chroma Bait", price = "290,000$"},
-    {name = "Royal Bait", price = "425,000$"},
-    {name = "Dark Matter Bait", price = "630,000$"},
-    {name = "Corrupt Bait", price = "1,150,000$"},
-    {name = "Aether Bait", price = "3,700,000$"},
-    {name = "Floral Bait", price = "4,000,000$"},
-    {name = "Singularity Bait", price = "8,200,000$"}
+-- ===== DATA BAIT (NAMA SAJA) =====
+local BaitNames = {
+    "Starter Bait",
+    "Topwater Bait",
+    "Luck Bait",
+    "Midnight Bait",
+    "Nature Bait",
+    "Chroma Bait",
+    "Royal Bait",
+    "Dark Matter Bait",
+    "Corrupt Bait",
+    "Aether Bait",
+    "Floral Bait",
+    "Singularity Bait"
 }
 
--- ===== DATA ROD (HARGA SAJA) =====
-local RodData = {
-    {name = "Starter Rod", price = "0$"},
-    {name = "Luck Rod", price = "250$"},
-    {name = "Carbon Rod", price = "900$"},
-    {name = "Toy Rod", price = "0$"},
-    {name = "Grass Rod", price = "1,500$"},
-    {name = "Damascus Rod", price = "3,000$"},
-    {name = "Ice Rod", price = "5,000$"},
-    {name = "Lava Rod", price = "0$"},
-    {name = "Lucky Rod", price = "10,000$"},
-    {name = "Midnight Rod", price = "50,000$"},
-    {name = "Steampunk Rod", price = "215,000$"},
-    {name = "Chrome Rod", price = "437,000$"},
-    {name = "Fluorescent Rod", price = "715,000$"},
-    {name = "Astral Rod", price = "1,000,000$"},
-    {name = "Hazmat Rod", price = "1,300,000$"},
-    {name = "Ares Rod", price = "3,000,000$"},
-    {name = "Angler Rod", price = "8,000,000$"},
-    {name = "Ghostfinn Rod", price = "Quest"},
-    {name = "Bamboo Rod", price = "12,000,000$"},
-    {name = "Element Rod", price = "Quest"},
-    {name = "Diamond Rod", price = "Quest"}
+-- ===== DATA ROD (NAMA SAJA) =====
+local RodNames = {
+    "Starter Rod",
+    "Luck Rod",
+    "Carbon Rod",
+    "Toy Rod",
+    "Grass Rod",
+    "Damascus Rod",
+    "Ice Rod",
+    "Lava Rod",
+    "Lucky Rod",
+    "Midnight Rod",
+    "Steampunk Rod",
+    "Chrome Rod",
+    "Fluorescent Rod",
+    "Astral Rod",
+    "Hazmat Rod",
+    "Ares Rod",
+    "Angler Rod",
+    "Ghostfinn Rod",
+    "Bamboo Rod",
+    "Element Rod",
+    "Diamond Rod"
 }
 
--- ===== DATA WEATHER (HARGA SAJA) =====
-local WeatherData = {
-    {name = "Wind", price = "10,000"},
-    {name = "Cloudy", price = "20,000"},
-    {name = "Snow", price = "15,000"},
-    {name = "Storm", price = "35,000"},
-    {name = "Radiant", price = "50,000"},
-    {name = "Shark Hunt", price = "300,000"}
+-- ===== DATA WEATHER (NAMA SAJA) =====
+local WeatherNames = {
+    "Wind",
+    "Cloudy",
+    "Snow",
+    "Storm",
+    "Radiant",
+    "Shark Hunt"
 }
 
 -- ===== DATA EVENT =====
@@ -498,22 +498,11 @@ local function showBait()
     
     createLabel(contentFrame, "Select Bait")
     
-    local baitNames = {}
-    for _, bait in ipairs(BaitData) do
-        table.insert(baitNames, bait.name .. " (" .. bait.price .. ")")
-    end
+    local selectedBait = BaitNames[1]
     
-    local selectedBait = "Starter Bait"
-    
-    createDropdown(contentFrame, baitNames, baitNames[1], function(selected)
-        -- Ambil nama tanpa harga
-        local spacePos = string.find(selected, " (")
-        if spacePos then
-            selectedBait = string.sub(selected, 1, spacePos - 1)
-        else
-            selectedBait = selected
-        end
-        notify("Bait", "Selected: " .. selectedBait)
+    createDropdown(contentFrame, BaitNames, BaitNames[1], function(selected)
+        selectedBait = selected
+        notify("Bait", "Selected: " .. selected)
     end)
     
     createButton(contentFrame, "BUY SELECTED BAIT", function()
@@ -537,22 +526,11 @@ local function showRod()
     
     createLabel(contentFrame, "Select Rod")
     
-    local rodNames = {}
-    for _, rod in ipairs(RodData) do
-        table.insert(rodNames, rod.name .. " (" .. rod.price .. ")")
-    end
+    local selectedRod = RodNames[1]
     
-    local selectedRod = "Starter Rod"
-    
-    createDropdown(contentFrame, rodNames, rodNames[1], function(selected)
-        -- Ambil nama tanpa harga
-        local spacePos = string.find(selected, " (")
-        if spacePos then
-            selectedRod = string.sub(selected, 1, spacePos - 1)
-        else
-            selectedRod = selected
-        end
-        notify("Rod", "Selected: " .. selectedRod)
+    createDropdown(contentFrame, RodNames, RodNames[1], function(selected)
+        selectedRod = selected
+        notify("Rod", "Selected: " .. selected)
     end)
     
     createButton(contentFrame, "BUY SELECTED ROD", function()
@@ -576,22 +554,11 @@ local function showWeather()
     
     createLabel(contentFrame, "Select Weather")
     
-    local weatherNames = {}
-    for _, w in ipairs(WeatherData) do
-        table.insert(weatherNames, w.name .. " (" .. w.price .. " coins)")
-    end
+    local selectedWeather = WeatherNames[1]
     
-    local selectedWeather = "Wind"
-    
-    createDropdown(contentFrame, weatherNames, weatherNames[1], function(selected)
-        -- Ambil nama tanpa harga
-        local spacePos = string.find(selected, " (")
-        if spacePos then
-            selectedWeather = string.sub(selected, 1, spacePos - 1)
-        else
-            selectedWeather = selected
-        end
-        notify("Weather", "Selected: " .. selectedWeather)
+    createDropdown(contentFrame, WeatherNames, WeatherNames[1], function(selected)
+        selectedWeather = selected
+        notify("Weather", "Selected: " .. selected)
     end)
     
     createButton(contentFrame, "ACTIVATE WEATHER", function()
@@ -820,4 +787,4 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
-print("Moe V1.0 GUI Loaded - Remote dari folder Packages")
+print("Moe V1.0 GUI Loaded - ULTIMATE FIXED VERSION")
