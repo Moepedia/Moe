@@ -1,4 +1,6 @@
--- MOE FISHING GUI v4.1 - FIXED STRUCTURE
+-- MOE FISHING GUI v5.0 - FINAL VERSION
+-- Menu: Fishing, Bait, Rod, Weather, Teleport, Quest
+-- Dengan akses langsung ke hash remote
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -14,31 +16,31 @@ gui.Parent = player:WaitForChild("PlayerGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local NetModule = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
--- NetModule adalah ModuleScript, jadi kita perlu cari folder RE dan RF sebagai child
-local RE = NetModule:FindFirstChild("RE")
-local RF = NetModule:FindFirstChild("RF")
-
-print("=== REMOTE FOLDERS ===")
-print("RE Folder:", RE ~= nil)
-print("RF Folder:", RF ~= nil)
-
 -- ===== HASH REMOTE DARI HASIL SPY =====
-local Remote = {}
+-- Ini adalah hash yang tercatat saat fishing normal
+local Remote = {
+    -- Casting (saat mulai mancing)
+    CastStart = NetModule:FindFirstChild("ad1cf49efe7abcbc289e426297b1b174c7685cc4115f72d165a9dc889ed5cdfe"),
+    
+    -- Cast complete (setelah cast)
+    CastComplete = NetModule:FindFirstChild("624df101b3abb91f1d30767fdec926afbb517bcd054891da36ab2914839adf37"),
+    
+    -- Fishing tick (update posisi)
+    FishingTick = NetModule:FindFirstChild("7b12f430cc70bc4e939d6032b967fa19647c80c2ae7396cf500f1e3113e07685"),
+    
+    -- Fishing update (parameter posisi)
+    FishingUpdate = NetModule:FindFirstChild("2560f6f476bebf12c2e1410090e3e7ee9c45755de63c8b6acf8bd43af4a3612a"),
+    
+    -- Catch finish (saat dapat ikan)
+    CatchFinish = NetModule:FindFirstChild("c83da140199b695e0338dcfc521b0441f3a801823d9f178fb00791f708e9b837"),
+    
+    -- Reset state (selesai)
+    FishingReset = NetModule:FindFirstChild("503147f7a18f101517830266720271719dac3d5ce7a3536911ec1829c2636eb1"),
+}
 
--- Fishing remotes (dari spy)
-if RF then
-    Remote.CastStart = RF:FindFirstChild("ad1cf49efe7abcbc289e426297b1b174c7685cc4115f72d165a9dc889ed5cdfe")
-    Remote.CastComplete = RF:FindFirstChild("624df101b3abb91f1d30767fdec926afbb517bcd054891da36ab2914839adf37")
-    Remote.FishingTick = RF:FindFirstChild("7b12f430cc70bc4e939d6032b967fa19647c80c2ae7396cf500f1e3113e07685")
-    Remote.FishingUpdate = RF:FindFirstChild("2560f6f476bebf12c2e1410090e3e7ee9c45755de63c8b6acf8bd43af4a3612a")
-    Remote.CatchFinish = RF:FindFirstChild("c83da140199b695e0338dcfc521b0441f3a801823d9f178fb00791f708e9b837")
-    Remote.FishingReset = RF:FindFirstChild("503147f7a18f101517830266720271719dac3d5ce7a3536911ec1829c2636eb1")
-end
-
--- Cari remote lain berdasarkan pola
-local function findRemoteByPattern(folder, pattern)
-    if not folder then return nil end
-    for _, child in pairs(folder:GetChildren()) do
+-- Cari remote lain berdasarkan pola (untuk equip dll)
+local function findRemoteByPattern(pattern)
+    for _, child in pairs(NetModule:GetChildren()) do
         if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
             if string.find(child.Name:lower(), pattern:lower()) then
                 return child
@@ -48,22 +50,15 @@ local function findRemoteByPattern(folder, pattern)
     return nil
 end
 
--- Tambahkan remote yang belum pasti
-if RE then
-    Remote.EquipRodSkin = findRemoteByPattern(RE, "EquipRodSkin") or findRemoteByPattern(RE, "rod")
-    Remote.EquipBait = findRemoteByPattern(RE, "EquipBait") or findRemoteByPattern(RE, "bait")
-    Remote.SubmarineTP = findRemoteByPattern(RE, "SubmarineTP") or findRemoteByPattern(RE, "submarine")
-    Remote.WeatherCommand = findRemoteByPattern(RE, "WeatherCommand") or findRemoteByPattern(RE, "weather")
-end
+-- Tambahkan remote lain
+Remote.EquipRodSkin = findRemoteByPattern("EquipRodSkin") or findRemoteByPattern("rod")
+Remote.EquipBait = findRemoteByPattern("EquipBait") or findRemoteByPattern("bait")
+Remote.SubmarineTP = findRemoteByPattern("SubmarineTP") or findRemoteByPattern("submarine")
+Remote.WeatherCommand = findRemoteByPattern("WeatherCommand") or findRemoteByPattern("weather")
+Remote.SellAll = findRemoteByPattern("SellAllItems") or findRemoteByPattern("sell")
 
-if RF then
-    Remote.SellAll = findRemoteByPattern(RF, "SellAllItems") or findRemoteByPattern(RF, "sell")
-    Remote.PurchaseBait = findRemoteByPattern(RF, "PurchaseBait") or findRemoteByPattern(RF, "bait")
-    Remote.PurchaseRod = findRemoteByPattern(RF, "PurchaseFishingRod") or findRemoteByPattern(RF, "rod")
-end
-
--- Print status remote
-print("\n=== REMOTE STATUS ===")
+-- Print status
+print("=== REMOTE STATUS ===")
 for name, remote in pairs(Remote) do
     if remote then
         print("✅ " .. name .. " -> " .. remote.Name)
@@ -144,45 +139,39 @@ end
 -- ===== SEQUENCE FISHING NORMAL =====
 local function DoNormalFishing()
     pcall(function()
-        -- 1. Cast start (dengan parameter 1)
+        -- 1. Cast start (parameter 1)
         if Remote.CastStart then
             Remote.CastStart:FireServer(1)
             task.wait(0.1)
-            print("✅ Cast start")
         end
         
-        -- 2. Cast complete (dengan parameter true)
+        -- 2. Cast complete (parameter true)
         if Remote.CastComplete then
             Remote.CastComplete:InvokeServer(true)
             task.wait(0.1)
-            print("✅ Cast complete")
         end
         
-        -- 3. Fishing tick
+        -- 3. Fishing tick (no params)
         if Remote.FishingTick then
             Remote.FishingTick:InvokeServer()
             task.wait(0.1)
-            print("✅ Fishing tick")
         end
         
-        -- 4. Fishing update (dengan parameter posisi)
+        -- 4. Fishing update (dengan posisi)
         if Remote.FishingUpdate then
             Remote.FishingUpdate:InvokeServer(-1.233184814453125, 0.5, tick())
             task.wait(0.1)
-            print("✅ Fishing update")
         end
         
         -- 5. Catch finish
         if Remote.CatchFinish then
             Remote.CatchFinish:InvokeServer()
             task.wait(0.1)
-            print("✅ Catch finish")
         end
         
-        -- 6. Reset state
+        -- 6. Reset state (parameter false)
         if Remote.FishingReset then
             Remote.FishingReset:InvokeServer(false)
-            print("✅ Fishing reset")
         end
         
         notify("Fishing", "Siklus fishing selesai!")
@@ -270,7 +259,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(0, 100, 1, 0)
 title.Position = UDim2.new(0, 38, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "Moe V4.1"
+title.Text = "Moe V5.0"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.TextSize = 16
 title.Font = Enum.Font.GothamBold
@@ -642,24 +631,12 @@ local function showFishing()
     clearFeatures()
     contentTitle.Text = "Fishing Features"
     
-    -- Status remote
-    if Remote.CastStart then
-        createLabel("✅ Cast Start: READY")
-    else
-        createLabel("❌ Cast Start: NOT FOUND")
-    end
-    
-    if Remote.CatchFinish then
-        createLabel("✅ Catch Finish: READY")
-    else
-        createLabel("❌ Catch Finish: NOT FOUND")
-    end
-    
-    createLabel("⚡ Fishing Mode")
+    createLabel("⚡ Instant Fishing")
     
     createToggle("Instant Fishing (Bypass)", InstantFishing, function(state)
         InstantFishing = state
-        notify("Instant Fishing", state and "ON (Bypass)" or "OFF (Normal)")
+        if not state then StopAutoFishing() end
+        notify("Instant Fishing", state and "ON" or "OFF")
     end)
     
     createInput("Delay (seconds)", InstantFishingDelay, "0.1 - 2.0", function(value)
@@ -688,10 +665,10 @@ local function showFishing()
         end
     end)
     
-    createButton("RESET FISHING STATE", function()
-        if Remote.FishingReset then
-            Remote.FishingReset:InvokeServer(false)
-            notify("Reset", "Fishing state reset")
+    createButton("SELL ALL ITEMS", function()
+        if Remote.SellAll then
+            Remote.SellAll:InvokeServer()
+            notify("Sell", "All items sold")
         end
     end)
 end
@@ -706,7 +683,7 @@ local function showBait()
         SelectedBait = selected
     end)
     
-    createButton("EQUIP SELECTED BAIT", function()
+    createButton("EQUIP BAIT", function()
         if Remote.EquipBait then
             Remote.EquipBait:FireServer(SelectedBait)
             notify("Bait", "Equipped " .. SelectedBait)
@@ -785,19 +762,6 @@ local function showTeleport()
     end
 end
 
-local function showQuest()
-    clearFeatures()
-    contentTitle.Text = "Quests"
-    
-    for _, quest in ipairs(QuestData) do
-        createLabel("📋 " .. quest.name)
-        for _, req in ipairs(quest.requirements) do
-            createLabel("  • " .. req)
-        end
-        createLabel("")
-    end
-end
-
 -- ===== LEFT MENU BUTTONS =====
 local menuButtons = {
     {name = "Fishing", func = showFishing},
@@ -805,7 +769,6 @@ local menuButtons = {
     {name = "Rod", func = showRod},
     {name = "Weather", func = showWeather},
     {name = "Teleport", func = showTeleport},
-    {name = "Quest", func = showQuest}
 }
 
 local currentMenu = ""
@@ -884,4 +847,4 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
-print("✅ Moe GUI v4.1 Loaded - Cek console untuk status remote!")
+print("✅ Moe GUI v5.0 Loaded - Cek console untuk status remote!")
