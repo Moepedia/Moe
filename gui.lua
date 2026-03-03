@@ -38,7 +38,8 @@ local function ScanRemotes()
                 table.insert(DetectedRemotes.Teleport, obj)
                 
             elseif name:find("fish") or name:find("catch") or name:find("cast") or 
-                   name:find("reel") or name:find("minigame") or name:find("charge") then
+                   name:find("reel") or name:find("minigame") or name:find("charge") or
+                   name:find("complete") then
                 table.insert(DetectedRemotes.Fishing, obj)
                 
             elseif name:find("bait") then
@@ -47,7 +48,8 @@ local function ScanRemotes()
             elseif name:find("rod") or name:find("pole") then
                 table.insert(DetectedRemotes.Rod, obj)
                 
-            elseif name:find("weather") or name:find("wind") or name:find("storm") then
+            elseif name:find("weather") or name:find("wind") or name:find("storm") or
+                   name:find("radiant") then
                 table.insert(DetectedRemotes.Weather, obj)
                 
             elseif name:find("sell") then
@@ -164,21 +166,20 @@ end
 local function TryInvoke(category, ...)
     local remotes = DetectedRemotes[category]
     if not remotes or #remotes == 0 then
-        notify("Error", "No " .. category .. " remote found!")
         return false
     end
     
     -- Coba semua remote yang relevan
     local success = false
     for _, remote in ipairs(remotes) do
-        pcall(function()
+        local s, e = pcall(function()
             if remote:IsA("RemoteEvent") then
                 remote:FireServer(...)
             elseif remote:IsA("RemoteFunction") then
                 remote:InvokeServer(...)
             end
-            success = true
         end)
+        if s then success = true end
     end
     
     return success
@@ -189,18 +190,7 @@ local function DoInstantFishing()
     if not InstantFishing then return end
     
     -- Bypass semua state, langsung coba semua kemungkinan fishing remote
-    local success = TryInvoke("Fishing")
-    
-    if success then
-        -- Coba juga remote spesifik catch jika ada
-        for _, remote in ipairs(DetectedRemotes.Fishing) do
-            if remote.Name:lower():find("catch") or remote.Name:lower():find("complete") then
-                pcall(function()
-                    remote:FireServer()
-                end)
-            end
-        end
-    end
+    TryInvoke("Fishing")
 end
 
 -- ===== AUTO FISHING LOOP =====
@@ -241,12 +231,535 @@ local function TeleportTo(location)
     end
 end
 
--- ===== GUI CONSTRUCTION =====
--- [SISIPKAN KODE GUI DARI SEBELUMNYA DI SINI]
--- (Saya akan gunakan kode GUI yang sudah kita buat sebelumnya, 
---  tapi dengan fungsi-fungsi yang sudah dimodifikasi)
+-- ===== MAIN FRAME (650x400) =====
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 650, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -325, 0.5, -200)
+mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+mainFrame.BackgroundTransparency = 0.15
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = gui
+mainFrame.ZIndex = 1
 
--- ===== MODIFIED MENU FUNCTIONS =====
+-- Rounded corners
+local corners = Instance.new("UICorner")
+corners.CornerRadius = UDim.new(0, 12)
+corners.Parent = mainFrame
+
+-- Border
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 1.2
+stroke.Color = Color3.new(1, 1, 1)
+stroke.Transparency = 0.3
+stroke.Parent = mainFrame
+
+-- ===== HEADER =====
+local headerFrame = Instance.new("Frame")
+headerFrame.Size = UDim2.new(1, 0, 0, 35)
+headerFrame.BackgroundTransparency = 1
+headerFrame.Parent = mainFrame
+
+-- Logo
+local logo = Instance.new("ImageLabel")
+logo.Size = UDim2.new(0, 25, 0, 25)
+logo.Position = UDim2.new(0, 8, 0.5, -12.5)
+logo.BackgroundTransparency = 1
+logo.Image = "rbxassetid://115935586997848"
+logo.ScaleType = Enum.ScaleType.Fit
+logo.Parent = headerFrame
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0, 100, 1, 0)
+title.Position = UDim2.new(0, 38, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "Moe V1.0"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 16
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = headerFrame
+
+-- Minimize button
+local minButton = Instance.new("TextButton")
+minButton.Size = UDim2.new(0, 25, 0, 25)
+minButton.Position = UDim2.new(1, -60, 0.5, -12.5)
+minButton.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+minButton.BackgroundTransparency = 0.3
+minButton.Text = "—"
+minButton.TextColor3 = Color3.new(1, 1, 1)
+minButton.TextSize = 16
+minButton.Font = Enum.Font.GothamBold
+minButton.Parent = headerFrame
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 4)
+minCorner.Parent = minButton
+
+-- Close button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 25, 0, 25)
+closeBtn.Position = UDim2.new(1, -30, 0.5, -12.5)
+closeBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+closeBtn.BackgroundTransparency = 0.3
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.TextSize = 14
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = headerFrame
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 4)
+closeCorner.Parent = closeBtn
+
+-- ===== FLOATING LOGO =====
+local floatingLogo = Instance.new("Frame")
+floatingLogo.Size = UDim2.new(0, 50, 0, 50)
+floatingLogo.Position = UDim2.new(0.9, -25, 0.9, -25)
+floatingLogo.BackgroundTransparency = 1
+floatingLogo.Parent = gui
+floatingLogo.Visible = false
+floatingLogo.ZIndex = 1000
+
+local floatLogoImg = Instance.new("ImageLabel")
+floatLogoImg.Size = UDim2.new(1, 0, 1, 0)
+floatLogoImg.BackgroundTransparency = 1
+floatLogoImg.Image = "rbxassetid://115935586997848"
+floatLogoImg.ScaleType = Enum.ScaleType.Fit
+floatLogoImg.Parent = floatingLogo
+
+local floatLogoCorner = Instance.new("UICorner")
+floatLogoCorner.CornerRadius = UDim.new(0, 25)
+floatLogoCorner.Parent = floatingLogo
+
+local floatButton = Instance.new("TextButton")
+floatButton.Size = UDim2.new(1, 0, 1, 0)
+floatButton.BackgroundTransparency = 1
+floatButton.Text = ""
+floatButton.Parent = floatingLogo
+
+-- Minimize functions
+minButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    floatingLogo.Visible = true
+end)
+
+floatButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = true
+    floatingLogo.Visible = false
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    StopAutoFishing()
+    gui:Destroy()
+end)
+
+-- Horizontal line
+local hLine = Instance.new("Frame")
+hLine.Size = UDim2.new(1, -20, 0, 1)
+hLine.Position = UDim2.new(0, 10, 0, 35)
+hLine.BackgroundColor3 = Color3.new(1, 1, 1)
+hLine.BackgroundTransparency = 0.3
+hLine.Parent = mainFrame
+
+-- ===== CONTENT CONTAINER =====
+local contentContainer = Instance.new("Frame")
+contentContainer.Size = UDim2.new(1, -20, 1, -45)
+contentContainer.Position = UDim2.new(0, 10, 0, 40)
+contentContainer.BackgroundTransparency = 1
+contentContainer.Parent = mainFrame
+contentContainer.ZIndex = 2
+
+-- ===== LEFT MENU =====
+local leftMenu = Instance.new("Frame")
+leftMenu.Size = UDim2.new(0, 120, 1, 0)
+leftMenu.BackgroundTransparency = 1
+leftMenu.Parent = contentContainer
+leftMenu.ZIndex = 2
+
+local menuLayout = Instance.new("UIListLayout")
+menuLayout.FillDirection = Enum.FillDirection.Vertical
+menuLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+menuLayout.Padding = UDim.new(0, 6)
+menuLayout.Parent = leftMenu
+
+-- Vertical line
+local vLine = Instance.new("Frame")
+vLine.Size = UDim2.new(0, 1, 1, 0)
+vLine.Position = UDim2.new(0, 130, 0, 0)
+vLine.BackgroundColor3 = Color3.new(1, 1, 1)
+vLine.BackgroundTransparency = 0.3
+vLine.Parent = contentContainer
+
+-- ===== RIGHT CONTENT AREA =====
+local contentArea = Instance.new("Frame")
+contentArea.Size = UDim2.new(1, -140, 1, 0)
+contentArea.Position = UDim2.new(0, 140, 0, 0)
+contentArea.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+contentArea.BackgroundTransparency = 0.3
+contentArea.Parent = contentContainer
+contentArea.ZIndex = 2
+contentArea.ClipsDescendants = true
+
+local contentCorner = Instance.new("UICorner")
+contentCorner.CornerRadius = UDim.new(0, 8)
+contentCorner.Parent = contentArea
+
+-- Content title
+local contentTitle = Instance.new("TextLabel")
+contentTitle.Size = UDim2.new(1, -10, 0, 25)
+contentTitle.Position = UDim2.new(0, 5, 0, 5)
+contentTitle.BackgroundTransparency = 1
+contentTitle.Text = "Fishing Features"
+contentTitle.TextColor3 = Color3.new(1, 1, 1)
+contentTitle.TextSize = 14
+contentTitle.Font = Enum.Font.GothamBold
+contentTitle.TextXAlignment = Enum.TextXAlignment.Left
+contentTitle.Parent = contentArea
+contentTitle.ZIndex = 2
+
+-- Scrolling frame untuk features
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, -10, 1, -35)
+scrollFrame.Position = UDim2.new(0, 5, 0, 30)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 4
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollFrame.Parent = contentArea
+scrollFrame.ZIndex = 2
+scrollFrame.ScrollingEnabled = true
+
+local featuresContainer = Instance.new("Frame")
+featuresContainer.Size = UDim2.new(1, 0, 0, 0)
+featuresContainer.BackgroundTransparency = 1
+featuresContainer.Parent = scrollFrame
+featuresContainer.AutomaticSize = Enum.AutomaticSize.Y
+featuresContainer.ZIndex = 2
+
+local featuresLayout = Instance.new("UIListLayout")
+featuresLayout.FillDirection = Enum.FillDirection.Vertical
+featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+featuresLayout.Padding = UDim.new(0, 8)
+featuresLayout.Parent = featuresContainer
+
+-- ===== UI ELEMENTS FUNCTIONS =====
+local function createToggle(parent, text, defaultValue, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 30)
+    frame.BackgroundTransparency = 1
+    frame.Parent = parent
+    frame.ZIndex = 2
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0, 180, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextSize = 13
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    label.ZIndex = 2
+    
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(0, 50, 0, 24)
+    toggleBtn.Position = UDim2.new(1, -50, 0.5, -12)
+    toggleBtn.BackgroundColor3 = defaultValue and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+    toggleBtn.BackgroundTransparency = 0.2
+    toggleBtn.Text = defaultValue and "ON" or "OFF"
+    toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+    toggleBtn.TextSize = 11
+    toggleBtn.Font = Enum.Font.GothamBold
+    toggleBtn.Parent = frame
+    toggleBtn.ZIndex = 3
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 12)
+    toggleCorner.Parent = toggleBtn
+    
+    local state = defaultValue
+    
+    toggleBtn.MouseButton1Click:Connect(function()
+        state = not state
+        toggleBtn.BackgroundColor3 = state and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+        toggleBtn.Text = state and "ON" or "OFF"
+        callback(state)
+    end)
+    
+    return frame
+end
+
+local function createSlider(parent, text, min, max, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 40)
+    frame.BackgroundTransparency = 1
+    frame.Parent = parent
+    frame.ZIndex = 2
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0, 180, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextSize = 13
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    label.ZIndex = 2
+    
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Size = UDim2.new(0, 40, 0, 20)
+    valueLabel.Position = UDim2.new(1, -40, 0, 0)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(default)
+    valueLabel.TextColor3 = Color3.new(1, 1, 0)
+    valueLabel.TextSize = 13
+    valueLabel.Font = Enum.Font.GothamBold
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    valueLabel.Parent = frame
+    valueLabel.ZIndex = 2
+    
+    local sliderBg = Instance.new("Frame")
+    sliderBg.Size = UDim2.new(1, 0, 0, 4)
+    sliderBg.Position = UDim2.new(0, 0, 1, -10)
+    sliderBg.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    sliderBg.Parent = frame
+    sliderBg.ZIndex = 2
+    
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.CornerRadius = UDim.new(0, 2)
+    sliderCorner.Parent = sliderBg
+    
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.new(0, 0.7, 1)
+    sliderFill.Parent = sliderBg
+    sliderFill.ZIndex = 2
+    
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 2)
+    fillCorner.Parent = sliderFill
+    
+    local dragBtn = Instance.new("TextButton")
+    dragBtn.Size = UDim2.new(0, 12, 0, 12)
+    dragBtn.Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6)
+    dragBtn.BackgroundColor3 = Color3.new(1, 1, 1)
+    dragBtn.Text = ""
+    dragBtn.Parent = sliderBg
+    dragBtn.ZIndex = 3
+    
+    local dragCorner = Instance.new("UICorner")
+    dragCorner.CornerRadius = UDim.new(0, 6)
+    dragCorner.Parent = dragBtn
+    
+    local dragging = false
+    
+    dragBtn.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+    
+    mouse.Move:Connect(function()
+        if dragging then
+            local pos = mouse.X - sliderBg.AbsolutePosition.X
+            local width = sliderBg.AbsoluteSize.X
+            local percentage = math.clamp(pos / width, 0, 1)
+            local value = min + (max - min) * percentage
+            value = math.floor(value * 10) / 10
+            
+            sliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+            dragBtn.Position = UDim2.new(percentage, -6, 0.5, -6)
+            valueLabel.Text = tostring(value)
+            callback(value)
+        end
+    end)
+    
+    mouse.Button1Up:Connect(function()
+        dragging = false
+    end)
+    
+    return frame
+end
+
+local function createDropdown(parent, options, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 35)
+    frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    frame.BackgroundTransparency = 0.2
+    frame.Parent = parent
+    frame.ZIndex = 5
+    frame.ClipsDescendants = false
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = frame
+    
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = default or (type(options) == "table" and options[1] or "Select")
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.Gotham
+    btn.Parent = frame
+    btn.ZIndex = 6
+    
+    local arrow = Instance.new("TextLabel")
+    arrow.Size = UDim2.new(0, 20, 1, 0)
+    arrow.Position = UDim2.new(1, -20, 0, 0)
+    arrow.BackgroundTransparency = 1
+    arrow.Text = "▼"
+    arrow.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    arrow.TextSize = 12
+    arrow.Parent = frame
+    arrow.ZIndex = 6
+    
+    local dropdownFrame = Instance.new("Frame")
+    dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
+    dropdownFrame.Position = UDim2.new(0, 0, 1, 2)
+    dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    dropdownFrame.BackgroundTransparency = 0.1
+    dropdownFrame.Visible = false
+    dropdownFrame.Parent = frame
+    dropdownFrame.ZIndex = 1000
+    dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
+    
+    local dropdownCorner = Instance.new("UICorner")
+    dropdownCorner.CornerRadius = UDim.new(0, 6)
+    dropdownCorner.Parent = dropdownFrame
+    
+    local dropdownList = Instance.new("UIListLayout")
+    dropdownList.FillDirection = Enum.FillDirection.Vertical
+    dropdownList.Padding = UDim.new(0, 2)
+    dropdownList.Parent = dropdownFrame
+    
+    -- Handle both table types (array or dictionary)
+    local optionsList = {}
+    if type(options) == "table" then
+        -- Check if it's an array or dictionary
+        local isArray = false
+        for i, v in pairs(options) do
+            if type(i) == "number" then
+                isArray = true
+            end
+            table.insert(optionsList, v)
+        end
+        if not isArray then
+            optionsList = {}
+            for key, _ in pairs(options) do
+                table.insert(optionsList, key)
+            end
+        end
+    end
+    
+    for i, opt in ipairs(optionsList) do
+        local optBtn = Instance.new("TextButton")
+        optBtn.Size = UDim2.new(1, 0, 0, 30)
+        optBtn.BackgroundTransparency = 1
+        optBtn.Text = tostring(opt)
+        optBtn.TextColor3 = Color3.new(1, 1, 1)
+        optBtn.TextSize = 13
+        optBtn.Font = Enum.Font.Gotham
+        optBtn.Parent = dropdownFrame
+        optBtn.ZIndex = 1001
+        
+        optBtn.MouseEnter:Connect(function()
+            optBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+            optBtn.BackgroundTransparency = 0.3
+        end)
+        
+        optBtn.MouseLeave:Connect(function()
+            optBtn.BackgroundTransparency = 1
+        end)
+        
+        optBtn.MouseButton1Click:Connect(function()
+            btn.Text = tostring(opt)
+            dropdownFrame.Visible = false
+            callback(opt)
+        end)
+    end
+    
+    btn.MouseButton1Click:Connect(function()
+        dropdownFrame.Visible = not dropdownFrame.Visible
+    end)
+    
+    -- Close dropdown when clicking outside
+    mouse.Button1Down:Connect(function()
+        if dropdownFrame.Visible then
+            local mousePos = Vector2.new(mouse.X, mouse.Y)
+            local dropdownAbsPos = dropdownFrame.AbsolutePosition
+            local dropdownAbsSize = dropdownFrame.AbsoluteSize
+            local frameAbsPos = frame.AbsolutePosition
+            local frameAbsSize = frame.AbsoluteSize
+            
+            if mousePos.X < dropdownAbsPos.X or mousePos.X > dropdownAbsPos.X + dropdownAbsSize.X or
+               mousePos.Y < dropdownAbsPos.Y or mousePos.Y > dropdownAbsPos.Y + dropdownAbsSize.Y then
+                if mousePos.X < frameAbsPos.X or mousePos.X > frameAbsPos.X + frameAbsSize.X or
+                   mousePos.Y < frameAbsPos.Y or mousePos.Y > frameAbsPos.Y + frameAbsSize.Y then
+                    dropdownFrame.Visible = false
+                end
+            end
+        end
+    end)
+    
+    return frame
+end
+
+local function createButton(parent, text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+    btn.BackgroundTransparency = 0.2
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = parent
+    btn.ZIndex = 2
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+    
+    btn.MouseButton1Click:Connect(callback)
+    
+    btn.MouseEnter:Connect(function()
+        btn.BackgroundColor3 = Color3.new(0.35, 0.35, 0.35)
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        btn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+    end)
+    
+    return btn
+end
+
+local function createLabel(parent, text)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 25)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextSize = 14
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = parent
+    label.ZIndex = 2
+    
+    return label
+end
+
+local function clearFeatures()
+    for _, child in pairs(featuresContainer:GetChildren()) do
+        if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+end
+
+-- ===== MENU FUNCTIONS =====
 
 -- Fishing Menu dengan auto-detect
 local function showFishing()
@@ -348,9 +861,25 @@ local function showBait()
     contentTitle.Text = "Bait Selector"
     
     if #DetectedRemotes.Bait > 0 then
-        createLabel(featuresContainer, "✅ Bait remotes available")
+        local statusLabel = Instance.new("TextLabel")
+        statusLabel.Size = UDim2.new(1, 0, 0, 20)
+        statusLabel.BackgroundTransparency = 1
+        statusLabel.Text = "✅ " .. #DetectedRemotes.Bait .. " bait remotes detected"
+        statusLabel.TextColor3 = Color3.new(0, 1, 0)
+        statusLabel.TextSize = 11
+        statusLabel.Font = Enum.Font.Gotham
+        statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+        statusLabel.Parent = featuresContainer
     else
-        createLabel(featuresContainer, "⚠️ No bait remotes detected")
+        local statusLabel = Instance.new("TextLabel")
+        statusLabel.Size = UDim2.new(1, 0, 0, 20)
+        statusLabel.BackgroundTransparency = 1
+        statusLabel.Text = "⚠️ No bait remotes detected"
+        statusLabel.TextColor3 = Color3.new(1, 1, 0)
+        statusLabel.TextSize = 11
+        statusLabel.Font = Enum.Font.Gotham
+        statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+        statusLabel.Parent = featuresContainer
     end
     
     createLabel(featuresContainer, "Select Bait")
@@ -371,9 +900,25 @@ local function showRod()
     contentTitle.Text = "Rod Selector"
     
     if #DetectedRemotes.Rod > 0 then
-        createLabel(featuresContainer, "✅ Rod remotes available")
+        local statusLabel = Instance.new("TextLabel")
+        statusLabel.Size = UDim2.new(1, 0, 0, 20)
+        statusLabel.BackgroundTransparency = 1
+        statusLabel.Text = "✅ " .. #DetectedRemotes.Rod .. " rod remotes detected"
+        statusLabel.TextColor3 = Color3.new(0, 1, 0)
+        statusLabel.TextSize = 11
+        statusLabel.Font = Enum.Font.Gotham
+        statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+        statusLabel.Parent = featuresContainer
     else
-        createLabel(featuresContainer, "⚠️ No rod remotes detected")
+        local statusLabel = Instance.new("TextLabel")
+        statusLabel.Size = UDim2.new(1, 0, 0, 20)
+        statusLabel.BackgroundTransparency = 1
+        statusLabel.Text = "⚠️ No rod remotes detected"
+        statusLabel.TextColor3 = Color3.new(1, 1, 0)
+        statusLabel.TextSize = 11
+        statusLabel.Font = Enum.Font.Gotham
+        statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+        statusLabel.Parent = featuresContainer
     end
     
     createLabel(featuresContainer, "Select Rod")
@@ -388,7 +933,15 @@ local function showRod()
     end)
     
     if AutoEquipRod then
-        createLabel(featuresContainer, "⚙️ Auto Equip is ON")
+        local autoLabel = Instance.new("TextLabel")
+        autoLabel.Size = UDim2.new(1, 0, 0, 20)
+        autoLabel.BackgroundTransparency = 1
+        autoLabel.Text = "⚙️ Auto Equip is ON"
+        autoLabel.TextColor3 = Color3.new(0, 1, 1)
+        autoLabel.TextSize = 11
+        autoLabel.Font = Enum.Font.Gotham
+        autoLabel.TextXAlignment = Enum.TextXAlignment.Left
+        autoLabel.Parent = featuresContainer
     end
 end
 
@@ -398,9 +951,25 @@ local function showWeather()
     contentTitle.Text = "Weather Control"
     
     if #DetectedRemotes.Weather > 0 then
-        createLabel(featuresContainer, "✅ Weather remotes available")
+        local statusLabel = Instance.new("TextLabel")
+        statusLabel.Size = UDim2.new(1, 0, 0, 20)
+        statusLabel.BackgroundTransparency = 1
+        statusLabel.Text = "✅ " .. #DetectedRemotes.Weather .. " weather remotes detected"
+        statusLabel.TextColor3 = Color3.new(0, 1, 0)
+        statusLabel.TextSize = 11
+        statusLabel.Font = Enum.Font.Gotham
+        statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+        statusLabel.Parent = featuresContainer
     else
-        createLabel(featuresContainer, "⚠️ No weather remotes detected")
+        local statusLabel = Instance.new("TextLabel")
+        statusLabel.Size = UDim2.new(1, 0, 0, 20)
+        statusLabel.BackgroundTransparency = 1
+        statusLabel.Text = "⚠️ No weather remotes detected"
+        statusLabel.TextColor3 = Color3.new(1, 1, 0)
+        statusLabel.TextSize = 11
+        statusLabel.Font = Enum.Font.Gotham
+        statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+        statusLabel.Parent = featuresContainer
     end
     
     createLabel(featuresContainer, "Select Weather")
@@ -415,10 +984,37 @@ local function showWeather()
     end)
 end
 
--- [SISIPKAN SEMUA FUNGSI GUI LAINNYA DARI SEBELUMNYA]
--- (createToggle, createSlider, createDropdown, createButton, createLabel, clearFeatures)
-
 -- ===== LEFT MENU BUTTONS =====
+local function createMenuButton(text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 100, 0, 35)
+    btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    btn.BackgroundTransparency = 0.2
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.TextSize = 12
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = leftMenu
+    btn.ZIndex = 2
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = btn
+    
+    btn.MouseButton1Click:Connect(callback)
+    
+    btn.MouseEnter:Connect(function()
+        btn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    end)
+    
+    return btn
+end
+
+-- Create menu buttons
 createMenuButton("⚡ Fishing", showFishing)
 createMenuButton("📍 Teleport", showTeleport)
 createMenuButton("🎣 Bait", showBait)
@@ -428,4 +1024,5 @@ createMenuButton("🌦️ Weather", showWeather)
 -- Show fishing menu by default
 showFishing()
 
-notify("Moe V1.0 - Dark Zepyhr", "Loaded! " .. #DetectedRemotes.Fishing + #DetectedRemotes.Bait + #DetectedRemotes.Rod + #DetectedRemotes.Weather + #DetectedRemotes.Sell .. " remotes detected")
+local totalRemotes = #DetectedRemotes.Fishing + #DetectedRemotes.Bait + #DetectedRemotes.Rod + #DetectedRemotes.Weather + #DetectedRemotes.Sell
+notify("Moe V1.0 - Dark Zepyhr", "Loaded! " .. totalRemotes .. " remotes detected")
