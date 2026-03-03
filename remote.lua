@@ -1,18 +1,12 @@
--- MOE REMOTE SCANNER v2.0 - GUI VERSION (COPY ALL)
--- Scan semua remote dan tampilkan dalam GUI yang bisa di-copy
-
+-- MOE REMOTE SPY v1.0 - Capture semua remote pas fishing
 local player = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
-gui.Name = "MoeRemoteScanner"
+gui.Name = "MoeSpyGUI"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.DisplayOrder = 999
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 
 -- ===== MAIN FRAME =====
 local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 700, 0, 500)
 mainFrame.Position = UDim2.new(0.5, -350, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
@@ -26,107 +20,79 @@ local corners = Instance.new("UICorner")
 corners.CornerRadius = UDim.new(0, 12)
 corners.Parent = mainFrame
 
-local stroke = Instance.new("UIStroke")
-stroke.Thickness = 1.2
-stroke.Color = Color3.new(0, 1, 0) -- Hijau
-stroke.Transparency = 0.3
-stroke.Parent = mainFrame
-
--- ===== HEADER =====
-local headerFrame = Instance.new("Frame")
-headerFrame.Size = UDim2.new(1, 0, 0, 40)
-headerFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-headerFrame.Parent = mainFrame
+-- Header
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 40)
+header.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+header.Parent = mainFrame
 
 local headerCorner = Instance.new("UICorner")
 headerCorner.CornerRadius = UDim.new(0, 12)
-headerCorner.Parent = headerFrame
+headerCorner.Parent = header
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -40, 1, 0)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🔍 MOE REMOTE SCANNER v2.0"
+title.Text = "🔍 MOE REMOTE SPY - Fishing Mode"
 title.TextColor3 = Color3.new(0, 1, 0)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = headerFrame
+title.Parent = header
 
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 30, 0, 30)
 closeBtn.Position = UDim2.new(1, -35, 0.5, -15)
 closeBtn.BackgroundColor3 = Color3.new(1, 0, 0)
-closeBtn.BackgroundTransparency = 0.2
 closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.TextSize = 16
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Parent = headerFrame
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 6)
-closeCorner.Parent = closeBtn
+closeBtn.Parent = header
 
 closeBtn.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
 
--- ===== STATUS BAR =====
-local statusFrame = Instance.new("Frame")
-statusFrame.Size = UDim2.new(1, -20, 0, 30)
-statusFrame.Position = UDim2.new(0, 10, 0, 45)
-statusFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-statusFrame.Parent = mainFrame
+-- Status bar
+local statusBar = Instance.new("Frame")
+statusBar.Size = UDim2.new(1, -20, 0, 30)
+statusBar.Position = UDim2.new(0, 10, 0, 45)
+statusBar.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+statusBar.Parent = mainFrame
 
 local statusCorner = Instance.new("UICorner")
 statusCorner.CornerRadius = UDim.new(0, 6)
-statusCorner.Parent = statusFrame
+statusCorner.Parent = statusBar
 
 local statusText = Instance.new("TextLabel")
 statusText.Size = UDim2.new(1, -10, 1, 0)
 statusText.Position = UDim2.new(0, 5, 0, 0)
 statusText.BackgroundTransparency = 1
-statusText.Text = "⏳ Scanning remotes... (0 found)"
+statusText.Text = "⏳ Status: Menunggu aktivitas fishing..."
 statusText.TextColor3 = Color3.new(1, 1, 0)
 statusText.TextSize = 14
 statusText.Font = Enum.Font.Gotham
 statusText.TextXAlignment = Enum.TextXAlignment.Left
-statusText.Parent = statusFrame
+statusText.Parent = statusBar
 
--- ===== PROGRESS BAR =====
-local progressFrame = Instance.new("Frame")
-progressFrame.Size = UDim2.new(1, -20, 0, 20)
-progressFrame.Position = UDim2.new(0, 10, 0, 80)
-progressFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-progressFrame.Parent = mainFrame
+-- Counter
+local counterText = Instance.new("TextLabel")
+counterText.Size = UDim2.new(0, 100, 1, 0)
+counterText.Position = UDim2.new(1, -110, 0, 0)
+counterText.BackgroundTransparency = 1
+counterText.Text = "0 remotes"
+counterText.TextColor3 = Color3.new(0, 1, 0)
+counterText.TextSize = 14
+counterText.Font = Enum.Font.GothamBold
+counterText.TextXAlignment = Enum.TextXAlignment.Right
+counterText.Parent = statusBar
 
-local progressCorner = Instance.new("UICorner")
-progressCorner.CornerRadius = UDim.new(0, 4)
-progressCorner.Parent = progressFrame
-
-local progressBar = Instance.new("Frame")
-progressBar.Size = UDim2.new(0, 0, 1, 0)
-progressBar.BackgroundColor3 = Color3.new(0, 1, 0)
-progressBar.Parent = progressFrame
-
-local progressBarCorner = Instance.new("UICorner")
-progressBarCorner.CornerRadius = UDim.new(0, 4)
-progressBarCorner.Parent = progressBar
-
-local progressText = Instance.new("TextLabel")
-progressText.Size = UDim2.new(1, 0, 1, 0)
-progressText.BackgroundTransparency = 1
-progressText.Text = "0%"
-progressText.TextColor3 = Color3.new(1, 1, 1)
-progressText.TextSize = 12
-progressText.Font = Enum.Font.GothamBold
-progressText.Parent = progressFrame
-
--- ===== TEXT BOX HASIL SCAN (BISA COPY) =====
+-- Text box hasil spy (bisa copy)
 local textBox = Instance.new("TextBox")
-textBox.Size = UDim2.new(1, -20, 1, -170)
-textBox.Position = UDim2.new(0, 10, 0, 105)
+textBox.Size = UDim2.new(1, -20, 1, -120)
+textBox.Position = UDim2.new(0, 10, 0, 80)
 textBox.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
 textBox.TextColor3 = Color3.new(0, 1, 0)
 textBox.Font = Enum.Font.Code
@@ -136,19 +102,22 @@ textBox.TextYAlignment = Enum.TextYAlignment.Top
 textBox.TextWrapped = true
 textBox.ClearTextOnFocus = false
 textBox.MultiLine = true
-textBox.Text = "Starting scan...\n"
+textBox.Text = "🔍 MOE REMOTE SPY - AKTIF\n"
+textBox.Text = textBox.Text .. "================================\n"
+textBox.Text = textBox.Text .. "Silakan lakukan FISHING NORMAL sekarang...\n"
+textBox.Text = textBox.Text .. "Semua remote akan tercatat di sini\n\n"
 textBox.Parent = mainFrame
 
 local textBoxCorner = Instance.new("UICorner")
 textBoxCorner.CornerRadius = UDim.new(0, 6)
 textBoxCorner.Parent = textBox
 
--- ===== BUTTON FRAME =====
-local buttonFrame = Instance.new("Frame")
-buttonFrame.Size = UDim2.new(1, -20, 0, 40)
-buttonFrame.Position = UDim2.new(0, 10, 1, -45)
-buttonFrame.BackgroundTransparency = 1
-buttonFrame.Parent = mainFrame
+-- Button frame
+local btnFrame = Instance.new("Frame")
+btnFrame.Size = UDim2.new(1, -20, 0, 40)
+btnFrame.Position = UDim2.new(0, 10, 1, -45)
+btnFrame.BackgroundTransparency = 1
+btnFrame.Parent = mainFrame
 
 -- Copy button
 local copyBtn = Instance.new("TextButton")
@@ -159,43 +128,43 @@ copyBtn.Text = "📋 COPY ALL"
 copyBtn.TextColor3 = Color3.new(1, 1, 1)
 copyBtn.TextSize = 14
 copyBtn.Font = Enum.Font.GothamBold
-copyBtn.Parent = buttonFrame
+copyBtn.Parent = btnFrame
 
 local copyCorner = Instance.new("UICorner")
 copyCorner.CornerRadius = UDim.new(0, 6)
 copyCorner.Parent = copyBtn
 
--- Rescan button
-local rescanBtn = Instance.new("TextButton")
-rescanBtn.Size = UDim2.new(0, 100, 0, 35)
-rescanBtn.Position = UDim2.new(0, 130, 0.5, -17.5)
-rescanBtn.BackgroundColor3 = Color3.new(1, 0.5, 0)
-rescanBtn.Text = "🔄 RESCAN"
-rescanBtn.TextColor3 = Color3.new(1, 1, 1)
-rescanBtn.TextSize = 14
-rescanBtn.Font = Enum.Font.GothamBold
-rescanBtn.Parent = buttonFrame
-
-local rescanCorner = Instance.new("UICorner")
-rescanCorner.CornerRadius = UDim.new(0, 6)
-rescanCorner.Parent = rescanBtn
-
 -- Clear button
 local clearBtn = Instance.new("TextButton")
 clearBtn.Size = UDim2.new(0, 100, 0, 35)
-clearBtn.Position = UDim2.new(0, 240, 0.5, -17.5)
+clearBtn.Position = UDim2.new(0, 130, 0.5, -17.5)
 clearBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
 clearBtn.Text = "🗑️ CLEAR"
 clearBtn.TextColor3 = Color3.new(1, 1, 1)
 clearBtn.TextSize = 14
 clearBtn.Font = Enum.Font.GothamBold
-clearBtn.Parent = buttonFrame
+clearBtn.Parent = btnFrame
 
 local clearCorner = Instance.new("UICorner")
 clearCorner.CornerRadius = UDim.new(0, 6)
 clearCorner.Parent = clearBtn
 
--- Save button (jika support)
+-- Start/Stop spy button
+local spyBtn = Instance.new("TextButton")
+spyBtn.Size = UDim2.new(0, 100, 0, 35)
+spyBtn.Position = UDim2.new(0, 240, 0.5, -17.5)
+spyBtn.BackgroundColor3 = Color3.new(0, 1, 0)
+spyBtn.Text = "🔴 STOP SPY"
+spyBtn.TextColor3 = Color3.new(1, 1, 1)
+spyBtn.TextSize = 14
+spyBtn.Font = Enum.Font.GothamBold
+spyBtn.Parent = btnFrame
+
+local spyCorner = Instance.new("UICorner")
+spyCorner.CornerRadius = UDim.new(0, 6)
+spyCorner.Parent = spyBtn
+
+-- Save button
 local saveBtn = Instance.new("TextButton")
 saveBtn.Size = UDim2.new(0, 100, 0, 35)
 saveBtn.Position = UDim2.new(1, -105, 0.5, -17.5)
@@ -204,233 +173,145 @@ saveBtn.Text = "💾 SAVE"
 saveBtn.TextColor3 = Color3.new(1, 1, 1)
 saveBtn.TextSize = 14
 saveBtn.Font = Enum.Font.GothamBold
-saveBtn.Parent = buttonFrame
+saveBtn.Parent = btnFrame
 
 local saveCorner = Instance.new("UICorner")
 saveCorner.CornerRadius = UDim.new(0, 6)
 saveCorner.Parent = saveBtn
 
 -- ===== VARIABLES =====
-local scanResults = {}
+local spyActive = true
+local remoteLog = {}
 local remoteCount = 0
-local totalInstances = 0
 
--- ===== FUNGSI UPDATE PROGRESS =====
-local function updateProgress(percent, text)
-    progressBar.Size = UDim2.new(percent, 0, 1, 0)
-    progressText.Text = text or math.floor(percent * 100) .. "%"
-end
-
--- ===== FUNGSI FORMAT PATH =====
-local function getFullPath(instance)
-    local path = instance.Name
-    local parent = instance.Parent
-    while parent and parent ~= game do
-        path = parent.Name .. "/" .. path
-        parent = parent.Parent
-    end
-    return path
-end
-
--- ===== FUNGSI SCAN REMOTES =====
-local function scanRemotes()
-    statusText.Text = "⏳ Scanning remotes... (0 found)"
-    statusText.TextColor3 = Color3.new(1, 1, 0)
-    textBox.Text = "🔍 MOE REMOTE SCANNER v2.0\n"
-    textBox.Text = textBox.Text .. "=" .. string.rep("=", 50) .. "\n\n"
-    textBox.Text = textBox.Text .. "STARTING SCAN...\n\n"
+-- ===== REMOTE SPY FUNCTION =====
+local function setupSpy()
+    local mt = getrawmetatable(game)
+    local old = mt.__namecall
+    setreadonly(mt, false)
     
-    scanResults = {}
-    remoteCount = 0
-    
-    -- Kumpulkan semua instance
-    local allDescendants = game:GetDescendants()
-    totalInstances = #allDescendants
-    
-    updateProgress(0, "0%")
-    
-    -- Scan setiap instance
-    for i, child in ipairs(allDescendants) do
-        -- Cek apakah ini remote
-        if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") or child:IsA("UnreliableRemoteEvent") then
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+        
+        if spyActive and (method == "FireServer" or method == "InvokeServer") then
             remoteCount = remoteCount + 1
-            local path = getFullPath(child)
-            local icon = child:IsA("RemoteEvent") and "📡" or (child:IsA("RemoteFunction") and "⚡" or "📶")
-            local line = string.format("%s [%d] %s: %s", icon, remoteCount, child.ClassName, path)
-            table.insert(scanResults, line)
             
-            -- Update text box setiap 10 remote ditemukan
-            if remoteCount % 10 == 0 then
-                local displayText = "🔍 MOE REMOTE SCANNER v2.0\n"
-                displayText = displayText .. "=" .. string.rep("=", 50) .. "\n\n"
-                displayText = displayText .. string.format("FOUND %d REMOTES (scanning...)\n\n", remoteCount)
-                displayText = displayText .. table.concat(scanResults, "\n")
-                textBox.Text = displayText
-            end
-        end
-        
-        -- Update progress setiap 1000 instance
-        if i % 1000 == 0 then
-            local percent = i / totalInstances
-            updateProgress(percent, string.format("%d%% (%d/%d)", math.floor(percent*100), i, totalInstances))
-            statusText.Text = string.format("⏳ Scanning... %d remotes found", remoteCount)
-            task.wait() -- Biar gak freeze
-        end
-    end
-    
-    -- Format hasil akhir
-    local resultText = "🔍 MOE REMOTE SCANNER v2.0\n"
-    resultText = resultText .. "=" .. string.rep("=", 50) .. "\n\n"
-    resultText = resultText .. string.format("✅ SCAN COMPLETE! Found %d remotes\n", remoteCount)
-    resultText = resultText .. string.format("📊 Total instances scanned: %d\n", totalInstances)
-    resultText = resultText .. string.format("⏰ Time: %s\n\n", os.date("%H:%M:%S"))
-    resultText = resultText .. "=" .. string.rep("=", 50) .. "\n\n"
-    
-    -- Hitung statistik
-    local remoteEvents = 0
-    local remoteFunctions = 0
-    local unreliable = 0
-    
-    for _, line in ipairs(scanResults) do
-        if string.find(line, "RemoteEvent") then
-            remoteEvents = remoteEvents + 1
-        elseif string.find(line, "RemoteFunction") then
-            remoteFunctions = remoteFunctions + 1
-        elseif string.find(line, "UnreliableRemoteEvent") then
-            unreliable = unreliable + 1
-        end
-    end
-    
-    resultText = resultText .. "📊 STATISTICS:\n"
-    resultText = resultText .. string.format("   RemoteEvents: %d\n", remoteEvents)
-    resultText = resultText .. string.format("   RemoteFunctions: %d\n", remoteFunctions)
-    resultText = resultText .. string.format("   Unreliable: %d\n", unreliable)
-    resultText = resultText .. "\n" .. "=" .. string.rep("=", 50) .. "\n\n"
-    resultText = resultText .. "📋 REMOTE LIST:\n\n"
-    resultText = resultText .. table.concat(scanResults, "\n")
-    
-    -- Tambahan: cek folder Packages secara spesifik
-    resultText = resultText .. "\n\n" .. "=" .. string.rep("=", 50) .. "\n"
-    resultText = resultText .. "🔍 PACKAGES FOLDER CHECK:\n\n"
-    
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local packages = ReplicatedStorage:FindFirstChild("Packages")
-    
-    if packages then
-        resultText = resultText .. "✅ Packages folder found!\n"
-        
-        local index = packages:FindFirstChild("_Index")
-        if index then
-            resultText = resultText .. "📁 _Index folder found\n"
+            -- Format pesan
+            local timestamp = os.date("%H:%M:%S")
+            local remotePath = self:GetFullName()
+            local argStr = ""
             
-            for _, folder in pairs(index:GetChildren()) do
-                if string.find(folder.Name, "sleitnick_net") then
-                    resultText = resultText .. string.format("\n📁 Found net folder: %s\n", folder.Name)
-                    local net = folder:FindFirstChild("net")
-                    if net then
-                        resultText = resultText .. "   Contents of net:\n"
-                        for _, child in pairs(net:GetChildren()) do
-                            resultText = resultText .. string.format("   - %s (%s)\n", child.Name, child.ClassName)
-                            
-                            if child:IsA("Folder") then
-                                for _, remote in pairs(child:GetChildren()) do
-                                    if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-                                        resultText = resultText .. string.format("      🔹 %s\n", remote.Name)
-                                    end
-                                end
-                            end
-                        end
-                    end
+            for i, arg in ipairs(args) do
+                if type(arg) == "string" then
+                    argStr = argStr .. string.format("   Arg %d: %q\n", i, arg)
+                elseif type(arg) == "number" then
+                    argStr = argStr .. string.format("   Arg %d: %s\n", i, tostring(arg))
+                elseif type(arg) == "boolean" then
+                    argStr = argStr .. string.format("   Arg %d: %s\n", i, tostring(arg))
+                elseif type(arg) == "table" then
+                    argStr = argStr .. string.format("   Arg %d: [TABLE]\n", i)
+                elseif type(arg) == "userdata" then
+                    argStr = argStr .. string.format("   Arg %d: [USERDATA]\n", i)
+                else
+                    argStr = argStr .. string.format("   Arg %d: %s\n", i, tostring(arg))
                 end
             end
+            
+            local logEntry = string.format("[%s] 🔴 %s\n   METHOD: %s\n%s\n", 
+                timestamp, remotePath, method, argStr)
+            
+            table.insert(remoteLog, logEntry)
+            
+            -- Update text box
+            local displayText = "🔍 MOE REMOTE SPY - AKTIF\n"
+            displayText = displayText .. "================================\n"
+            displayText = displayText .. string.format("Total remotes tercatat: %d\n\n", remoteCount)
+            displayText = displayText .. table.concat(remoteLog, "\n")
+            textBox.Text = displayText
+            counterText.Text = remoteCount .. " remotes"
+            statusText.Text = "🔴 Merekam... (" .. remoteCount .. " remotes)"
+            
+            -- Auto scroll ke bawah
+            textBox.CursorPosition = #textBox.Text
         end
-    else
-        resultText = resultText .. "❌ Packages folder not found!\n"
-    end
+        
+        return old(self, ...)
+    end)
     
-    textBox.Text = resultText
-    statusText.Text = string.format("✅ Scan complete! Found %d remotes", remoteCount)
-    statusText.TextColor3 = Color3.new(0, 1, 0)
-    updateProgress(1, "100%")
+    print("✅ Remote Spy Aktif!")
 end
 
--- ===== FUNGSI COPY =====
-local function copyToClipboard()
-    -- Method 1: Coba pake setclipboard (untuk executor yang support)
+-- ===== START SPY =====
+setupSpy()
+
+-- ===== BUTTON FUNCTIONS =====
+copyBtn.MouseButton1Click:Connect(function()
     local success, err = pcall(function()
         setclipboard(textBox.Text)
     end)
     
     if success then
-        statusText.Text = "✅ Copied to clipboard! (Ctrl+V to paste)"
+        statusText.Text = "✅ Copied to clipboard!"
         statusText.TextColor3 = Color3.new(0, 1, 0)
-        copyBtn.BackgroundColor3 = Color3.new(0, 1, 0)
-        task.wait(1)
-        copyBtn.BackgroundColor3 = Color3.new(0, 0.5, 1)
     else
-        -- Method 2: Kasih instruksi manual
-        statusText.Text = "⚠️ Manual copy: Select all (Ctrl+A) then Ctrl+C"
+        statusText.Text = "⚠️ Manual copy: Ctrl+A then Ctrl+C"
         statusText.TextColor3 = Color3.new(1, 1, 0)
-        
-        -- Focus ke text box
         textBox:CaptureFocus()
-        textBox.CursorPosition = #textBox.Text
     end
-end
-
--- ===== BUTTON FUNCTIONS =====
-copyBtn.MouseButton1Click:Connect(copyToClipboard)
-
-rescanBtn.MouseButton1Click:Connect(function()
-    scanRemotes()
 end)
 
 clearBtn.MouseButton1Click:Connect(function()
-    textBox.Text = ""
-    scanResults = {}
+    remoteLog = {}
     remoteCount = 0
-    statusText.Text = "🔄 Cleared"
-    statusText.TextColor3 = Color3.new(1, 1, 1)
-    updateProgress(0, "0%")
+    textBox.Text = "🔍 MOE REMOTE SPY - AKTIF\n"
+    textBox.Text = textBox.Text .. "================================\n"
+    textBox.Text = textBox.Text .. "Silakan lakukan FISHING NORMAL sekarang...\n\n"
+    counterText.Text = "0 remotes"
+    statusText.Text = "🔄 Cleared - Menunggu aktivitas..."
+end)
+
+spyBtn.MouseButton1Click:Connect(function()
+    spyActive = not spyActive
+    if spyActive then
+        spyBtn.Text = "🔴 STOP SPY"
+        spyBtn.BackgroundColor3 = Color3.new(1, 0, 0)
+        statusText.Text = "🔴 Merekam... (" .. remoteCount .. " remotes)"
+        statusText.TextColor3 = Color3.new(1, 0, 0)
+    else
+        spyBtn.Text = "🟢 START SPY"
+        spyBtn.BackgroundColor3 = Color3.new(0, 1, 0)
+        statusText.Text = "⏸️ Paused"
+        statusText.TextColor3 = Color3.new(1, 1, 0)
+    end
 end)
 
 saveBtn.MouseButton1Click:Connect(function()
     local success, err = pcall(function()
-        writefile("MoeRemoteScan_" .. os.date("%Y%m%d_%H%M%S") .. ".txt", textBox.Text)
+        writefile("MoeSpyLog_" .. os.date("%Y%m%d_%H%M%S") .. ".txt", textBox.Text)
     end)
     
     if success then
         statusText.Text = "✅ Saved to file!"
         statusText.TextColor3 = Color3.new(0, 1, 0)
-        saveBtn.BackgroundColor3 = Color3.new(0, 1, 0)
-        task.wait(1)
-        saveBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
     else
-        statusText.Text = "❌ Save failed (manual copy only)"
+        statusText.Text = "❌ Save failed"
         statusText.TextColor3 = Color3.new(1, 0, 0)
     end
 end)
 
--- ===== INSTRUKSI =====
-local instrFrame = Instance.new("Frame")
-instrFrame.Size = UDim2.new(1, -20, 0, 25)
-instrFrame.Position = UDim2.new(0, 10, 1, -25)
-instrFrame.BackgroundTransparency = 1
-instrFrame.Parent = mainFrame
+-- Instructions
+local instr = Instance.new("TextLabel")
+instr.Size = UDim2.new(1, -20, 0, 20)
+instr.Position = UDim2.new(0, 10, 1, -22)
+instr.BackgroundTransparency = 1
+instr.Text = "💡 Lakukan FISHING NORMAL sekarang! Semua remote akan tercatat"
+instr.TextColor3 = Color3.new(0.5, 0.5, 0.5)
+instr.TextSize = 11
+instr.Font = Enum.Font.Gotham
+instr.Parent = mainFrame
 
-local instrText = Instance.new("TextLabel")
-instrText.Size = UDim2.new(1, 0, 1, 0)
-instrText.BackgroundTransparency = 1
-instrText.Text = "💡 Click COPY ALL or use Ctrl+A then Ctrl+C to copy results"
-instrText.TextColor3 = Color3.new(0.5, 0.5, 0.5)
-instrText.TextSize = 11
-instrText.Font = Enum.Font.Gotham
-instrText.Parent = instrFrame
-
--- ===== START SCAN =====
-scanRemotes()
-
--- ===== DRAG FUNCTIONALITY =====
+-- Drag functionality
 local dragging = false
 local dragStart
 local startPos
@@ -444,7 +325,7 @@ mainFrame.InputBegan:Connect(function(input)
 end)
 
 mainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStart
         mainFrame.Position = UDim2.new(
             startPos.X.Scale,
@@ -461,4 +342,4 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
-print("✅ Moe Remote Scanner GUI Loaded - Click COPY ALL to copy results")
+print("✅ Moe Remote Spy Loaded - Lakukan fishing normal sekarang!")
