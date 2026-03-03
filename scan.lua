@@ -1,117 +1,45 @@
--- MOE FISHING PARAMETER TESTER
-local player = game.Players.LocalPlayer
-local gui = Instance.new("ScreenGui")
-gui.Name = "MoeParamTester"
-gui.Parent = player:WaitForChild("PlayerGui")
-
--- Main frame
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 500, 0, 600)
-frame.Position = UDim2.new(0.5, -250, 0.5, -300)
-frame.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-frame.Parent = gui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
-corner.Parent = frame
-
--- Header
-local header = Instance.new("TextLabel")
-header.Size = UDim2.new(1, 0, 0, 35)
-header.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-header.Text = "🎣 MOE PARAMETER FINDER"
-header.TextColor3 = Color3.new(0, 1, 0)
-header.Font = Enum.Font.GothamBold
-header.TextSize = 16
-header.Parent = frame
-
-local close = Instance.new("TextButton")
-close.Size = UDim2.new(0, 30, 0, 30)
-close.Position = UDim2.new(1, -30, 0, 2.5)
-close.BackgroundColor3 = Color3.new(1, 0, 0)
-close.Text = "X"
-close.TextColor3 = Color3.new(1, 1, 1)
-close.Font = Enum.Font.GothamBold
-close.Parent = header
-
-close.MouseButton1Click:Connect(function()
-    gui:Destroy()
-end)
-
--- Scroll frame untuk konten
-local scroll = Instance.new("ScrollingFrame")
-scroll.Size = UDim2.new(1, -20, 1, -100)
-scroll.Position = UDim2.new(0, 10, 0, 40)
-scroll.BackgroundTransparency = 1
-scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scroll.Parent = frame
-
-local container = Instance.new("Frame")
-container.Size = UDim2.new(1, 0, 0, 0)
-container.BackgroundTransparency = 1
-container.Parent = scroll
-container.AutomaticSize = Enum.AutomaticSize.Y
-
-local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0, 10)
-layout.Parent = container
-
--- ===== REMOTE SETUP =====
+-- CEK ISI NET MODULE
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
-local RF = Net:FindFirstChild("RF")
+local NetModule = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
-local Remote = {
-    RequestMinigame = RF and RF:FindFirstChild("1239e94e6397b16cef3f55f2d4dbc4b8de29b5552820cb62e0477b58bad3b47f"),
-    CastRod = RF and RF:FindFirstChild("0f54ec0060b2b41e6d662c98f5f5e329065210ef504926fc89577dceb774915c"),
-    CatchFish = RF and RF:FindFirstChild("c8f3fe1d1a51c63b116e59e52aa538562a03a0e273fab6ef8a5768bf936df31d"),
+print("=== ISI NET MODULE ===")
+for _, child in pairs(NetModule:GetChildren()) do
+    print("📁 " .. child.Name .. " (" .. child.ClassName .. ")")
+    
+    -- Kalau childnya folder, cek isinya
+    if child:IsA("Folder") then
+        for _, remote in pairs(child:GetChildren()) do
+            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+                print("   🔹 " .. remote.Name)
+            end
+        end
+    end
+    
+    -- Kalau childnya langsung remote
+    if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
+        print("   🔹 " .. child.Name .. " (LANGSUNG)")
+    end
+end
+
+-- Cek juga apakah ada remote dengan hash yang kita cari
+local hashList = {
+    "ad1cf49efe7abcbc289e426297b1b174c7685cc4115f72d165a9dc889ed5cdfe",
+    "624df101b3abb91f1d30767fdec926afbb517bcd054891da36ab2914839adf37",
+    "7b12f430cc70bc4e939d6032b967fa19647c80c2ae7396cf500f1e3113e07685",
+    "2560f6f476bebf12c2e1410090e3e7ee9c45755de63c8b6acf8bd43af4a3612a",
+    "c83da140199b695e0338dcfc521b0441f3a801823d9f178fb00791f708e9b837",
+    "503147f7a18f101517830266720271719dac3d5ce7a3536911ec1829c2636eb1"
 }
 
--- ===== FUNGSI BUAT INPUT =====
-local function createInputRow(name, default1, default2, default3)
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 100)
-    row.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-    row.Parent = container
-    
-    local rowCorner = Instance.new("UICorner")
-    rowCorner.CornerRadius = UDim.new(0, 6)
-    rowCorner.Parent = row
-    
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -10, 0, 25)
-    title.Position = UDim2.new(0, 5, 0, 5)
-    title.BackgroundTransparency = 1
-    title.Text = name
-    title.TextColor3 = Color3.new(1, 1, 0)
-    title.Font = Enum.Font.GothamBold
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = row
-    
-    local input1 = Instance.new("TextBox")
-    input1.Size = UDim2.new(0.3, -5, 0, 30)
-    input1.Position = UDim2.new(0, 5, 0, 35)
-    input1.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    input1.Text = tostring(default1 or "")
-    input1.PlaceholderText = "Arg 1"
-    input1.TextColor3 = Color3.new(1, 1, 1)
-    input1.Font = Enum.Font.Code
-    input1.Parent = row
-    
-    local input2 = Instance.new("TextBox")
-    input2.Size = UDim2.new(0.3, -5, 0, 30)
-    input2.Position = UDim2.new(0.35, 0, 0, 35)
-    input2.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    input2.Text = tostring(default2 or "")
-    input2.PlaceholderText = "Arg 2"
-    input2.TextColor3 = Color3.new(1, 1, 1)
-    input2.Font = Enum.Font.Code
-    input2.Parent = row
-    
+print("\n=== MENCARI HASH REMOTE ===")
+for _, hash in ipairs(hashList) do
+    local remote = NetModule:FindFirstChild(hash)
+    if remote then
+        print("✅ DITEMUKAN: " .. hash .. " (" .. remote.ClassName .. ")")
+    else
+        print("❌ TIDAK DITEMUKAN: " .. hash)
+    end
+end    
     local input3 = Instance.new("TextBox")
     input3.Size = UDim2.new(0.3, -5, 0, 30)
     input3.Position = UDim2.new(0.7, 0, 0, 35)
