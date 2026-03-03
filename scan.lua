@@ -1,32 +1,34 @@
--- FISH IT - REMOTE PARAMETER TESTER + COPY ALL (FIXED)
+-- Moe V1.0 - REMOTE PARAMETER TESTER + COPY ALL
+-- Jalankan ini di game, test semua parameter, copy hasilnya
+
 local player = game.Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "RemoteTesterGUI"
+gui.Name = "RemoteParameterTester"
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 550, 0, 650)
-mainFrame.Position = UDim2.new(0.5, -275, 0.5, -325)
+mainFrame.Size = UDim2.new(0, 700, 0, 550)
+mainFrame.Position = UDim2.new(0.5, -350, 0.5, -275)
 mainFrame.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = gui
 
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
+corner.CornerRadius = UDim.new(0, 12)
 corner.Parent = mainFrame
 
 -- Header
 local header = Instance.new("Frame")
-header.Size = UDim2.new(1, 0, 0, 45)
+header.Size = UDim2.new(1, 0, 0, 40)
 header.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
 header.Parent = mainFrame
 
 local headerCorner = Instance.new("UICorner")
-headerCorner.CornerRadius = UDim.new(0, 10)
+headerCorner.CornerRadius = UDim.new(0, 12)
 headerCorner.Parent = header
 
 local title = Instance.new("TextLabel")
@@ -36,13 +38,13 @@ title.BackgroundTransparency = 1
 title.Text = "🔍 REMOTE PARAMETER TESTER"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 18
+title.TextSize = 16
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = header
 
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 30, 0, 30)
-closeBtn.Position = UDim2.new(1, -40, 0, 7)
+closeBtn.Position = UDim2.new(1, -35, 0, 5)
 closeBtn.BackgroundColor3 = Color3.new(1, 0.3, 0.3)
 closeBtn.Text = "✕"
 closeBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -56,27 +58,20 @@ closeCorner.Parent = closeBtn
 
 closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
 
--- Tabs (baris pertama)
-local tabFrame1 = Instance.new("Frame")
-tabFrame1.Size = UDim2.new(1, -20, 0, 35)
-tabFrame1.Position = UDim2.new(0, 10, 0, 50)
-tabFrame1.BackgroundTransparency = 1
-tabFrame1.Parent = mainFrame
+-- Tab buttons
+local tabFrame = Instance.new("Frame")
+tabFrame.Size = UDim2.new(1, -20, 0, 35)
+tabFrame.Position = UDim2.new(0, 10, 0, 45)
+tabFrame.BackgroundTransparency = 1
+tabFrame.Parent = mainFrame
 
--- Tabs (baris kedua)
-local tabFrame2 = Instance.new("Frame")
-tabFrame2.Size = UDim2.new(1, -20, 0, 35)
-tabFrame2.Position = UDim2.new(0, 10, 0, 90)
-tabFrame2.BackgroundTransparency = 1
-tabFrame2.Parent = mainFrame
+local tabs = {"All", "Bait", "Rod", "Weather", "Teleport", "Quest", "Sell"}
+local currentTab = "All"
 
-local tabs1 = {"All", "Fishing", "Bait", "Rod"}
-local tabs2 = {"Weather", "Teleport", "Quest", "Sell"}
-
--- Result area (disesuaikan posisinya)
+-- Result area
 local resultFrame = Instance.new("Frame")
-resultFrame.Size = UDim2.new(1, -20, 1, -240)
-resultFrame.Position = UDim2.new(0, 10, 0, 130)
+resultFrame.Size = UDim2.new(1, -20, 1, -140)
+resultFrame.Position = UDim2.new(0, 10, 0, 85)
 resultFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
 resultFrame.Parent = mainFrame
 
@@ -96,38 +91,38 @@ resultBox.TextYAlignment = Enum.TextYAlignment.Top
 resultBox.MultiLine = true
 resultBox.ClearTextOnFocus = false
 resultBox.TextEditable = false
-resultBox.Text = "Klik tombol SCAN ALL untuk mulai testing..."
+resultBox.Text = "Klik tombol TEST ALL REMOTES untuk memulai..."
 resultBox.Parent = resultFrame
 
--- Button frame (3 tombol sejajar)
+-- Button frame
 local buttonFrame = Instance.new("Frame")
 buttonFrame.Size = UDim2.new(1, -20, 0, 45)
-buttonFrame.Position = UDim2.new(0, 10, 0, resultFrame.Position.Y.Offset + resultFrame.Size.Y.Offset + 10)
+buttonFrame.Position = UDim2.new(0, 10, 0, resultFrame.Position.Y.Offset + resultFrame.Size.Y.Offset + 5)
 buttonFrame.BackgroundTransparency = 1
 buttonFrame.Parent = mainFrame
 
-local scanBtn = Instance.new("TextButton")
-scanBtn.Size = UDim2.new(0.32, -5, 1, 0)
-scanBtn.Position = UDim2.new(0, 0, 0, 0)
-scanBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
-scanBtn.Text = "🔍 SCAN ALL"
-scanBtn.TextColor3 = Color3.new(1, 1, 1)
-scanBtn.Font = Enum.Font.GothamBold
-scanBtn.TextSize = 14
-scanBtn.Parent = buttonFrame
+local testBtn = Instance.new("TextButton")
+testBtn.Size = UDim2.new(0.32, -5, 1, 0)
+testBtn.Position = UDim2.new(0, 0, 0, 0)
+testBtn.BackgroundColor3 = Color3.new(0.2, 0.6, 0.2)
+testBtn.Text = "🔍 TEST ALL REMOTES"
+testBtn.TextColor3 = Color3.new(1, 1, 1)
+testBtn.Font = Enum.Font.GothamBold
+testBtn.TextSize = 12
+testBtn.Parent = buttonFrame
 
-local scanCorner = Instance.new("UICorner")
-scanCorner.CornerRadius = UDim.new(0, 6)
-scanCorner.Parent = scanBtn
+local testCorner = Instance.new("UICorner")
+testCorner.CornerRadius = UDim.new(0, 6)
+testCorner.Parent = testBtn
 
 local copyBtn = Instance.new("TextButton")
 copyBtn.Size = UDim2.new(0.32, -5, 1, 0)
 copyBtn.Position = UDim2.new(0.34, 0, 0, 0)
 copyBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.8)
-copyBtn.Text = "📋 COPY ALL"
+copyBtn.Text = "📋 COPY RESULTS"
 copyBtn.TextColor3 = Color3.new(1, 1, 1)
 copyBtn.Font = Enum.Font.GothamBold
-copyBtn.TextSize = 14
+copyBtn.TextSize = 12
 copyBtn.Parent = buttonFrame
 
 local copyCorner = Instance.new("UICorner")
@@ -141,7 +136,7 @@ clearBtn.BackgroundColor3 = Color3.new(0.6, 0.2, 0.2)
 clearBtn.Text = "🗑️ CLEAR"
 clearBtn.TextColor3 = Color3.new(1, 1, 1)
 clearBtn.Font = Enum.Font.GothamBold
-clearBtn.TextSize = 14
+clearBtn.TextSize = 12
 clearBtn.Parent = buttonFrame
 
 local clearCorner = Instance.new("UICorner")
@@ -150,179 +145,211 @@ clearCorner.Parent = clearBtn
 
 -- Status
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, -20, 0, 30)
-statusLabel.Position = UDim2.new(0, 10, 0, buttonFrame.Position.Y.Offset + buttonFrame.Size.Y.Offset + 5)
+statusLabel.Size = UDim2.new(1, -20, 0, 25)
+statusLabel.Position = UDim2.new(0, 10, 0, buttonFrame.Position.Y.Offset + buttonFrame.Size.Y.Offset + 2)
 statusLabel.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-statusLabel.Text = "Ready - Klik SCAN ALL untuk memulai"
+statusLabel.Text = "Ready"
 statusLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
 statusLabel.Font = Enum.Font.Gotham
 statusLabel.TextSize = 12
-statusLabel.TextXAlignment = Enum.TextXAlignment.Center
 statusLabel.Parent = mainFrame
 
 local statusCorner = Instance.new("UICorner")
 statusCorner.CornerRadius = UDim.new(0, 4)
 statusCorner.Parent = statusLabel
 
--- ===== FUNGSI UTILITY =====
-local function getRemote(name)
-    local rf = ReplicatedStorage:FindFirstChild("RF")
-    if rf then
-        local r = rf:FindFirstChild(name)
-        if r then return r, "RF" end
-    end
+-- ===== FUNGSI GET REMOTE =====
+local function getRemoteFromPackages(folder, name)
+    local packages = ReplicatedStorage:FindFirstChild("Packages")
+    if not packages then return nil end
     
-    local re = ReplicatedStorage:FindFirstChild("RE")
-    if re then
-        local r = re:FindFirstChild(name)
-        if r then return r, "RE" end
+    if folder == "RF" then
+        local rf = packages:FindFirstChild("RF")
+        if rf then return rf:FindFirstChild(name) end
+    elseif folder == "RE" then
+        local re = packages:FindFirstChild("RE")
+        if re then return re:FindFirstChild(name) end
     end
-    
-    return nil, nil
+    return nil
 end
 
-local function log(text)
-    resultBox.Text = text .. "\n" .. resultBox.Text
-end
-
-local function testRemote(remoteName, params, desc)
-    local remote, type = getRemote(remoteName)
+-- ===== TEST REMOTE =====
+local function testRemote(remote, params, desc)
     if not remote then
-        return "❌ " .. remoteName .. " - NOT FOUND"
+        return "❌ REMOTE NOT FOUND - " .. desc
     end
     
-    local result = "🔍 " .. remoteName .. " (" .. type .. ")\n"
-    result = result .. "   Parameter: " .. desc .. "\n"
-    
-    local success, res = pcall(function()
-        if type == "RF" then
-            return remote:InvokeServer(unpack(params))
-        else
-            remote:FireServer(unpack(params))
-            return "Fired (no return)"
-        end
+    local success, result = pcall(function()
+        return remote:FireServer(unpack(params))
     end)
     
     if success then
-        result = result .. "   ✅ SUCCESS: " .. tostring(res) .. "\n"
+        return "✅ SUCCESS - " .. desc .. " | Result: " .. tostring(result)
     else
-        result = result .. "   ❌ ERROR: " .. tostring(res) .. "\n"
+        return "❌ ERROR - " .. desc .. " | Error: " .. tostring(result)
     end
-    
-    return result
 end
 
--- ===== SCAN ALL REMOTES =====
-scanBtn.MouseButton1Click:Connect(function()
-    statusLabel.Text = "Scanning... (mohon tunggu)"
-    resultBox.Text = "Memulai scan semua remote...\n\n"
-    
+-- ===== TEST FUNCTIONS =====
+local function testAllRemotes()
+    statusLabel.Text = "Testing all remotes..."
+    resultBox.Text = ""
+
     local results = {}
     
-    -- Daftar remote yang akan di test
-    local testList = {
-        -- Fishing
-        {name = "RF/StartFishing", params = {}, desc = "no params"},
-        {name = "RF/StartFishing", params = {1}, desc = "{1}"},
-        {name = "RF/CatchFishCompleted", params = {}, desc = "no params"},
-        {name = "RF/CatchFishCompleted", params = {true}, desc = "{true}"},
-        {name = "RF/ChargeFishingRod", params = {}, desc = "no params"},
-        {name = "RF/ChargeFishingRod", params = {1}, desc = "{1}"},
-        {name = "RE/FishingMinigameChanged", params = {true}, desc = "{true}"},
-        {name = "RE/FishingStopped", params = {}, desc = "no params"},
+    -- AMBIL SEMUA REMOTE DARI PACKAGES
+    local packages = ReplicatedStorage:FindFirstChild("Packages")
+    if not packages then
+        resultBox.Text = "❌ Packages folder not found!"
+        return
+    end
+    
+    local rfFolder = packages:FindFirstChild("RF")
+    local reFolder = packages:FindFirstChild("RE")
+    
+    -- Test semua kemungkinan parameter untuk setiap remote
+    local testCases = {
+        -- BAIT
+        {folder = "RF", name = "PurchaseBait", params = {{}, {"Starter Bait"}, {1}, {"Starter Bait", 1}, {1, "Starter Bait"}}},
+        {folder = "RE", name = "EquipBait", params = {{}, {"Starter Bait"}, {1}}},
         
-        -- Bait
-        {name = "RF/PurchaseBait", params = {}, desc = "no params"},
-        {name = "RF/PurchaseBait", params = {"Starter Bait"}, desc = '{"Starter Bait"}'},
-        {name = "RF/PurchaseBait", params = {"Starter Bait", 1}, desc = '{"Starter Bait", 1}'},
-        {name = "RF/PurchaseBait", params = {1, "Starter Bait"}, desc = '{1, "Starter Bait"}'},
-        {name = "RF/PurchaseBait", params = {1}, desc = "{1}"},
-        {name = "RE/EquipBait", params = {}, desc = "no params"},
-        {name = "RE/EquipBait", params = {"Starter Bait"}, desc = '{"Starter Bait"}'},
-        {name = "RE/EquipBait", params = {1}, desc = "{1}"},
+        -- ROD
+        {folder = "RF", name = "PurchaseFishingRod", params = {{}, {"Starter Rod"}, {1}, {"Starter Rod", 1}, {1, "Starter Rod"}}},
+        {folder = "RE", name = "EquipRodSkin", params = {{}, {"Starter Rod"}, {1}}},
         
-        -- Rod
-        {name = "RF/PurchaseFishingRod", params = {}, desc = "no params"},
-        {name = "RF/PurchaseFishingRod", params = {"Starter Rod"}, desc = '{"Starter Rod"}'},
-        {name = "RF/PurchaseFishingRod", params = {"Starter Rod", 1}, desc = '{"Starter Rod", 1}'},
-        {name = "RF/PurchaseFishingRod", params = {1, "Starter Rod"}, desc = '{1, "Starter Rod"}'},
-        {name = "RF/PurchaseFishingRod", params = {1}, desc = "{1}"},
-        {name = "RE/EquipRodSkin", params = {}, desc = "no params"},
-        {name = "RE/EquipRodSkin", params = {"Starter Rod"}, desc = '{"Starter Rod"}'},
-        {name = "RE/EquipRodSkin", params = {1}, desc = "{1}"},
+        -- WEATHER
+        {folder = "RE", name = "WeatherCommand", params = {{}, {"Clear"}, {"Rain"}, {"Storm"}, {"Fog"}, {"Wind"}}},
+        {folder = "RF", name = "PurchaseWeatherEvent", params = {{}, {1}, {1, "Clear"}, {"Clear", 1}}},
         
-        -- Weather
-        {name = "RE/WeatherCommand", params = {}, desc = "no params"},
-        {name = "RE/WeatherCommand", params = {"Clear"}, desc = '{"Clear"}'},
-        {name = "RE/WeatherCommand", params = {"Rain"}, desc = '{"Rain"}'},
-        {name = "RE/WeatherCommand", params = {"Storm"}, desc = '{"Storm"}'},
-        {name = "RE/WeatherCommand", params = {"Fog"}, desc = '{"Fog"}'},
-        {name = "RF/PurchaseWeatherEvent", params = {}, desc = "no params"},
-        {name = "RF/PurchaseWeatherEvent", params = {1}, desc = "{1}"},
-        {name = "RF/PurchaseWeatherEvent", params = {1, "Clear"}, desc = '{1, "Clear"}'},
-        {name = "RF/PurchaseWeatherEvent", params = {"Clear", 1}, desc = '{"Clear", 1}'},
+        -- TELEPORT
+        {folder = "RE", name = "SubmarineTP", params = {{}, {"Spawn"}, {"Coral Reefs"}, {"Ancient Jungle"}}},
+        {folder = "RF", name = "SubmarineTP2", params = {{}, {"Spawn"}, {1}}},
+        {folder = "RE", name = "BoatTeleport", params = {{}, {"Spawn"}, {1}}},
         
-        -- Teleport
-        {name = "RE/SubmarineTP", params = {}, desc = "no params"},
-        {name = "RE/SubmarineTP", params = {"Spawn"}, desc = '{"Spawn"}'},
-        {name = "RF/SubmarineTP2", params = {}, desc = "no params"},
-        {name = "RF/SubmarineTP2", params = {"Spawn"}, desc = '{"Spawn"}'},
-        {name = "RE/BoatTeleport", params = {}, desc = "no params"},
-        {name = "RE/BoatTeleport", params = {"Spawn"}, desc = '{"Spawn"}'},
+        -- QUEST
+        {folder = "RF", name = "ClaimDailyLogin", params = {{}, {1}}},
+        {folder = "RF", name = "ClaimBounty", params = {{}, {1}}},
+        {folder = "RE", name = "ClaimEventReward", params = {{}, {1}}},
         
-        -- Quest
-        {name = "RF/ClaimDailyLogin", params = {}, desc = "no params"},
-        {name = "RF/ClaimDailyLogin", params = {1}, desc = "{1}"},
-        {name = "RF/ClaimBounty", params = {}, desc = "no params"},
-        {name = "RF/ClaimBounty", params = {1}, desc = "{1}"},
-        {name = "RE/ClaimEventReward", params = {}, desc = "no params"},
-        {name = "RE/ClaimEventReward", params = {1}, desc = "{1}"},
-        {name = "RF/RF_ClaimMegalodonQuest", params = {}, desc = "no params"},
-        {name = "RF/RF_ClaimMegalodonQuest", params = {1}, desc = "{1}"},
-        {name = "RF/CreateTranscendedStone", params = {}, desc = "no params"},
-        {name = "RF/CreateTranscendedStone", params = {1}, desc = "{1}"},
+        -- SELL
+        {folder = "RF", name = "SellAllItems", params = {{}, {1}}},
+        {folder = "RF", name = "SellItem", params = {{}, {1}, {"item"}}},
         
-        -- Sell
-        {name = "RF/SellAllItems", params = {}, desc = "no params"},
-        {name = "RF/SellAllItems", params = {1}, desc = "{1}"},
-        {name = "RF/SellItem", params = {}, desc = "no params"},
-        {name = "RF/SellItem", params = {1}, desc = "{1}"},
-        {name = "RF/SellItem", params = {"item"}, desc = '{"item"}'},
-        
-        -- Favorite
-        {name = "RE/FavoriteItem", params = {}, desc = "no params"},
-        {name = "RE/FavoriteItem", params = {1}, desc = "{1}"},
-        {name = "RE/FavoriteItem", params = {"item"}, desc = '{"item"}'},
-        {name = "RE/FavoriteStateChanged", params = {}, desc = "no params"},
-        {name = "RE/FavoriteStateChanged", params = {1, true}, desc = '{1, true}'},
-        
-        -- Market
-        {name = "RF/PurchaseMarketItem", params = {}, desc = "no params"},
-        {name = "RF/PurchaseMarketItem", params = {"item"}, desc = '{"item"}'},
-        {name = "RF/PurchaseMarketItem", params = {"item", 1}, desc = '{"item", 1}'},
+        -- FISHING
+        {folder = "RF", name = "ChargeFishingRod", params = {{}, {1}}},
+        {folder = "RF", name = "CatchFishCompleted", params = {{}, {true}}},
+        {folder = "RE", name = "FishingMinigameChanged", params = {{}, {true}}},
     }
     
-    for i, test in ipairs(testList) do
-        local res = testRemote(test.name, test.params, test.desc)
-        table.insert(results, res)
-        task.wait(0.05) -- Jeda biar ga overload
+    for _, test in ipairs(testCases) do
+        local remote = getRemoteFromPackages(test.folder, test.name)
+        local remoteName = test.folder .. "/" .. test.name
+        
+        table.insert(results, "\n=== " .. remoteName .. " ===")
+        
+        for _, params in ipairs(test.params) do
+            local paramStr = "{" .. table.concat(params, ", ") .. "}"
+            if #params == 0 then paramStr = "{}" end
+            
+            local result = testRemote(remote, params, remoteName .. " " .. paramStr)
+            table.insert(results, result)
+            
+            -- Jeda biar ga overload
+            task.wait(0.05)
+        end
+    end
+    
+    -- Cari juga remote lain yang mungkin berguna
+    if rfFolder then
+        table.insert(results, "\n=== OTHER RF REMOTES ===")
+        for _, remote in ipairs(rfFolder:GetChildren()) do
+            if remote:IsA("RemoteFunction") then
+                local result = testRemote(remote, {}, "RF/" .. remote.Name .. " {}")
+                table.insert(results, result)
+                task.wait(0.05)
+            end
+        end
+    end
+    
+    if reFolder then
+        table.insert(results, "\n=== OTHER RE REMOTES ===")
+        for _, remote in ipairs(reFolder:GetChildren()) do
+            if remote:IsA("RemoteEvent") then
+                local result = testRemote(remote, {}, "RE/" .. remote.Name .. " {}")
+                table.insert(results, result)
+                task.wait(0.05)
+            end
+        end
     end
     
     -- Gabungkan hasil
-    local finalText = "=" .. string.rep("=", 50) .. "\n"
-    finalText = finalText .. "HASIL SCAN REMOTE PARAMETER\n"
-    finalText = finalText .. string.rep("=", 50) .. "\n\n"
+    local finalText = "=" .. string.rep("=", 60) .. "\n"
+    finalText = finalText .. "REMOTE PARAMETER TEST RESULTS\n"
+    finalText = finalText .. string.rep("=", 60) .. "\n"
+    finalText = finalText .. "Tested at: " .. os.date() .. "\n"
+    finalText = finalText .. string.rep("=", 60) .. "\n\n"
     finalText = finalText .. table.concat(results, "\n")
     
     resultBox.Text = finalText
-    statusLabel.Text = "✅ Scan selesai! " .. #testList .. " remote di test"
-end)
+    statusLabel.Text = "✅ Test complete! Total " .. #results .. " tests"
+end
 
--- COPY ALL
+-- ===== CREATE TABS =====
+local function createTab(name, xPos)
+    local tab = Instance.new("TextButton")
+    tab.Size = UDim2.new(0, 70, 0, 30)
+    tab.Position = UDim2.new(0, xPos, 0, 2)
+    tab.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    tab.Text = name
+    tab.TextColor3 = Color3.new(1, 1, 1)
+    tab.Font = Enum.Font.Gotham
+    tab.TextSize = 12
+    tab.Parent = tabFrame
+    
+    local tabCorner = Instance.new("UICorner")
+    tabCorner.CornerRadius = UDim.new(0, 4)
+    tabCorner.Parent = tab
+    
+    if name == "All" then
+        tab.BackgroundColor3 = Color3.new(0.3, 0.6, 0.3)
+    end
+    
+    tab.MouseButton1Click:Connect(function()
+        -- Reset all tabs
+        for _, child in pairs(tabFrame:GetChildren()) do
+            if child:IsA("TextButton") then
+                child.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+            end
+        end
+        tab.BackgroundColor3 = Color3.new(0.3, 0.6, 0.3)
+        currentTab = name
+        
+        -- Filter results
+        if name ~= "All" then
+            local lines = resultBox.Text:split("\n")
+            local filtered = {}
+            for _, line in ipairs(lines) do
+                if line:find(name) or line:find("===") or line:find("=") then
+                    table.insert(filtered, line)
+                end
+            end
+            resultBox.Text = table.concat(filtered, "\n")
+        end
+    end)
+end
+
+-- Create tabs
+for i, name in ipairs(tabs) do
+    createTab(name, 5 + (i-1) * 75)
+end
+
+-- Button functions
+testBtn.MouseButton1Click:Connect(testAllRemotes)
+
 copyBtn.MouseButton1Click:Connect(function()
     if setclipboard then
         setclipboard(resultBox.Text)
-        statusLabel.Text = "✅ Hasil scan dicopy ke clipboard!"
+        statusLabel.Text = "✅ Results copied to clipboard!"
     else
         -- Manual copy instructions
         resultBox.Text = [[
@@ -340,68 +367,13 @@ copyBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- CLEAR
 clearBtn.MouseButton1Click:Connect(function()
-    resultBox.Text = "Hasil scan dibersihkan.\nKlik SCAN ALL untuk memulai lagi."
+    resultBox.Text = "Hasil dibersihkan. Klik TEST ALL REMOTES untuk memulai lagi."
     statusLabel.Text = "Ready"
 end)
 
--- ===== TAB BUTTONS =====
-local function createTab(parent, name, xPos)
-    local tab = Instance.new("TextButton")
-    tab.Size = UDim2.new(0, 70, 0, 30)
-    tab.Position = UDim2.new(0, xPos, 0, 2)
-    tab.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    tab.BackgroundTransparency = 0.3
-    tab.Text = name
-    tab.TextColor3 = Color3.new(1, 1, 1)
-    tab.Font = Enum.Font.Gotham
-    tab.TextSize = 13
-    tab.Parent = parent
-    
-    local tabCorner = Instance.new("UICorner")
-    tabCorner.CornerRadius = UDim.new(0, 4)
-    tabCorner.Parent = tab
-    
-    if name == "All" then
-        tab.BackgroundColor3 = Color3.new(0.3, 0.6, 0.3)
-    end
-    
-    tab.MouseButton1Click:Connect(function()
-        -- Reset all tabs
-        for _, child in pairs(tabFrame1:GetChildren()) do
-            if child:IsA("TextButton") then
-                child.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-            end
-        end
-        for _, child in pairs(tabFrame2:GetChildren()) do
-            if child:IsA("TextButton") then
-                child.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-            end
-        end
-        tab.BackgroundColor3 = Color3.new(0.3, 0.6, 0.3)
-        
-        -- Filter results based on tab
-        if name ~= "All" then
-            local lines = resultBox.Text:split("\n")
-            local filtered = {}
-            for _, line in ipairs(lines) do
-                if line:find(name) or line:find("=") then
-                    table.insert(filtered, line)
-                end
-            end
-            resultBox.Text = table.concat(filtered, "\n")
-        end
-    end)
-end
+-- Auto test on start
+task.wait(0.5)
+testAllRemotes()
 
--- Create tabs
-for i, tabName in ipairs(tabs1) do
-    createTab(tabFrame1, tabName, 5 + (i-1) * 75)
-end
-
-for i, tabName in ipairs(tabs2) do
-    createTab(tabFrame2, tabName, 5 + (i-1) * 75)
-end
-
-print("✅ Remote Tester GUI loaded - Tombol SCAN ALL ada di bawah!")
+print("✅ Remote Parameter Tester loaded - Klik TEST ALL REMOTES")
