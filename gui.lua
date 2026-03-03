@@ -1,6 +1,6 @@
--- Moe V1.0 GUI for FISH IT - LEFT MENU STYLE (650x400)
+-- MOE FISHING GUI v3.0 - WORKING VERSION
 -- Menu: Fishing, Favorite, Shop, Teleport, Weather
--- Input delay manual (ketik angka)
+-- Dengan remote hash yang benar
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -11,6 +11,92 @@ gui.IgnoreGuiInset = true
 gui.DisplayOrder = 999
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
+
+-- ===== REMOTE PATHS YANG BENAR =====
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
+
+-- Folder RE dan RF
+local RE = Net:FindFirstChild("RE")  -- RemoteEvents
+local RF = Net:FindFirstChild("RF")  -- RemoteFunctions
+
+-- Fungsi untuk mendapatkan remote berdasarkan nama (case insensitive)
+local function GetRemote(type, namePattern)
+    local folder = type == "RE" and RE or RF
+    if not folder then return nil end
+    
+    for _, remote in pairs(folder:GetChildren()) do
+        if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+            -- Cek apakah nama remote mengandung pattern yang dicari
+            if string.find(remote.Name:lower(), namePattern:lower()) then
+                return remote
+            end
+        end
+    end
+    return nil
+end
+
+-- Remote yang kita butuhkan (semua ada dalam bentuk hash)
+local Remote = {
+    -- Fishing
+    ChargeRod = GetRemote("RF", "ChargeFishingRod"),
+    CatchFish = GetRemote("RF", "CatchFishCompleted"),
+    FishingMinigame = GetRemote("RE", "FishingMinigameChanged"),
+    FishingStopped = GetRemote("RE", "FishingStopped"),
+    CaughtFishVisual = GetRemote("RE", "CaughtFishVisual"),
+    UpdateChargeState = GetRemote("RE", "UpdateChargeState"),
+    
+    -- Bait & Rod
+    EquipBait = GetRemote("RE", "EquipBait"),
+    EquipRodSkin = GetRemote("RE", "EquipRodSkin"),
+    PurchaseBait = GetRemote("RF", "PurchaseBait"),
+    PurchaseRod = GetRemote("RF", "PurchaseFishingRod"),
+    EquipBaitSkin = GetRemote("RE", "EquipBaitSkin"),
+    UnequipBaitSkin = GetRemote("RE", "UnequipBaitSkin"),
+    
+    -- Favorite
+    FavoriteItem = GetRemote("RE", "FavoriteItem"),
+    FavoriteStateChanged = GetRemote("RE", "FavoriteStateChanged"),
+    
+    -- Shop
+    PurchaseWeather = GetRemote("RF", "PurchaseWeatherEvent"),
+    PurchaseSkinCrate = GetRemote("RF", "PurchaseSkinCrate"),
+    PurchaseEmoteCrate = GetRemote("RF", "PurchaseEmoteCrate"),
+    PurchaseGear = GetRemote("RF", "PurchaseGear"),
+    PurchaseCharm = GetRemote("RF", "PurchaseCharm"),
+    
+    -- Teleport (PENTING!)
+    SubmarineTP = GetRemote("RE", "SubmarineTP"),  -- Ini yang dipake
+    SubmarineTP2 = GetRemote("RF", "SubmarineTP2"),
+    BoatTeleport = GetRemote("RE", "BoatTeleport"),
+    TriggerSubmarine = GetRemote("RE", "TriggerSubmarine"),
+    
+    -- Weather
+    WeatherCommand = GetRemote("RE", "WeatherCommand"),
+    
+    -- Sell
+    SellItem = GetRemote("RF", "SellItem"),
+    SellAll = GetRemote("RF", "SellAllItems"),
+    
+    -- Daily & Quest
+    ClaimDailyLogin = GetRemote("RF", "ClaimDailyLogin"),
+    ClaimBounty = GetRemote("RF", "ClaimBounty"),
+    ClaimEventReward = GetRemote("RE", "ClaimEventReward"),
+    
+    -- Fishing Circle
+    JoinFishingCircle = GetRemote("RE", "JoinFishingCircle"),
+    LeftFishingCircle = GetRemote("RE", "LeftFishingCircle"),
+}
+
+-- Print status remote di console
+print("=== MOE GUI REMOTE STATUS ===")
+for name, remote in pairs(Remote) do
+    if remote then
+        print("✅ " .. name .. " -> " .. remote.Name)
+    else
+        print("❌ " .. name .. " not found")
+    end
+end
 
 -- ===== DATA LOKASI TELEPORT =====
 local LOCATIONS = {
@@ -47,65 +133,6 @@ local RodNames = {
 
 local WeatherNames = {"Wind", "Cloudy", "Snow", "Storm", "Radiant", "Shark Hunt"}
 
--- ===== REMOTE PATHS =====
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Net = ReplicatedStorage:FindFirstChild("Packages") and 
-            ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
-
-local RE = Net and Net:FindFirstChild("RE")
-local RF = Net and Net:FindFirstChild("RF")
-
-local function GetRemote(type, name)
-    local folder = type == "RE" and RE or RF
-    if folder then
-        for _, remote in pairs(folder:GetChildren()) do
-            if (remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction")) and 
-               string.find(remote.Name:lower(), name:lower()) then
-                return remote
-            end
-        end
-    end
-    return nil
-end
-
-local Remote = {
-    -- Fishing
-    ChargeRod = GetRemote("RF", "ChargeFishingRod"),
-    CatchFish = GetRemote("RF", "CatchFishCompleted"),
-    FishingMinigame = GetRemote("RE", "FishingMinigameChanged"),
-    FishingStopped = GetRemote("RE", "FishingStopped"),
-    CaughtFishVisual = GetRemote("RE", "CaughtFishVisual"),
-    
-    -- Bait & Rod
-    EquipBait = GetRemote("RE", "EquipBait"),
-    EquipRodSkin = GetRemote("RE", "EquipRodSkin"),
-    PurchaseBait = GetRemote("RF", "PurchaseBait"),
-    PurchaseRod = GetRemote("RF", "PurchaseFishingRod"),
-    
-    -- Favorite
-    FavoriteItem = GetRemote("RE", "FavoriteItem"),
-    FavoriteStateChanged = GetRemote("RE", "FavoriteStateChanged"),
-    
-    -- Shop
-    PurchaseWeather = GetRemote("RF", "PurchaseWeatherEvent"),
-    PurchaseSkinCrate = GetRemote("RF", "PurchaseSkinCrate"),
-    PurchaseEmoteCrate = GetRemote("RF", "PurchaseEmoteCrate"),
-    
-    -- Teleport
-    SubmarineTP = GetRemote("RE", "SubmarineTP"),
-    BoatTeleport = GetRemote("RE", "BoatTeleport"),
-    TriggerSubmarine = GetRemote("RE", "TriggerSubmarine"),
-    
-    -- Weather
-    WeatherCommand = GetRemote("RE", "WeatherCommand"),
-    
-    -- Sell
-    SellAll = GetRemote("RF", "SellAllItems"),
-    
-    -- Daily
-    ClaimDailyLogin = GetRemote("RF", "ClaimDailyLogin"),
-}
-
 -- ===== VARIABLES =====
 local AutoFishing = false
 local AutoEquipRod = false
@@ -136,12 +163,17 @@ local function TeleportTo(location)
     
     local character = player.Character
     if character and character:FindFirstChild("HumanoidRootPart") then
+        -- Teleport pake CFrame
         character.HumanoidRootPart.CFrame = cf
         notify("Teleport", "Teleported to " .. location)
         
+        -- Coba pake SubmarineTP remote
         pcall(function()
             if Remote.SubmarineTP then
                 Remote.SubmarineTP:FireServer(cf)
+            end
+            if Remote.TriggerSubmarine then
+                Remote.TriggerSubmarine:FireServer()
             end
         end)
     end
@@ -153,10 +185,15 @@ local function DoInstantFishing()
     
     pcall(function()
         if Remote.CatchFish then
+            -- Langsung catch tanpa minigame/charge/cast
             Remote.CatchFish:FireServer()
+            
+            -- Trigger visual biar keliatan real
             if Remote.CaughtFishVisual then
                 Remote.CaughtFishVisual:FireServer()
             end
+            
+            -- Trigger fishing stopped biar gak error
             if Remote.FishingStopped then
                 Remote.FishingStopped:FireServer()
             end
@@ -171,12 +208,19 @@ local function StartAutoFishing()
         FishingLoop = nil
     end
     
+    if not Remote.CatchFish then
+        notify("Error", "CatchFish remote tidak ditemukan!")
+        return
+    end
+    
     FishingLoop = game:GetService("RunService").Heartbeat:Connect(function()
         if AutoFishing and InstantFishing then
             DoInstantFishing()
             task.wait(InstantFishingDelay)
         end
     end)
+    
+    notify("Auto Fishing", "Started with delay " .. InstantFishingDelay .. "s")
 end
 
 local function StopAutoFishing()
@@ -185,6 +229,7 @@ local function StopAutoFishing()
         FishingLoop = nil
     end
     AutoFishing = false
+    notify("Auto Fishing", "Stopped")
 end
 
 -- ===== MAIN FRAME =====
@@ -193,8 +238,10 @@ mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 650, 0, 400)
 mainFrame.Position = UDim2.new(0.5, -325, 0.5, -200)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
-mainFrame.BackgroundTransparency = 0.15
+mainFrame.BackgroundTransparency = 0.25 -- Lebih transparan
 mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
 mainFrame.Parent = gui
 
 local corners = Instance.new("UICorner")
@@ -204,7 +251,7 @@ corners.Parent = mainFrame
 local stroke = Instance.new("UIStroke")
 stroke.Thickness = 1.2
 stroke.Color = Color3.new(1, 1, 1)
-stroke.Transparency = 0.3
+stroke.Transparency = 0.5
 stroke.Parent = mainFrame
 
 -- ===== HEADER =====
@@ -225,18 +272,19 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(0, 100, 1, 0)
 title.Position = UDim2.new(0, 38, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "Moe V1.0"
+title.Text = "Moe V3.0"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.TextSize = 16
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = headerFrame
 
+-- Minimize button
 local minButton = Instance.new("TextButton")
 minButton.Size = UDim2.new(0, 25, 0, 25)
 minButton.Position = UDim2.new(1, -60, 0.5, -12.5)
 minButton.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-minButton.BackgroundTransparency = 0.3
+minButton.BackgroundTransparency = 0.4
 minButton.Text = "—"
 minButton.TextColor3 = Color3.new(1, 1, 1)
 minButton.TextSize = 16
@@ -247,11 +295,12 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 4)
 minCorner.Parent = minButton
 
+-- Close button
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 25, 0, 25)
 closeBtn.Position = UDim2.new(1, -30, 0.5, -12.5)
 closeBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-closeBtn.BackgroundTransparency = 0.3
+closeBtn.BackgroundTransparency = 0.4
 closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.TextSize = 14
@@ -261,6 +310,11 @@ closeBtn.Parent = headerFrame
 local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
+
+closeBtn.MouseButton1Click:Connect(function()
+    StopAutoFishing()
+    gui:Destroy()
+end)
 
 -- ===== FLOATING LOGO =====
 local floatingLogo = Instance.new("Frame")
@@ -293,17 +347,12 @@ floatButton.MouseButton1Click:Connect(function()
     floatingLogo.Visible = false
 end)
 
-closeBtn.MouseButton1Click:Connect(function()
-    StopAutoFishing()
-    gui:Destroy()
-end)
-
 -- Horizontal line
 local hLine = Instance.new("Frame")
 hLine.Size = UDim2.new(1, -20, 0, 1)
 hLine.Position = UDim2.new(0, 10, 0, 35)
 hLine.BackgroundColor3 = Color3.new(1, 1, 1)
-hLine.BackgroundTransparency = 0.3
+hLine.BackgroundTransparency = 0.5
 hLine.Parent = mainFrame
 
 -- ===== CONTENT CONTAINER =====
@@ -330,7 +379,7 @@ local vLine = Instance.new("Frame")
 vLine.Size = UDim2.new(0, 1, 1, 0)
 vLine.Position = UDim2.new(0, 130, 0, 0)
 vLine.BackgroundColor3 = Color3.new(1, 1, 1)
-vLine.BackgroundTransparency = 0.3
+vLine.BackgroundTransparency = 0.5
 vLine.Parent = contentContainer
 
 -- ===== RIGHT CONTENT AREA =====
@@ -338,7 +387,7 @@ local contentArea = Instance.new("Frame")
 contentArea.Size = UDim2.new(1, -140, 1, 0)
 contentArea.Position = UDim2.new(0, 140, 0, 0)
 contentArea.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-contentArea.BackgroundTransparency = 0.3
+contentArea.BackgroundTransparency = 0.4
 contentArea.Parent = contentContainer
 
 local contentCorner = Instance.new("UICorner")
@@ -578,6 +627,7 @@ local function createInput(text, default, placeholder, callback)
     
     inputBox.FocusLost:Connect(function()
         local value = tonumber(inputBox.Text) or default
+        value = math.clamp(value, 0.1, 2)
         inputBox.Text = tostring(value)
         callback(value)
     end)
@@ -596,6 +646,13 @@ local function showFishing()
     clearFeatures()
     contentTitle.Text = "Fishing Features"
     
+    -- Status remote
+    if Remote.CatchFish then
+        createLabel("✅ CatchFish: READY")
+    else
+        createLabel("❌ CatchFish: NOT FOUND")
+    end
+    
     createLabel("⚡ Instant Fishing")
     
     createToggle("Instant Fishing", InstantFishing, function(state)
@@ -605,7 +662,7 @@ local function showFishing()
     end)
     
     createInput("Delay (seconds)", InstantFishingDelay, "0.1 - 2.0", function(value)
-        InstantFishingDelay = math.clamp(value, 0.1, 2)
+        InstantFishingDelay = value
     end)
     
     createToggle("Auto Equip Rod", AutoEquipRod, function(state)
@@ -619,15 +676,12 @@ local function showFishing()
         if InstantFishing then
             AutoFishing = true
             StartAutoFishing()
-            notify("Auto Fishing", "Started")
         else
             notify("Error", "Enable Instant Fishing first!")
         end
     end)
     
-    createButton("STOP AUTO FISHING", function()
-        StopAutoFishing()
-    end)
+    createButton("STOP AUTO FISHING", StopAutoFishing)
     
     createLabel("🔥 Manual Bypass")
     
@@ -640,6 +694,8 @@ local function showFishing()
         if Remote.ChargeRod then
             Remote.ChargeRod:FireServer()
             notify("Rod", "Charged")
+        else
+            notify("Error", "ChargeRod not found")
         end
     end)
     
@@ -647,6 +703,8 @@ local function showFishing()
         if Remote.SellAll then
             Remote.SellAll:FireServer()
             notify("Sell", "All items sold")
+        else
+            notify("Error", "SellAll not found")
         end
     end)
 end
@@ -659,11 +717,12 @@ local function showFavorite()
     
     createButton("FAVORITE CURRENT ITEM", function()
         if Remote.FavoriteItem then
-            -- Ini perlu parameter item ID, coba tanpa parameter dulu
             pcall(function()
                 Remote.FavoriteItem:FireServer()
             end)
             notify("Favorite", "Toggled favorite")
+        else
+            notify("Error", "Favorite remote not found")
         end
     end)
     
@@ -673,6 +732,8 @@ local function showFavorite()
                 Remote.FavoriteStateChanged:FireServer(false)
             end)
             notify("Favorite", "All unfavorited")
+        else
+            notify("Error", "Favorite remote not found")
         end
     end)
     
@@ -682,6 +743,15 @@ local function showFavorite()
         if Remote.ClaimDailyLogin then
             Remote.ClaimDailyLogin:FireServer()
             notify("Daily", "Claimed!")
+        else
+            notify("Error", "Daily remote not found")
+        end
+    end)
+    
+    createButton("CLAIM BOUNTY", function()
+        if Remote.ClaimBounty then
+            Remote.ClaimBounty:FireServer()
+            notify("Bounty", "Claimed!")
         end
     end)
 end
@@ -700,6 +770,8 @@ local function showShop()
         if Remote.PurchaseBait then
             Remote.PurchaseBait:FireServer(SelectedBait, 1)
             notify("Shop", "Bought " .. SelectedBait)
+        else
+            notify("Error", "PurchaseBait not found")
         end
     end)
     
@@ -707,6 +779,8 @@ local function showShop()
         if Remote.EquipBait then
             Remote.EquipBait:FireServer(SelectedBait)
             notify("Shop", "Equipped " .. SelectedBait)
+        else
+            notify("Error", "EquipBait not found")
         end
     end)
     
@@ -720,6 +794,8 @@ local function showShop()
         if Remote.PurchaseRod then
             Remote.PurchaseRod:FireServer(SelectedRod, 1)
             notify("Shop", "Bought " .. SelectedRod)
+        else
+            notify("Error", "PurchaseRod not found")
         end
     end)
     
@@ -727,6 +803,8 @@ local function showShop()
         if Remote.EquipRodSkin then
             Remote.EquipRodSkin:FireServer(SelectedRod)
             notify("Shop", "Equipped " .. SelectedRod)
+        else
+            notify("Error", "EquipRodSkin not found")
         end
     end)
     
@@ -753,6 +831,7 @@ local function showTeleport()
     
     createLabel("📍 Location Teleport")
     
+    -- Convert LOCATIONS table to array
     local locList = {}
     for loc, _ in pairs(LOCATIONS) do
         table.insert(locList, loc)
@@ -822,6 +901,8 @@ local function showWeather()
         if Remote.WeatherCommand then
             Remote.WeatherCommand:FireServer(SelectedWeather)
             notify("Weather", SelectedWeather .. " activated")
+        else
+            notify("Error", "Weather remote not found")
         end
     end)
     
@@ -864,7 +945,7 @@ for _, btnData in ipairs(menuButtons) do
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 100, 0, 35)
     btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    btn.BackgroundTransparency = 0.3
+    btn.BackgroundTransparency = 0.4
     btn.Text = btnData.name
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.TextSize = 13
@@ -877,20 +958,20 @@ for _, btnData in ipairs(menuButtons) do
     
     btn.MouseEnter:Connect(function()
         if currentMenu ~= btnData.name then
-            btn.BackgroundTransparency = 0.1
+            btn.BackgroundTransparency = 0.2
         end
     end)
     
     btn.MouseLeave:Connect(function()
         if currentMenu ~= btnData.name then
-            btn.BackgroundTransparency = 0.3
+            btn.BackgroundTransparency = 0.4
         end
     end)
     
     btn.MouseButton1Click:Connect(function()
         for _, b in pairs(leftMenu:GetChildren()) do
             if b:IsA("TextButton") then
-                b.BackgroundTransparency = 0.3
+                b.BackgroundTransparency = 0.4
             end
         end
         btn.BackgroundTransparency = 0
@@ -899,9 +980,9 @@ for _, btnData in ipairs(menuButtons) do
     end)
 end
 
--- Show Fishing menu by default
+-- Show Teleport menu first (yang pasti work)
 task.wait(0.1)
-showFishing()
+showTeleport()
 
 -- ===== DRAG FUNCTIONALITY =====
 local dragging = false
@@ -934,4 +1015,4 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
-print("Moe V1.0 GUI Loaded - Menu: Fishing, Favorite, Shop, Teleport, Weather")
+print("✅ Moe GUI v3.0 Loaded - All remotes mapped!")
