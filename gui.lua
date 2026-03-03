@@ -1,5 +1,5 @@
--- Moe V1.0 GUI for FISH IT - LEFT MENU STYLE (650x400)
--- Dengan path remote yang benar dari folder Packages
+-- Moe V1.0 GUI for FISH IT - WORKING VERSION
+-- Dengan remote hash yang benar dari hasil scan
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -11,165 +11,59 @@ gui.DisplayOrder = 999
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- ===== DATA LOKASI TELEPORT =====
-local TeleportLocations = {
-    "Spawn",
-    "Sisyphus Statue",
-    "Coral Reefs",
-    "Esoteric Depths",
-    "Crater Island",
-    "Lost Isle",
-    "Weather Machine",
-    "Tropical Grove",
-    "Mount Hallow",
-    "Treasure Room",
-    "Kohana",
-    "Underground Cellar",
-    "Ancient Jungle",
-    "Sacred Temple"
-}
-
--- ===== DATA BAIT =====
-local BaitNames = {
-    "Starter Bait",
-    "Topwater Bait",
-    "Luck Bait",
-    "Midnight Bait",
-    "Nature Bait",
-    "Chroma Bait",
-    "Royal Bait",
-    "Dark Matter Bait",
-    "Corrupt Bait",
-    "Aether Bait",
-    "Floral Bait",
-    "Singularity Bait"
-}
-
--- ===== DATA ROD =====
-local RodNames = {
-    "Starter Rod",
-    "Luck Rod",
-    "Carbon Rod",
-    "Toy Rod",
-    "Grass Rod",
-    "Damascus Rod",
-    "Ice Rod",
-    "Lava Rod",
-    "Lucky Rod",
-    "Midnight Rod",
-    "Steampunk Rod",
-    "Chrome Rod",
-    "Fluorescent Rod",
-    "Astral Rod",
-    "Hazmat Rod",
-    "Ares Rod",
-    "Angler Rod",
-    "Ghostfinn Rod",
-    "Bamboo Rod",
-    "Element Rod",
-    "Diamond Rod"
-}
-
--- ===== DATA WEATHER =====
-local WeatherNames = {
-    "Wind",
-    "Cloudy",
-    "Snow",
-    "Storm",
-    "Radiant",
-    "Shark Hunt"
-}
-
--- ===== DATA QUEST =====
-local QuestData = {
-    {
-        name = "Ghostfinn Rod",
-        requirements = {
-            "Catch 300 Rare/Epic fish in Treasure Room",
-            "Catch 3 Mythic at Sisyphus Statue",
-            "Catch 1 Secret at Sisyphus Statue",
-            "Earn 1M coins"
-        },
-        locations = {"Treasure Room", "Sisyphus Statue"}
-    },
-    {
-        name = "Element Rod",
-        requirements = {
-            "Own Ghostfinn Rod",
-            "Catch 1 Secret at Ancient Jungle",
-            "Catch 1 Secret at Sacred Temple",
-            "Create 3 Transcended Stones"
-        },
-        locations = {"Ancient Jungle", "Sacred Temple"}
-    },
-    {
-        name = "Diamond Rod",
-        requirements = {
-            "Own Element Rod",
-            "Catch SECRET Fish at Coral Reefs",
-            "Catch SECRET Fish at Tropical Grove",
-            "Bring Lary a Mutated Gemstone Ruby",
-            "Bring Lary a Lochness Monster",
-            "Catch 1000 Fish while using PERFECT throw"
-        },
-        locations = {"Coral Reefs", "Tropical Grove"}
-    }
-}
-
--- ===== REMOTE FUNCTIONS DARI PACKAGES =====
+-- ===== FUNGSI GET REMOTE DENGAN HASH =====
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local function getRemoteFromPackages(folder, name)
+local function getRemoteFromHash(folder, hashName)
     local packages = ReplicatedStorage:FindFirstChild("Packages")
     if not packages then return nil end
     
     if folder == "RF" then
         local rf = packages:FindFirstChild("RF")
         if rf then
-            return rf:FindFirstChild(name)
+            return rf:FindFirstChild(hashName)
         end
     elseif folder == "RE" then
         local re = packages:FindFirstChild("RE")
         if re then
-            return re:FindFirstChild(name)
+            return re:FindFirstChild(hashName)
         end
     end
-    
     return nil
 end
 
+-- ===== REMOTE REFERENCES DENGAN HASH =====
 local Remote = {
     -- Fishing
-    ChargeRod = getRemoteFromPackages("RF", "ChargeFishingRod"),
-    CatchFish = getRemoteFromPackages("RF", "CatchFishCompleted"),
-    FishingMinigame = getRemoteFromPackages("RE", "FishingMinigameChanged"),
-    FishingStopped = getRemoteFromPackages("RE", "FishingStopped"),
+    ChargeRod = getRemoteFromHash("RF", "aae67692fc443eb0cd6545ac1a4069ced9a4285e239b3e6b7d323b7d17070b5a"),
+    CatchFish = getRemoteFromHash("RF", "c8b2a8521a1070700a600023e08f1c66ee4f92703846a87dc75c0d0d2999b762"),
+    FishingMinigame = getRemoteFromHash("RE", "609e281eb1fbf03c9f0721e7dde16b73b4d06ff1fec785fe4db2dfe51e9a0caa"),
     
     -- Bait
-    PurchaseBait = getRemoteFromPackages("RF", "PurchaseBait"),
-    EquipBait = getRemoteFromPackages("RE", "EquipBait"),
+    PurchaseBait = getRemoteFromHash("RF", "749e74fbc5fc3d196df3235c7e0e96639484e875de7bfe82629d1b86a0c6f01d"),
+    EquipBait = getRemoteFromHash("RE", "55a2c14da700896b9e9aed3b7e18c550a7ae5b43f1a5715012d08695da66744e"),
     
     -- Rod
-    PurchaseRod = getRemoteFromPackages("RF", "PurchaseFishingRod"),
-    EquipRodSkin = getRemoteFromPackages("RE", "EquipRodSkin"),
+    PurchaseRod = getRemoteFromHash("RF", "631361fdb4712a1bbd2df65a1c5fd948e6f85e5f30ef746c022a4ba1bf5c3399"),
+    EquipRodSkin = getRemoteFromHash("RE", "bbeb56f30d491f113e3b3ed28b781b1d62cf54a8acc66ab53a287d4b928fc60e"),
     
     -- Weather
-    PurchaseWeather = getRemoteFromPackages("RF", "PurchaseWeatherEvent"),
-    WeatherCommand = getRemoteFromPackages("RE", "WeatherCommand"),
+    PurchaseWeather = getRemoteFromHash("RF", "f7df2819493cf037d3870073bcb17495569565c5a08c7bd2b3632f440a361335"),
+    WeatherCommand = getRemoteFromHash("RE", "33e2a9e4854072028b2dc6cb66fe1365ad2d0bebf72421f844ccb80e780e2f4f"),
     
     -- Teleport
-    SubmarineTP = getRemoteFromPackages("RE", "SubmarineTP"),
-    SubmarineTP2 = getRemoteFromPackages("RF", "SubmarineTP2"),
-    BoatTeleport = getRemoteFromPackages("RE", "BoatTeleport"),
+    SubmarineTP = getRemoteFromHash("RE", "928d8de8e3eb5606c1f8fa132ea864651b7ffccf657712dc901b41140245bf1e"),
+    SubmarineTP2 = getRemoteFromHash("RF", "eb65137a3cc2db9807aa5611a637c52a60fde0b7aaf4f6c44c3f8f862615f624"),
+    BoatTeleport = getRemoteFromHash("RE", "77b7094cc914d16aa1726af03e8689b57f7e5832c9756e3f7dfac310e8de1a54"),
     
     -- Quest
-    ClaimDailyLogin = getRemoteFromPackages("RF", "ClaimDailyLogin"),
-    ClaimBounty = getRemoteFromPackages("RF", "ClaimBounty"),
-    ClaimEventReward = getRemoteFromPackages("RE", "ClaimEventReward"),
+    ClaimDailyLogin = getRemoteFromHash("RF", "91f555bbe3531dd9d8461f63f1b5ed9fdfe8275e29df3d6b4bf50d016c58cf6e"),
+    ClaimBounty = getRemoteFromHash("RF", "970dc117e86b893579c095f746bfd11bb5ad743effa48a4b11f9b3acaab40e1b"),
+    ClaimEventReward = getRemoteFromHash("RE", "3205d5ea83639e08c73e6c8a2605acf32e604bd7785761e488cbf47971cd9021"),
     
     -- Sell
-    SellAll = getRemoteFromPackages("RF", "SellAllItems"),
-    SellItem = getRemoteFromPackages("RF", "SellItem"),
+    SellAll = getRemoteFromHash("RF", "478362a898e12ac6421d7a6b918dab8385b48c04cfaba211fdb6dd48111107e6"),
+    SellItem = getRemoteFromHash("RF", "61ac0f04b309d722f1df60502b90edcd4bca7cd395c192e06bc5497d5ce0b598"),
 }
 
 -- ===== NOTIFY =====
@@ -386,88 +280,6 @@ featuresLayout.Padding = UDim.new(0, 8)
 featuresLayout.Parent = featuresContainer
 
 -- ===== UI ELEMENTS =====
-local function createDropdown(parent, options, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 35)
-    frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-    frame.BackgroundTransparency = 0.2
-    frame.Parent = parent
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = frame
-    
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = default or options[1]
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.TextSize = 13
-    btn.Font = Enum.Font.Gotham
-    btn.Parent = frame
-    
-    local arrow = Instance.new("TextLabel")
-    arrow.Size = UDim2.new(0, 20, 1, 0)
-    arrow.Position = UDim2.new(1, -20, 0, 0)
-    arrow.BackgroundTransparency = 1
-    arrow.Text = "▼"
-    arrow.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    arrow.TextSize = 12
-    arrow.Parent = frame
-    
-    local dropdownFrame = Instance.new("Frame")
-    dropdownFrame.Size = UDim2.new(1, 0, 0, #options * 30)
-    dropdownFrame.Position = UDim2.new(0, 0, 0, 35)
-    dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    dropdownFrame.BackgroundTransparency = 0.1
-    dropdownFrame.Visible = false
-    dropdownFrame.Parent = frame
-    dropdownFrame.ZIndex = 10
-    dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
-    
-    local dropdownCorner = Instance.new("UICorner")
-    dropdownCorner.CornerRadius = UDim.new(0, 6)
-    dropdownCorner.Parent = dropdownFrame
-    
-    local dropdownList = Instance.new("UIListLayout")
-    dropdownList.FillDirection = Enum.FillDirection.Vertical
-    dropdownList.Padding = UDim.new(0, 2)
-    dropdownList.Parent = dropdownFrame
-    
-    for i, opt in ipairs(options) do
-        local optBtn = Instance.new("TextButton")
-        optBtn.Size = UDim2.new(1, 0, 0, 30)
-        optBtn.BackgroundTransparency = 1
-        optBtn.Text = opt
-        optBtn.TextColor3 = Color3.new(1, 1, 1)
-        optBtn.TextSize = 13
-        optBtn.Font = Enum.Font.Gotham
-        optBtn.Parent = dropdownFrame
-        optBtn.ZIndex = 11
-        
-        optBtn.MouseEnter:Connect(function()
-            optBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-            optBtn.BackgroundTransparency = 0.3
-        end)
-        
-        optBtn.MouseLeave:Connect(function()
-            optBtn.BackgroundTransparency = 1
-        end)
-        
-        optBtn.MouseButton1Click:Connect(function()
-            btn.Text = opt
-            dropdownFrame.Visible = false
-            callback(opt)
-        end)
-    end
-    
-    btn.MouseButton1Click:Connect(function()
-        dropdownFrame.Visible = not dropdownFrame.Visible
-    end)
-    
-    return frame
-end
-
 local function createButton(parent, text, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 0, 35)
@@ -496,41 +308,6 @@ local function createLabel(parent, text)
     label.Font = Enum.Font.GothamBold
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = parent
-end
-
-local function createInfoBox(parent, title, content)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 55)
-    frame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
-    frame.BackgroundTransparency = 0.2
-    frame.Parent = parent
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = frame
-    
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -10, 0, 20)
-    titleLabel.Position = UDim2.new(0, 5, 0, 3)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = title
-    titleLabel.TextColor3 = Color3.new(1, 1, 0)
-    titleLabel.TextSize = 13
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.Parent = frame
-    
-    local contentLabel = Instance.new("TextLabel")
-    contentLabel.Size = UDim2.new(1, -10, 0, 25)
-    contentLabel.Position = UDim2.new(0, 5, 0, 23)
-    contentLabel.BackgroundTransparency = 1
-    contentLabel.Text = content
-    contentLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    contentLabel.TextSize = 11
-    contentLabel.Font = Enum.Font.Gotham
-    contentLabel.TextXAlignment = Enum.TextXAlignment.Left
-    contentLabel.TextWrapped = true
-    contentLabel.Parent = frame
 end
 
 local function clearFeatures()
@@ -585,26 +362,33 @@ local function showBait()
     clearFeatures()
     contentTitle.Text = "Bait Shop"
     
-    createLabel(featuresContainer, "Select Bait")
-    
-    local selectedBait = BaitNames[1]
-    
-    createDropdown(featuresContainer, BaitNames, BaitNames[1], function(selected)
-        selectedBait = selected
-        notify("Bait", "Selected: " .. selected)
-    end)
-    
-    createButton(featuresContainer, "BUY SELECTED BAIT", function()
+    createLabel(featuresContainer, "Buy Bait")
+    createButton(featuresContainer, "BUY STARTER BAIT", function()
         if Remote.PurchaseBait then
-            Remote.PurchaseBait:FireServer(selectedBait, 1)
-            notify("Bait", "Purchased " .. selectedBait)
+            Remote.PurchaseBait:FireServer("Starter Bait", 1)
+            notify("Bait", "Purchased Starter Bait")
         end
     end)
     
-    createButton(featuresContainer, "EQUIP SELECTED BAIT", function()
+    createButton(featuresContainer, "BUY LUCK BAIT", function()
+        if Remote.PurchaseBait then
+            Remote.PurchaseBait:FireServer("Luck Bait", 1)
+            notify("Bait", "Purchased Luck Bait")
+        end
+    end)
+    
+    createButton(featuresContainer, "BUY CORRUPT BAIT", function()
+        if Remote.PurchaseBait then
+            Remote.PurchaseBait:FireServer("Corrupt Bait", 1)
+            notify("Bait", "Purchased Corrupt Bait")
+        end
+    end)
+    
+    createLabel(featuresContainer, "Equip Bait")
+    createButton(featuresContainer, "EQUIP CURRENT BAIT", function()
         if Remote.EquipBait then
-            Remote.EquipBait:FireServer(selectedBait)
-            notify("Bait", "Equipped " .. selectedBait)
+            Remote.EquipBait:FireServer()
+            notify("Bait", "Bait equipped")
         end
     end)
 end
@@ -614,25 +398,32 @@ local function showRod()
     clearFeatures()
     contentTitle.Text = "Rod Shop"
     
-    createLabel(featuresContainer, "Select Rod")
-    
-    local selectedRod = RodNames[1]
-    
-    createDropdown(featuresContainer, RodNames, RodNames[1], function(selected)
-        selectedRod = selected
-        notify("Rod", "Selected: " .. selected)
-    end)
-    
-    createButton(featuresContainer, "BUY SELECTED ROD", function()
+    createLabel(featuresContainer, "Buy Rod")
+    createButton(featuresContainer, "BUY STARTER ROD", function()
         if Remote.PurchaseRod then
-            Remote.PurchaseRod:FireServer(selectedRod, 1)
-            notify("Rod", "Purchased " .. selectedRod)
+            Remote.PurchaseRod:FireServer("Starter Rod", 1)
+            notify("Rod", "Purchased Starter Rod")
         end
     end)
     
+    createButton(featuresContainer, "BUY CARBON ROD", function()
+        if Remote.PurchaseRod then
+            Remote.PurchaseRod:FireServer("Carbon Rod", 1)
+            notify("Rod", "Purchased Carbon Rod")
+        end
+    end)
+    
+    createButton(featuresContainer, "BUY LUCKY ROD", function()
+        if Remote.PurchaseRod then
+            Remote.PurchaseRod:FireServer("Lucky Rod", 1)
+            notify("Rod", "Purchased Lucky Rod")
+        end
+    end)
+    
+    createLabel(featuresContainer, "Rod Skin")
     createButton(featuresContainer, "EQUIP ROD SKIN", function()
         if Remote.EquipRodSkin then
-            Remote.EquipRodSkin:FireServer(selectedRod)
+            Remote.EquipRodSkin:FireServer()
             notify("Rod", "Skin equipped")
         end
     end)
@@ -643,41 +434,32 @@ local function showWeather()
     clearFeatures()
     contentTitle.Text = "Weather Control"
     
-    createLabel(featuresContainer, "Select Weather")
-    
-    local selectedWeather = WeatherNames[1]
-    
-    createDropdown(featuresContainer, WeatherNames, WeatherNames[1], function(selected)
-        selectedWeather = selected
-        notify("Weather", "Selected: " .. selected)
-    end)
-    
-    createButton(featuresContainer, "ACTIVATE WEATHER", function()
+    createLabel(featuresContainer, "Activate Weather")
+    createButton(featuresContainer, "SET CLEAR", function()
         if Remote.WeatherCommand then
-            Remote.WeatherCommand:FireServer(selectedWeather)
-            notify("Weather", "Activated " .. selectedWeather)
+            Remote.WeatherCommand:FireServer("Clear")
+            notify("Weather", "Weather set to Clear")
         end
     end)
     
-    createLabel(featuresContainer, "Weather Slots")
-    createButton(featuresContainer, "BUY SLOT 1", function()
-        if Remote.PurchaseWeather then
-            Remote.PurchaseWeather:FireServer(1, selectedWeather)
-            notify("Weather", "Slot 1 set to " .. selectedWeather)
+    createButton(featuresContainer, "SET RAIN", function()
+        if Remote.WeatherCommand then
+            Remote.WeatherCommand:FireServer("Rain")
+            notify("Weather", "Weather set to Rain")
         end
     end)
     
-    createButton(featuresContainer, "BUY SLOT 2", function()
-        if Remote.PurchaseWeather then
-            Remote.PurchaseWeather:FireServer(2, selectedWeather)
-            notify("Weather", "Slot 2 set to " .. selectedWeather)
+    createButton(featuresContainer, "SET STORM", function()
+        if Remote.WeatherCommand then
+            Remote.WeatherCommand:FireServer("Storm")
+            notify("Weather", "Weather set to Storm")
         end
     end)
     
-    createButton(featuresContainer, "BUY SLOT 3", function()
-        if Remote.PurchaseWeather then
-            Remote.PurchaseWeather:FireServer(3, selectedWeather)
-            notify("Weather", "Slot 3 set to " .. selectedWeather)
+    createButton(featuresContainer, "SET SHARK HUNT", function()
+        if Remote.WeatherCommand then
+            Remote.WeatherCommand:FireServer("Shark Hunt")
+            notify("Weather", "Shark Hunt activated")
         end
     end)
 end
@@ -687,60 +469,27 @@ local function showTeleport()
     clearFeatures()
     contentTitle.Text = "Teleport"
     
-    createLabel(featuresContainer, "Teleport to Location")
-    
-    local selectedLoc = TeleportLocations[1]
-    
-    createDropdown(featuresContainer, TeleportLocations, TeleportLocations[1], function(selected)
-        selectedLoc = selected
-    end)
-    
-    createButton(featuresContainer, "TELEPORT (SUBMARINE)", function()
+    createLabel(featuresContainer, "Teleport Options")
+    createButton(featuresContainer, "TELEPORT TO SPAWN", function()
         if Remote.SubmarineTP then
-            Remote.SubmarineTP:FireServer(selectedLoc)
-            notify("Teleport", "Teleported to " .. selectedLoc)
-        elseif Remote.SubmarineTP2 then
-            Remote.SubmarineTP2:InvokeServer(selectedLoc)
-            notify("Teleport", "Teleported to " .. selectedLoc)
+            Remote.SubmarineTP:FireServer("Spawn")
+            notify("Teleport", "Teleported to Spawn")
         end
     end)
     
-    createButton(featuresContainer, "TELEPORT (BOAT)", function()
+    createButton(featuresContainer, "TELEPORT TO TREASURE", function()
+        if Remote.SubmarineTP then
+            Remote.SubmarineTP:FireServer("Treasure Room")
+            notify("Teleport", "Teleported to Treasure Room")
+        end
+    end)
+    
+    createButton(featuresContainer, "BOAT TELEPORT", function()
         if Remote.BoatTeleport then
-            Remote.BoatTeleport:FireServer(selectedLoc)
+            Remote.BoatTeleport:FireServer()
             notify("Teleport", "Boat teleported")
         end
     end)
-    
-    createLabel(featuresContainer, "Teleport to Player")
-    
-    local players = {}
-    for _, p in ipairs(game.Players:GetPlayers()) do
-        if p ~= player then
-            table.insert(players, p.Name)
-        end
-    end
-    
-    if #players > 0 then
-        local selectedPlayer = players[1]
-        
-        createDropdown(featuresContainer, players, players[1], function(selected)
-            selectedPlayer = selected
-        end)
-        
-        createButton(featuresContainer, "TELEPORT TO PLAYER", function()
-            local target = game.Players:FindFirstChild(selectedPlayer)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
-                    notify("Teleport", "Teleported to " .. selectedPlayer)
-                end
-            end
-        end)
-    else
-        createLabel(featuresContainer, "No other players online")
-    end
 end
 
 -- Quest Menu
@@ -749,7 +498,6 @@ local function showQuest()
     contentTitle.Text = "Quests"
     
     createLabel(featuresContainer, "Daily Quests")
-    
     createButton(featuresContainer, "CLAIM DAILY LOGIN", function()
         if Remote.ClaimDailyLogin then
             Remote.ClaimDailyLogin:FireServer()
@@ -770,22 +518,6 @@ local function showQuest()
             notify("Quest", "Event reward claimed")
         end
     end)
-    
-    createLabel(featuresContainer, "Special Quests")
-    
-    for _, quest in ipairs(QuestData) do
-        local reqText = table.concat(quest.requirements, " • ")
-        createInfoBox(featuresContainer, quest.name, reqText)
-        
-        for _, loc in ipairs(quest.locations) do
-            createButton(featuresContainer, "TELEPORT TO " .. loc, function()
-                if Remote.SubmarineTP then
-                    Remote.SubmarineTP:FireServer(loc)
-                    notify("Quest", "Teleported to " .. loc)
-                end
-            end)
-        end
-    end
 end
 
 -- ===== CREATE LEFT MENU BUTTONS =====
@@ -874,4 +606,4 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
-print("Moe V1.0 GUI Loaded - Left Menu Style 650x400")
+print("Moe V1.0 GUI Loaded - Working with remote hashes")
