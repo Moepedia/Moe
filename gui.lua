@@ -1,5 +1,5 @@
--- Moe V1.0 GUI for FISH IT - Dengan Fungsi dari Auto Fish V4.0
--- Desain menu kiri seperti sebelumnya, fungsi fishing dari script yang bekerja
+-- Moe V1.0 GUI for FISH IT - SAFE VERSION
+-- Versi aman, tidak agresif, anti-cheat friendly
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -13,13 +13,11 @@ gui.Parent = player:WaitForChild("PlayerGui")
 
 -- ===== SERVICES =====
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local HttpService = game:GetService("HttpService")
 local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 
--- ===== ANTI-AFK =====
+-- ===== ANTI-AFK (AMAN) =====
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
@@ -46,13 +44,11 @@ local TeleportLocations = {
 -- ===== SETTINGS =====
 local Settings = {
     AutoFish = false,
-    BlatantMode = false,
-    AutoCatch = false,
     AutoSell = false,
     AutoFavorite = false,
-    FishDelay = 0.9,
-    CatchDelay = 0.2,
-    SellDelay = 30
+    FishDelay = 2.5,  -- Lebih lambat biar aman
+    SellDelay = 45,
+    BlatantMode = false  -- Nonaktifkan blatant mode karena berbahaya
 }
 
 -- ===== FUNGSI UTILITY =====
@@ -73,234 +69,122 @@ local function protectedCall(func, ...)
     return result
 end
 
--- ===== NETWORK EVENTS (DARI AUTO FISH V4.0) =====
-local net = ReplicatedStorage:FindFirstChild("Packages") 
-    and ReplicatedStorage.Packages:FindFirstChild("_Index")
-    and ReplicatedStorage.Packages._Index:FindFirstChild("sleitnick_net@0.2.0")
-    and ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
-
-local Events = {}
-
-if net then
-    Events = {
-        fishing = net:FindFirstChild("RE/FishingCompleted"),
-        sell = net:FindFirstChild("RF/SellAllItems"),
-        charge = net:FindFirstChild("RF/ChargeFishingRod"),
-        minigame = net:FindFirstChild("RF/RequestFishingMinigameStarted"),
-        cancel = net:FindFirstChild("RF/CancelFishingInputs"),
-        equip = net:FindFirstChild("RE/EquipToolFromHotbar"),
-        unequip = net:FindFirstChild("RE/UnequipToolFromHotbar"),
-        favorite = net:FindFirstChild("RE/FavoriteItem")
-    }
-else
-    -- Fallback ke pencarian manual
-    Events = {
-        fishing = ReplicatedStorage:FindFirstChild("RE") and ReplicatedStorage.RE:FindFirstChild("FishingCompleted"),
-        sell = ReplicatedStorage:FindFirstChild("RF") and ReplicatedStorage.RF:FindFirstChild("SellAllItems"),
-        charge = ReplicatedStorage:FindFirstChild("RF") and ReplicatedStorage.RF:FindFirstChild("ChargeFishingRod"),
-        minigame = ReplicatedStorage:FindFirstChild("RF") and ReplicatedStorage.RF:FindFirstChild("RequestFishingMinigameStarted"),
-        equip = ReplicatedStorage:FindFirstChild("RE") and ReplicatedStorage.RE:FindFirstChild("EquipToolFromHotbar"),
-        unequip = ReplicatedStorage:FindFirstChild("RE") and ReplicatedStorage.RE:FindFirstChild("UnequipToolFromHotbar"),
-        favorite = ReplicatedStorage:FindFirstChild("RE") and ReplicatedStorage.RE:FindFirstChild("FavoriteItem")
-    }
+-- ===== REMOTE EVENTS (PENCARIAN AMAN) =====
+local function findRemote(name)
+    -- Cari di ReplicatedStorage
+    local remote = ReplicatedStorage:FindFirstChild(name)
+    if remote then return remote end
+    
+    -- Cari di folder RE
+    local reFolder = ReplicatedStorage:FindFirstChild("RE")
+    if reFolder then
+        remote = reFolder:FindFirstChild(name)
+        if remote then return remote end
+    end
+    
+    -- Cari di folder RF
+    local rfFolder = ReplicatedStorage:FindFirstChild("RF")
+    if rfFolder then
+        remote = rfFolder:FindFirstChild(name)
+        if remote then return remote end
+    end
+    
+    return nil
 end
 
--- ===== STATUS FISHING =====
-local isFishing = false
+local Remote = {
+    StartFishing = findRemote("StartFishing") or findRemote("RF/StartFishing"),
+    CatchFish = findRemote("CatchFishCompleted") or findRemote("RF/CatchFishCompleted"),
+    FishingMinigame = findRemote("FishingMinigameChanged") or findRemote("RE/FishingMinigameChanged"),
+    SellAll = findRemote("SellAllItems") or findRemote("RF/SellAllItems"),
+    Favorite = findRemote("FavoriteItem") or findRemote("RE/FavoriteItem"),
+    PurchaseBait = findRemote("PurchaseBait") or findRemote("RF/PurchaseBait"),
+    PurchaseRod = findRemote("PurchaseFishingRod") or findRemote("RF/PurchaseFishingRod"),
+    WeatherCommand = findRemote("WeatherCommand") or findRemote("RE/WeatherCommand"),
+    PurchaseWeather = findRemote("PurchaseWeatherEvent") or findRemote("RF/PurchaseWeatherEvent")
+}
+
+-- ===== AUTO FISHING (VERSI LEMBUT, ANTI-DETEKSI) =====
 local fishingActive = false
+local lastAction = 0
 
--- ===== FUNGSI FISHING DARI AUTO FISH V4.0 =====
-local function castRod()
-    protectedCall(function()
-        if Events.equip then
-            Events.equip:FireServer(1)
-        end
-        task.wait(0.05)
-        if Events.charge then
-            Events.charge:InvokeServer(1755848498.4834)
-        end
-        task.wait(0.02)
-        if Events.minigame then
-            Events.minigame:InvokeServer(1.2854545116425, 1)
-        end
+local function safeCast()
+    if Remote.StartFishing then
+        Remote.StartFishing:FireServer()
         print("[Fishing] 🎣 Cast")
-    end)
-end
-
-local function reelIn()
-    protectedCall(function()
-        if Events.fishing then
-            Events.fishing:FireServer()
-            print("[Fishing] ✅ Reel")
-        end
-    end)
-end
-
--- BLATANT MODE (dari Auto Fish V4.0)
-local function blatantFishingLoop()
-    while fishingActive and Settings.BlatantMode do
-        if not isFishing then
-            isFishing = true
-            
-            -- Step 1: Rapid fire casts
-            protectedCall(function()
-                if Events.equip then
-                    Events.equip:FireServer(1)
-                end
-                task.wait(0.01)
-                
-                -- Cast 1
-                task.spawn(function()
-                    if Events.charge then
-                        Events.charge:InvokeServer(1755848498.4834)
-                    end
-                    task.wait(0.01)
-                    if Events.minigame then
-                        Events.minigame:InvokeServer(1.2854545116425, 1)
-                    end
-                end)
-                
-                task.wait(0.05)
-                
-                -- Cast 2 (overlapping)
-                task.spawn(function()
-                    if Events.charge then
-                        Events.charge:InvokeServer(1755848498.4834)
-                    end
-                    task.wait(0.01)
-                    if Events.minigame then
-                        Events.minigame:InvokeServer(1.2854545116425, 1)
-                    end
-                end)
-            end)
-            
-            -- Step 2: Wait for fish
-            task.wait(Settings.FishDelay)
-            
-            -- Step 3: Spam reel 5x
-            for i = 1, 5 do
-                protectedCall(function() 
-                    if Events.fishing then
-                        Events.fishing:FireServer()
-                    end
-                end)
-                task.wait(0.01)
-            end
-            
-            -- Step 4: Short cooldown
-            task.wait(Settings.CatchDelay * 0.5)
-            
-            isFishing = false
-            print("[Blatant] ⚡ Fast cycle")
-        else
-            task.wait(0.01)
-        end
     end
 end
 
--- NORMAL MODE
-local function normalFishingLoop()
-    while fishingActive and not Settings.BlatantMode do
-        if not isFishing then
-            isFishing = true
-            
-            castRod()
-            task.wait(Settings.FishDelay)
-            reelIn()
-            task.wait(Settings.CatchDelay)
-            
-            isFishing = false
-        else
-            task.wait(0.1)
-        end
+local function safeCatch()
+    if Remote.CatchFish then
+        Remote.CatchFish:FireServer()
+        print("[Fishing] ✅ Catch")
     end
 end
 
--- Main fishing controller
-local function fishingLoop()
-    while fishingActive do
-        if Settings.BlatantMode then
-            blatantFishingLoop()
-        else
-            normalFishingLoop()
-        end
-        task.wait(0.1)
-    end
-end
-
--- Auto Catch spam
-task.spawn(function()
+-- Loop fishing dengan delay acak biar tidak seperti bot
+spawn(function()
     while true do
-        if Settings.AutoCatch and not isFishing and Events.fishing then
-            protectedCall(function() 
-                Events.fishing:FireServer()
-            end)
+        if Settings.AutoFish then
+            local now = tick()
+            if now - lastAction >= Settings.FishDelay then
+                protectedCall(function()
+                    -- Variasi acar kecil biar tidak terdeteksi
+                    local variation = math.random(80, 120) / 100
+                    
+                    safeCast()
+                    task.wait(0.1 * variation)
+                    
+                    if Remote.FishingMinigame then
+                        Remote.FishingMinigame:FireServer(true)
+                    end
+                    
+                    task.wait(0.2 * variation)
+                    safeCatch()
+                    
+                    lastAction = now
+                end)
+            end
         end
-        task.wait(Settings.CatchDelay)
+        task.wait(0.5)
     end
 end)
 
--- ===== AUTO SELL =====
-local function sellAllItems()
-    print("╔═══════════════════════════════════╗")
-    print("[Auto Sell] 💰 Selling all items...")
-    
-    protectedCall(function()
-        if Events.sell then
-            if Events.sell:IsA("RemoteFunction") then
-                Events.sell:InvokeServer()
-            else
-                Events.sell:FireServer()
-            end
-            print("[Auto Sell] ✅ SOLD!")
+-- ===== AUTO SELL (VERSI LEMBUT) =====
+local function safeSell()
+    if Remote.SellAll then
+        if Remote.SellAll:IsA("RemoteFunction") then
+            Remote.SellAll:InvokeServer()
+        else
+            Remote.SellAll:FireServer()
         end
-    end)
-    
-    print("╚═══════════════════════════════════╝")
+        print("[Sell] 💰 Sold items")
+    end
 end
 
-task.spawn(function()
+spawn(function()
     while true do
         task.wait(Settings.SellDelay)
         if Settings.AutoSell then
-            sellAllItems()
+            protectedCall(safeSell)
         end
     end
 end)
 
--- ===== AUTO FAVORITE =====
-local favoritedItems = {}
-
-local function autoFavorite()
-    if not Settings.AutoFavorite or not Events.favorite then return end
-    
-    protectedCall(function()
-        -- Cari inventory player
-        local playerData = ReplicatedStorage:FindFirstChild("PlayerData")
-        if playerData and playerData:FindFirstChild(LocalPlayer.Name) then
-            local inventory = playerData[LocalPlayer.Name]:FindFirstChild("Inventory")
-            if inventory then
-                for _, item in pairs(inventory:GetChildren()) do
-                    if item:IsA("Folder") and not favoritedItems[item.Name] then
-                        Events.favorite:FireServer(item.Name)
-                        favoritedItems[item.Name] = true
-                        print("[Auto Favorite] ⭐ Favorited item")
-                        task.wait(0.3)
-                    end
-                end
-            end
-        end
-    end)
-end
-
-task.spawn(function()
+-- ===== AUTO FAVORITE (VERSI LEMBUT) =====
+spawn(function()
     while true do
-        task.wait(10)
-        autoFavorite()
+        task.wait(15)
+        if Settings.AutoFavorite and Remote.Favorite then
+            protectedCall(function()
+                Remote.Favorite:FireServer()
+                print("[Favorite] ⭐ Auto favorite")
+            end)
+        end
     end
 end)
 
--- ===== MAIN FRAME (DESAIN SEPERTI SEBELUMNYA) =====
+-- ===== UI DESIGN (TETAP SAMA) =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 850, 0, 550)
@@ -456,7 +340,7 @@ contentContainer.Position = UDim2.new(0, 10, 0, 55)
 contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = mainFrame
 
--- LEFT MENU (desain seperti sebelumnya)
+-- LEFT MENU
 local leftMenu = Instance.new("Frame")
 leftMenu.Size = UDim2.new(0, 140, 1, 0)
 leftMenu.BackgroundTransparency = 1
@@ -750,7 +634,7 @@ local function createDropdown(parent, title, options, current, callback)
     end)
 end
 
--- ===== FUNGSI CLEAR CONTAINER =====
+-- ===== CLEAR CONTAINER =====
 local function clearContainer()
     for _, child in pairs(featuresContainer:GetChildren()) do
         if child:IsA("Frame") then
@@ -766,36 +650,13 @@ local function showFishing()
     clearContainer()
     contentTitle.Text = "⚓ FISHING FEATURES"
     
-    createToggle(featuresContainer, "🤖 Auto Fish", Settings.AutoFish, function(state)
+    createToggle(featuresContainer, "🎣 Auto Fish", Settings.AutoFish, function(state)
         Settings.AutoFish = state
-        fishingActive = state
-        if state then
-            notify("Fishing", "Auto Fish Started")
-            task.spawn(fishingLoop)
-        else
-            notify("Fishing", "Auto Fish Stopped")
-            if Events.unequip then
-                Events.unequip:FireServer()
-            end
-        end
-    end)
-    
-    createToggle(featuresContainer, "⚡ Blatant Mode", Settings.BlatantMode, function(state)
-        Settings.BlatantMode = state
-        notify("Fishing", "Blatant Mode "..(state and "ON - 3x Faster!" or "OFF"))
-    end)
-    
-    createToggle(featuresContainer, "🎯 Auto Catch", Settings.AutoCatch, function(state)
-        Settings.AutoCatch = state
-        notify("Fishing", "Auto Catch "..(state and "ON" or "OFF"))
+        notify("Fishing", "Auto Fish "..(state and "ON" or "OFF"))
     end)
     
     createInput(featuresContainer, "Fish Delay (s)", Settings.FishDelay, function(val)
         Settings.FishDelay = val
-    end)
-    
-    createInput(featuresContainer, "Catch Delay (s)", Settings.CatchDelay, function(val)
-        Settings.CatchDelay = val
     end)
     
     createSeparator(featuresContainer, "AUTO SELL")
@@ -810,7 +671,7 @@ local function showFishing()
     end)
     
     createButton(featuresContainer, "💰 SELL NOW", function()
-        sellAllItems()
+        safeSell()
         notify("Fishing", "Sold all items!")
     end)
 end
@@ -826,8 +687,10 @@ local function showFavorite()
     end)
     
     createButton(featuresContainer, "⭐ Favorite Now", function()
-        autoFavorite()
-        notify("Favorite", "Favoriting items...")
+        if Remote.Favorite then
+            Remote.Favorite:FireServer()
+            notify("Favorite", "Favorited item")
+        end
     end)
 end
 
@@ -837,30 +700,24 @@ local function showShop()
     contentTitle.Text = "🛒 SHOP FEATURES"
     
     createButton(featuresContainer, "🎣 Buy Bait (10x)", function()
-        local purchaseBait = ReplicatedStorage:FindFirstChild("RF") and ReplicatedStorage.RF:FindFirstChild("PurchaseBait")
-        if purchaseBait then
-            if purchaseBait:IsA("RemoteFunction") then
-                purchaseBait:InvokeServer(10)
+        if Remote.PurchaseBait then
+            if Remote.PurchaseBait:IsA("RemoteFunction") then
+                Remote.PurchaseBait:InvokeServer(10)
             else
-                purchaseBait:FireServer(10)
+                Remote.PurchaseBait:FireServer(10)
             end
             notify("Shop", "Bought 10 Bait")
-        else
-            notify("Shop", "Purchase remote not found")
         end
     end)
     
     createButton(featuresContainer, "🎣 Buy Fishing Rod", function()
-        local purchaseRod = ReplicatedStorage:FindFirstChild("RF") and ReplicatedStorage.RF:FindFirstChild("PurchaseFishingRod")
-        if purchaseRod then
-            if purchaseRod:IsA("RemoteFunction") then
-                purchaseRod:InvokeServer()
+        if Remote.PurchaseRod then
+            if Remote.PurchaseRod:IsA("RemoteFunction") then
+                Remote.PurchaseRod:InvokeServer()
             else
-                purchaseRod:FireServer()
+                Remote.PurchaseRod:FireServer()
             end
             notify("Shop", "Bought Fishing Rod")
-        else
-            notify("Shop", "Purchase remote not found")
         end
     end)
 end
@@ -923,56 +780,29 @@ local function showWeather()
     local weathers = {"Clear", "Rain", "Storm", "Fog"}
     
     createDropdown(featuresContainer, "☀️ Change Weather", weathers, "Clear", function(selected)
-        local weatherCmd = ReplicatedStorage:FindFirstChild("RE") and ReplicatedStorage.RE:FindFirstChild("WeatherCommand")
-        if weatherCmd then
-            weatherCmd:FireServer(selected)
+        if Remote.WeatherCommand then
+            Remote.WeatherCommand:FireServer(selected)
             notify("Weather", "Weather changed to "..selected)
-        else
-            local lighting = game:GetService("Lighting")
-            if selected == "Clear" then
-                lighting.ClockTime = 12
-                lighting.Brightness = 1
-            elseif selected == "Rain" then
-                lighting.ClockTime = 14
-                lighting.Brightness = 0.7
-            elseif selected == "Storm" then
-                lighting.ClockTime = 18
-                lighting.Brightness = 0.4
-            elseif selected == "Fog" then
-                lighting.FogEnd = 50
-            end
-            notify("Weather", "Weather changed to "..selected.." (local)")
         end
     end)
     
-    createSeparator(featuresContainer, "WEATHER SLOTS")
-    
-    local purchaseWeather = ReplicatedStorage:FindFirstChild("RF") and ReplicatedStorage.RF:FindFirstChild("PurchaseWeatherEvent")
-    
-    if purchaseWeather then
+    if Remote.PurchaseWeather then
+        createSeparator(featuresContainer, "WEATHER SLOTS")
+        
         createDropdown(featuresContainer, "Slot 1", weathers, "Clear", function(selected)
-            purchaseWeather:FireServer(1, selected)
+            Remote.PurchaseWeather:FireServer(1, selected)
             notify("Weather", "Slot 1 set to "..selected)
         end)
         
         createDropdown(featuresContainer, "Slot 2", weathers, "Rain", function(selected)
-            purchaseWeather:FireServer(2, selected)
+            Remote.PurchaseWeather:FireServer(2, selected)
             notify("Weather", "Slot 2 set to "..selected)
         end)
         
         createDropdown(featuresContainer, "Slot 3", weathers, "Storm", function(selected)
-            purchaseWeather:FireServer(3, selected)
+            Remote.PurchaseWeather:FireServer(3, selected)
             notify("Weather", "Slot 3 set to "..selected)
         end)
-    else
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 0, 40)
-        label.BackgroundTransparency = 1
-        label.Text = "Weather slots tidak tersedia"
-        label.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-        label.Font = Enum.Font.Gotham
-        label.TextSize = 14
-        label.Parent = featuresContainer
     end
 end
 
@@ -1060,9 +890,6 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
     if input == dragInput and dragging then update(input) end
 end)
 
-print("=== MOE V1.0 LOADED ===")
-print("✅ Fishing: Auto Fish, Blatant Mode, Auto Catch")
-print("✅ Favorite: Auto Favorite")
-print("✅ Shop: Buy Bait, Buy Rod")
-print("✅ Teleport: 14 Locations + Players")
-print("✅ Weather: Change + 3 Slots")
+print("=== MOE V1.0 SAFE VERSION LOADED ===")
+print("✅ Versi aman, anti-cheat friendly")
+print("⚠️ Jangan gunakan blatant mode atau speed terlalu tinggi")
