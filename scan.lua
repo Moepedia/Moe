@@ -1,118 +1,173 @@
--- Moe V1.0 - PACKAGES REMOTE SCANNER
--- Fokus scan di folder Packages aja
-
+-- MOE DEX EXPLORER SEDERHANA - Cari remote fishing manual
 local player = game.Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "PackagesRemoteScanner"
+gui.Name = "MoeExplorer"
+gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 800, 0, 600)
-mainFrame.Position = UDim2.new(0.5, -400, 0.5, -300)
-mainFrame.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = gui
+-- Frame utama
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 600, 0, 400)
+frame.Position = UDim2.new(0.5, -300, 0.5, -200)
+frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
 
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = mainFrame
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = frame
 
 -- Header
-local header = Instance.new("Frame")
-header.Size = UDim2.new(1, 0, 0, 45)
-header.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
-header.Parent = mainFrame
+local header = Instance.new("TextLabel")
+header.Size = UDim2.new(1, 0, 0, 30)
+header.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+header.Text = "🔍 MOE EXPLORER - Cari Remote Fishing"
+header.TextColor3 = Color3.new(0, 1, 0)
+header.Font = Enum.Font.GothamBold
+header.TextSize = 16
+header.Parent = frame
 
-local headerCorner = Instance.new("UICorner")
-headerCorner.CornerRadius = UDim.new(0, 12)
-headerCorner.Parent = header
+-- Close button
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 30, 0, 30)
+close.Position = UDim2.new(1, -30, 0, 0)
+close.BackgroundColor3 = Color3.new(1, 0, 0)
+close.Text = "X"
+close.TextColor3 = Color3.new(1, 1, 1)
+close.Font = Enum.Font.GothamBold
+close.Parent = header
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -40, 1, 0)
-title.Position = UDim2.new(0, 10, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "📦 PACKAGES REMOTE SCANNER"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = header
+close.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
 
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 30, 0, 30)
-closeBtn.Position = UDim2.new(1, -40, 0, 7)
-closeBtn.BackgroundColor3 = Color3.new(1, 0.3, 0.3)
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 16
-closeBtn.Parent = header
+-- Text box untuk hasil
+local textBox = Instance.new("TextBox")
+textBox.Size = UDim2.new(1, -20, 1, -80)
+textBox.Position = UDim2.new(0, 10, 0, 35)
+textBox.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
+textBox.TextColor3 = Color3.new(0, 1, 0)
+textBox.Font = Enum.Font.Code
+textBox.TextSize = 12
+textBox.TextXAlignment = Enum.TextXAlignment.Left
+textBox.TextYAlignment = Enum.TextYAlignment.Top
+textBox.TextWrapped = true
+textBox.ClearTextOnFocus = false
+textBox.MultiLine = true
+textBox.Text = "Klik tombol SCAN untuk mencari remote fishing...\n"
+textBox.Parent = frame
 
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 6)
-closeCorner.Parent = closeBtn
-
-closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
-
--- Progress bar
-local progressFrame = Instance.new("Frame")
-progressFrame.Size = UDim2.new(1, -20, 0, 20)
-progressFrame.Position = UDim2.new(0, 10, 0, 50)
-progressFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-progressFrame.Parent = mainFrame
-
-local progressCorner = Instance.new("UICorner")
-progressCorner.CornerRadius = UDim.new(0, 6)
-progressCorner.Parent = progressFrame
-
-local progressBar = Instance.new("Frame")
-progressBar.Size = UDim2.new(0, 0, 1, 0)
-progressBar.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
-progressBar.Parent = progressFrame
-
-local progressLabel = Instance.new("TextLabel")
-progressLabel.Size = UDim2.new(1, 0, 1, 0)
-progressLabel.BackgroundTransparency = 1
-progressLabel.Text = "0%"
-progressLabel.TextColor3 = Color3.new(1, 1, 1)
-progressLabel.Font = Enum.Font.GothamBold
-progressLabel.TextSize = 12
-progressLabel.Parent = progressFrame
-
--- Result area
-local resultFrame = Instance.new("Frame")
-resultFrame.Size = UDim2.new(1, -20, 1, -150)
-resultFrame.Position = UDim2.new(0, 10, 0, 75)
-resultFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
-resultFrame.Parent = mainFrame
-
-local resultCorner = Instance.new("UICorner")
-resultCorner.CornerRadius = UDim.new(0, 8)
-resultCorner.Parent = resultFrame
-
-local resultBox = Instance.new("TextBox")
-resultBox.Size = UDim2.new(1, -10, 1, -10)
-resultBox.Position = UDim2.new(0, 5, 0, 5)
-resultBox.BackgroundTransparency = 1
-resultBox.TextColor3 = Color3.new(0.3, 1, 0.3)
-resultBox.Font = Enum.Font.Code
-resultBox.TextSize = 12
-resultBox.TextXAlignment = Enum.TextXAlignment.Left
-resultBox.TextYAlignment = Enum.TextYAlignment.Top
-resultBox.MultiLine = true
-resultBox.ClearTextOnFocus = false
-resultBox.TextEditable = false
-resultBox.Text = "Mencari folder Packages...\n"
-resultBox.Parent = resultFrame
+local boxCorner = Instance.new("UICorner")
+boxCorner.CornerRadius = UDim.new(0, 6)
+boxCorner.Parent = textBox
 
 -- Button frame
-local buttonFrame = Instance.new("Frame")
-buttonFrame.Size = UDim2.new(1, -20, 0, 45)
-buttonFrame.Position = UDim2.new(0, 10, 0, resultFrame.Position.Y.Offset + resultFrame.Size.Y.Offset + 5)
+local btnFrame = Instance.new("Frame")
+btnFrame.Size = UDim2.new(1, -20, 0, 40)
+btnFrame.Position = UDim2.new(0, 10, 1, -45)
+btnFrame.BackgroundTransparency = 1
+btnFrame.Parent = frame
+
+-- Scan button
+local scanBtn = Instance.new("TextButton")
+scanBtn.Size = UDim2.new(0, 120, 0, 35)
+scanBtn.Position = UDim2.new(0, 0, 0.5, -17.5)
+scanBtn.BackgroundColor3 = Color3.new(0, 0.5, 1)
+scanBtn.Text = "🔍 SCAN"
+scanBtn.TextColor3 = Color3.new(1, 1, 1)
+scanBtn.TextSize = 14
+scanBtn.Font = Enum.Font.GothamBold
+scanBtn.Parent = btnFrame
+
+local scanCorner = Instance.new("UICorner")
+scanCorner.CornerRadius = UDim.new(0, 6)
+scanCorner.Parent = scanBtn
+
+-- Copy button
+local copyBtn = Instance.new("TextButton")
+copyBtn.Size = UDim2.new(0, 100, 0, 35)
+copyBtn.Position = UDim2.new(0, 130, 0.5, -17.5)
+copyBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
+copyBtn.Text = "📋 COPY"
+copyBtn.TextColor3 = Color3.new(1, 1, 1)
+copyBtn.TextSize = 14
+copyBtn.Font = Enum.Font.GothamBold
+copyBtn.Parent = btnFrame
+
+local copyCorner = Instance.new("UICorner")
+copyCorner.CornerRadius = UDim.new(0, 6)
+copyCorner.Parent = copyBtn
+
+-- Fungsi scan
+local function scanRemotes()
+    textBox.Text = "🔍 SCANNING...\n\n"
+    local results = {}
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    
+    -- Kata kunci fishing
+    local keywords = {"Fish", "Fishing", "Catch", "Rod", "Bait", "Cast", "Reel", "Minigame", "Charge"}
+    
+    -- Fungsi recursive scan
+    local function scanFolder(folder, depth)
+        if depth > 4 then return end
+        
+        for _, child in pairs(folder:GetChildren()) do
+            if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
+                for _, kw in ipairs(keywords) do
+                    if string.find(child.Name, kw) or string.find(child.Name:lower(), kw:lower()) then
+                        table.insert(results, string.format("[%s] %s (%s)", 
+                            child.ClassName, child:GetFullName(), child.Name))
+                        break
+                    end
+                end
+            end
+            scanFolder(child, depth + 1)
+        end
+    end
+    
+    -- Scan lokasi penting
+    scanFolder(ReplicatedStorage, 0)
+    
+    local packages = ReplicatedStorage:FindFirstChild("Packages")
+    if packages then
+        scanFolder(packages, 0)
+    end
+    
+    -- Tampilkan hasil
+    if #results > 0 then
+        textBox.Text = "🔍 REMOTE FISHING DITEMUKAN:\n"
+        textBox.Text = textBox.Text .. "================================\n\n"
+        for i, res in ipairs(results) do
+            textBox.Text = textBox.Text .. res .. "\n\n"
+        end
+    else
+        textBox.Text = "❌ TIDAK ADA REMOTE FISHING DITEMUKAN!\n"
+        textBox.Text = textBox.Text .. "Coba cek manual dengan Dex Explorer"
+    end
+end
+
+-- Button functions
+scanBtn.MouseButton1Click:Connect(scanRemotes)
+
+copyBtn.MouseButton1Click:Connect(function()
+    local success = pcall(function()
+        setclipboard(textBox.Text)
+    end)
+    
+    if success then
+        scanBtn.Text = "✅ COPIED!"
+        task.wait(1)
+        scanBtn.Text = "📋 COPY"
+    else
+        textBox:CaptureFocus()
+    end
+end)
+
+-- Auto scan
+task.wait(0.5)
+scanRemotes()buttonFrame.Position = UDim2.new(0, 10, 0, resultFrame.Position.Y.Offset + resultFrame.Size.Y.Offset + 5)
 buttonFrame.BackgroundTransparency = 1
 buttonFrame.Parent = mainFrame
 
