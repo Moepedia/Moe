@@ -1,118 +1,283 @@
--- MOE FISHING TESTER v2.0 - GUI VERSION (COPY ALL)
+-- MOE FISHING PARAMETER TESTER
 local player = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
-gui.Name = "MoeFishingTester"
-gui.ResetOnSpawn = false
+gui.Name = "MoeParamTester"
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- ===== MAIN FRAME =====
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 700, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -350, 0.5, -250)
-mainFrame.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
-mainFrame.BackgroundTransparency = 0.1
-mainFrame.BorderSizePixel = 0
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = gui
+-- Main frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 500, 0, 600)
+frame.Position = UDim2.new(0.5, -250, 0.5, -300)
+frame.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
 
-local corners = Instance.new("UICorner")
-corners.CornerRadius = UDim.new(0, 12)
-corners.Parent = mainFrame
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = frame
 
 -- Header
-local header = Instance.new("Frame")
-header.Size = UDim2.new(1, 0, 0, 40)
+local header = Instance.new("TextLabel")
+header.Size = UDim2.new(1, 0, 0, 35)
 header.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-header.Parent = mainFrame
+header.Text = "🎣 MOE PARAMETER FINDER"
+header.TextColor3 = Color3.new(0, 1, 0)
+header.Font = Enum.Font.GothamBold
+header.TextSize = 16
+header.Parent = frame
 
-local headerCorner = Instance.new("UICorner")
-headerCorner.CornerRadius = UDim.new(0, 12)
-headerCorner.Parent = header
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 30, 0, 30)
+close.Position = UDim2.new(1, -30, 0, 2.5)
+close.BackgroundColor3 = Color3.new(1, 0, 0)
+close.Text = "X"
+close.TextColor3 = Color3.new(1, 1, 1)
+close.Font = Enum.Font.GothamBold
+close.Parent = header
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -40, 1, 0)
-title.Position = UDim2.new(0, 10, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "🎣 MOE FISHING TESTER v2.0"
-title.TextColor3 = Color3.new(0, 1, 0)
-title.TextSize = 18
-title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = header
-
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 30, 0, 30)
-closeBtn.Position = UDim2.new(1, -35, 0.5, -15)
-closeBtn.BackgroundColor3 = Color3.new(1, 0, 0)
-closeBtn.Text = "X"
-closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.TextSize = 16
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Parent = header
-
-closeBtn.MouseButton1Click:Connect(function()
+close.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
 
--- Status bar
-local statusBar = Instance.new("Frame")
-statusBar.Size = UDim2.new(1, -20, 0, 30)
-statusBar.Position = UDim2.new(0, 10, 0, 45)
-statusBar.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-statusBar.Parent = mainFrame
+-- Scroll frame untuk konten
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1, -20, 1, -100)
+scroll.Position = UDim2.new(0, 10, 0, 40)
+scroll.BackgroundTransparency = 1
+scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.Parent = frame
 
-local statusCorner = Instance.new("UICorner")
-statusCorner.CornerRadius = UDim.new(0, 6)
-statusCorner.Parent = statusBar
+local container = Instance.new("Frame")
+container.Size = UDim2.new(1, 0, 0, 0)
+container.BackgroundTransparency = 1
+container.Parent = scroll
+container.AutomaticSize = Enum.AutomaticSize.Y
 
-local statusText = Instance.new("TextLabel")
-statusText.Size = UDim2.new(1, -10, 1, 0)
-statusText.Position = UDim2.new(0, 5, 0, 0)
-statusText.BackgroundTransparency = 1
-statusText.Text = "⏳ Ready to test"
-statusText.TextColor3 = Color3.new(1, 1, 0)
-statusText.TextSize = 14
-statusText.Font = Enum.Font.Gotham
-statusText.TextXAlignment = Enum.TextXAlignment.Left
-statusText.Parent = statusBar
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 10)
+layout.Parent = container
 
--- ===== LEFT PANEL (BUTTONS) =====
-local leftPanel = Instance.new("Frame")
-leftPanel.Size = UDim2.new(0, 200, 1, -120)
-leftPanel.Position = UDim2.new(0, 10, 0, 80)
-leftPanel.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
-leftPanel.Parent = mainFrame
+-- ===== REMOTE SETUP =====
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
+local RF = Net:FindFirstChild("RF")
 
-local leftCorner = Instance.new("UICorner")
-leftCorner.CornerRadius = UDim.new(0, 8)
-leftCorner.Parent = leftPanel
+local Remote = {
+    RequestMinigame = RF and RF:FindFirstChild("1239e94e6397b16cef3f55f2d4dbc4b8de29b5552820cb62e0477b58bad3b47f"),
+    CastRod = RF and RF:FindFirstChild("0f54ec0060b2b41e6d662c98f5f5e329065210ef504926fc89577dceb774915c"),
+    CatchFish = RF and RF:FindFirstChild("c8f3fe1d1a51c63b116e59e52aa538562a03a0e273fab6ef8a5768bf936df31d"),
+}
 
-local leftTitle = Instance.new("TextLabel")
-leftTitle.Size = UDim2.new(1, -10, 0, 25)
-leftTitle.Position = UDim2.new(0, 5, 0, 5)
-leftTitle.BackgroundTransparency = 1
-leftTitle.Text = "🎮 TEST BUTTONS"
-leftTitle.TextColor3 = Color3.new(1, 1, 0)
-leftTitle.TextSize = 14
-leftTitle.Font = Enum.Font.GothamBold
-leftTitle.TextXAlignment = Enum.TextXAlignment.Left
-leftTitle.Parent = leftPanel
+-- ===== FUNGSI BUAT INPUT =====
+local function createInputRow(name, default1, default2, default3)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, 100)
+    row.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    row.Parent = container
+    
+    local rowCorner = Instance.new("UICorner")
+    rowCorner.CornerRadius = UDim.new(0, 6)
+    rowCorner.Parent = row
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -10, 0, 25)
+    title.Position = UDim2.new(0, 5, 0, 5)
+    title.BackgroundTransparency = 1
+    title.Text = name
+    title.TextColor3 = Color3.new(1, 1, 0)
+    title.Font = Enum.Font.GothamBold
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = row
+    
+    local input1 = Instance.new("TextBox")
+    input1.Size = UDim2.new(0.3, -5, 0, 30)
+    input1.Position = UDim2.new(0, 5, 0, 35)
+    input1.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    input1.Text = tostring(default1 or "")
+    input1.PlaceholderText = "Arg 1"
+    input1.TextColor3 = Color3.new(1, 1, 1)
+    input1.Font = Enum.Font.Code
+    input1.Parent = row
+    
+    local input2 = Instance.new("TextBox")
+    input2.Size = UDim2.new(0.3, -5, 0, 30)
+    input2.Position = UDim2.new(0.35, 0, 0, 35)
+    input2.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    input2.Text = tostring(default2 or "")
+    input2.PlaceholderText = "Arg 2"
+    input2.TextColor3 = Color3.new(1, 1, 1)
+    input2.Font = Enum.Font.Code
+    input2.Parent = row
+    
+    local input3 = Instance.new("TextBox")
+    input3.Size = UDim2.new(0.3, -5, 0, 30)
+    input3.Position = UDim2.new(0.7, 0, 0, 35)
+    input3.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    input3.Text = tostring(default3 or "")
+    input3.PlaceholderText = "Arg 3"
+    input3.TextColor3 = Color3.new(1, 1, 1)
+    input3.Font = Enum.Font.Code
+    input3.Parent = row
+    
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 35)
+    btn.Position = UDim2.new(0, 5, 0, 70)
+    btn.BackgroundColor3 = Color3.new(0.2, 0.5, 0.8)
+    btn.Text = "TEST " .. name
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = row
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = btn
+    
+    return row, {input1, input2, input3}, btn
+end
 
-local leftScroll = Instance.new("ScrollingFrame")
-leftScroll.Size = UDim2.new(1, -10, 1, -35)
-leftScroll.Position = UDim2.new(0, 5, 0, 30)
-leftScroll.BackgroundTransparency = 1
-leftScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-leftScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-leftScroll.ScrollBarThickness = 4
-leftScroll.Parent = leftPanel
+-- ===== CREATE INPUT ROWS =====
+local function createInputs()
+    -- Request Minigame
+    local row1, inputs1, btn1 = createInputRow("Request Minigame", "true")
+    btn1.MouseButton1Click:Connect(function()
+        local arg = inputs1[1].Text == "true" and true or false
+        local success, result = pcall(function()
+            return Remote.RequestMinigame:InvokeServer(arg)
+        end)
+        print("RequestMinigame:", success, result)
+    end)
+    
+    -- Cast Rod (dengan parameter dari log)
+    local row2, inputs2, btn2 = createInputRow("Cast Rod", "-1.233184814453125", "0.5", "1772552798.43857")
+    btn2.MouseButton1Click:Connect(function()
+        local arg1 = tonumber(inputs2[1].Text) or -1.233
+        local arg2 = tonumber(inputs2[2].Text) or 0.5
+        local arg3 = tonumber(inputs2[3].Text) or tick()
+        local success, result = pcall(function()
+            return Remote.CastRod:InvokeServer(arg1, arg2, arg3)
+        end)
+        print("CastRod:", success, result)
+    end)
+    
+    -- Catch Fish
+    local row3, inputs3, btn3 = createInputRow("Catch Fish")
+    btn3.MouseButton1Click:Connect(function()
+        local success, result = pcall(function()
+            return Remote.CatchFish:InvokeServer()
+        end)
+        print("CatchFish:", success, result)
+    end)
+    
+    -- Sequence
+    local seqRow = Instance.new("Frame")
+    seqRow.Size = UDim2.new(1, 0, 0, 70)
+    seqRow.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    seqRow.Parent = container
+    
+    local seqCorner = Instance.new("UICorner")
+    seqCorner.CornerRadius = UDim.new(0, 6)
+    seqCorner.Parent = seqRow
+    
+    local seqTitle = Instance.new("TextLabel")
+    seqTitle.Size = UDim2.new(1, -10, 0, 25)
+    seqTitle.Position = UDim2.new(0, 5, 0, 5)
+    seqTitle.BackgroundTransparency = 1
+    seqTitle.Text = "FULL SEQUENCE"
+    seqTitle.TextColor3 = Color3.new(1, 1, 0)
+    seqTitle.Font = Enum.Font.GothamBold
+    seqTitle.TextXAlignment = Enum.TextXAlignment.Left
+    seqTitle.Parent = seqRow
+    
+    local seqBtn = Instance.new("TextButton")
+    seqBtn.Size = UDim2.new(1, -10, 0, 35)
+    seqBtn.Position = UDim2.new(0, 5, 0, 35)
+    seqBtn.BackgroundColor3 = Color3.new(0.9, 0.6, 0)
+    seqBtn.Text = "RUN SEQUENCE (Request → Cast → Catch)"
+    seqBtn.TextColor3 = Color3.new(1, 1, 1)
+    seqBtn.Font = Enum.Font.GothamBold
+    seqBtn.Parent = seqRow
+    
+    local seqBtnCorner = Instance.new("UICorner")
+    seqBtnCorner.CornerRadius = UDim.new(0, 6)
+    seqBtnCorner.Parent = seqBtn
+    
+    seqBtn.MouseButton1Click:Connect(function()
+        local results = {}
+        
+        -- Request
+        local success1, res1 = pcall(function()
+            return Remote.RequestMinigame:InvokeServer(true)
+        end)
+        table.insert(results, "Req: " .. tostring(success1))
+        
+        -- Cast (pake parameter dari input)
+        local arg1 = tonumber(inputs2[1].Text) or -1.233
+        local arg2 = tonumber(inputs2[2].Text) or 0.5
+        local arg3 = tonumber(inputs2[3].Text) or tick()
+        local success2, res2 = pcall(function()
+            return Remote.CastRod:InvokeServer(arg1, arg2, arg3)
+        end)
+        table.insert(results, "Cast: " .. tostring(success2))
+        
+        -- Catch
+        local success3, res3 = pcall(function()
+            return Remote.CatchFish:InvokeServer()
+        end)
+        table.insert(results, "Catch: " .. tostring(success3))
+        
+        print("SEQUENCE:", table.concat(results, " | "))
+    end)
+end
 
-local leftContainer = Instance.new("Frame")
-leftContainer.Size = UDim2.new(1, 0, 0, 0)
-leftContainer.BackgroundTransparency = 1
-leftContainer.Parent = leftScroll
-leftContainer.AutomaticSize = Enum.AutomaticSize.Y
+createInputs()
+
+-- Output box
+local outputBox = Instance.new("TextBox")
+outputBox.Size = UDim2.new(1, -20, 0, 100)
+outputBox.Position = UDim2.new(0, 10, 1, -105)
+outputBox.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
+outputBox.TextColor3 = Color3.new(0, 1, 0)
+outputBox.Font = Enum.Font.Code
+outputBox.TextSize = 12
+outputBox.TextWrapped = true
+outputBox.ClearTextOnFocus = false
+outputBox.MultiLine = true
+outputBox.Text = "Hasil akan muncul di console (F9)\n"
+outputBox.Parent = frame
+
+local outputCorner = Instance.new("UICorner")
+outputCorner.CornerRadius = UDim.new(0, 6)
+outputCorner.Parent = outputBox
+
+-- Copy button di bawah
+local copyBtn = Instance.new("TextButton")
+copyBtn.Size = UDim2.new(0, 100, 0, 30)
+copyBtn.Position = UDim2.new(1, -110, 1, -35)
+copyBtn.BackgroundColor3 = Color3.new(0, 0.5, 1)
+copyBtn.Text = "📋 COPY"
+copyBtn.TextColor3 = Color3.new(1, 1, 1)
+copyBtn.Font = Enum.Font.GothamBold
+copyBtn.Parent = frame
+
+local copyCorner = Instance.new("UICorner")
+copyCorner.CornerRadius = UDim.new(0, 6)
+copyCorner.Parent = copyBtn
+
+copyBtn.MouseButton1Click:Connect(function()
+    local success = pcall(function()
+        setclipboard(outputBox.Text)
+    end)
+    if success then
+        copyBtn.Text = "✅ COPIED!"
+        task.wait(1)
+        copyBtn.Text = "📋 COPY"
+    end
+end)
+
+print("✅ Parameter Tester Loaded - Coba berbagai kombinasi parameter!")leftContainer.AutomaticSize = Enum.AutomaticSize.Y
 
 local leftLayout = Instance.new("UIListLayout")
 leftLayout.Padding = UDim.new(0, 5)
