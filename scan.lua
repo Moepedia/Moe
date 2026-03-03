@@ -70,7 +70,7 @@ TabFrame.BackgroundTransparency = 1
 TabFrame.Parent = MainFrame
 
 local RemoteTab = Instance.new("TextButton")
-RemoteTab.Size = UDim2.new(0.33, -2, 0, 35)
+RemoteTab.Size = UDim2.new(0.25, -2, 0, 35)
 RemoteTab.Position = UDim2.new(0, 5, 0, 2)
 RemoteTab.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
 RemoteTab.Text = "🔍 REMOTES"
@@ -81,8 +81,8 @@ RemoteTab.BorderSizePixel = 0
 RemoteTab.Parent = TabFrame
 
 local BaitTab = Instance.new("TextButton")
-BaitTab.Size = UDim2.new(0.33, -2, 0, 35)
-BaitTab.Position = UDim2.new(0.33, 2, 0, 2)
+BaitTab.Size = UDim2.new(0.25, -2, 0, 35)
+BaitTab.Position = UDim2.new(0.25, 2, 0, 2)
 BaitTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 BaitTab.Text = "🎣 BAIT"
 BaitTab.TextColor3 = Color3.new(1, 1, 1)
@@ -92,8 +92,8 @@ BaitTab.BorderSizePixel = 0
 BaitTab.Parent = TabFrame
 
 local RodTab = Instance.new("TextButton")
-RodTab.Size = UDim2.new(0.33, -2, 0, 35)
-RodTab.Position = UDim2.new(0.66, 4, 0, 2)
+RodTab.Size = UDim2.new(0.25, -2, 0, 35)
+RodTab.Position = UDim2.new(0.5, 4, 0, 2)
 RodTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 RodTab.Text = "🎣 ROD"
 RodTab.TextColor3 = Color3.new(1, 1, 1)
@@ -103,8 +103,8 @@ RodTab.BorderSizePixel = 0
 RodTab.Parent = TabFrame
 
 local WeatherTab = Instance.new("TextButton")
-WeatherTab.Size = UDim2.new(0.33, -2, 0, 35)
-WeatherTab.Position = UDim2.new(0.99, -0.33, 0, 2)
+WeatherTab.Size = UDim2.new(0.25, -2, 0, 35)
+WeatherTab.Position = UDim2.new(0.75, 6, 0, 2)
 WeatherTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 WeatherTab.Text = "☁️ WEATHER"
 WeatherTab.TextColor3 = Color3.new(1, 1, 1)
@@ -157,18 +157,19 @@ ScanButton.TextSize = 14
 ScanButton.BorderSizePixel = 0
 ScanButton.Parent = ButtonFrame
 
-local CopyButton = Instance.new("TextButton")
-CopyButton.Size = UDim2.new(0.48, 0, 0, 45)
-CopyButton.Position = UDim2.new(0.52, 0, 0, 0)
-CopyButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-CopyButton.Text = "📋 COPY"
-CopyButton.TextColor3 = Color3.new(1, 1, 1)
-CopyButton.Font = Enum.Font.GothamBold
-CopyButton.TextSize = 14
-CopyButton.BorderSizePixel = 0
-CopyButton.Parent = ButtonFrame
+-- Ganti tombol COPY dengan INSTRUKSI
+local InfoButton = Instance.new("TextButton")
+InfoButton.Size = UDim2.new(0.48, 0, 0, 45)
+InfoButton.Position = UDim2.new(0.52, 0, 0, 0)
+InfoButton.BackgroundColor3 = Color3.fromRGB(150, 100, 50)
+InfoButton.Text = "📋 CARA COPY"
+InfoButton.TextColor3 = Color3.new(1, 1, 1)
+InfoButton.Font = Enum.Font.GothamBold
+InfoButton.TextSize = 14
+InfoButton.BorderSizePixel = 0
+InfoButton.Parent = ButtonFrame
 
-for _, btn in pairs({ScanButton, CopyButton}) do
+for _, btn in pairs({ScanButton, InfoButton}) do
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
@@ -303,7 +304,7 @@ local function scanBait()
     end
     
     ResultBox.Text = resultText
-    StatusLabel.Text = "✅ Deteksi Bait selesai. Copy dan kirim ke Moe!"
+    StatusLabel.Text = "✅ Deteksi Bait selesai. Gunakan INSTRUKSI untuk copy!"
 end
 
 -- Fungsi deteksi Rod
@@ -335,7 +336,7 @@ local function scanRod()
     end
     
     ResultBox.Text = resultText
-    StatusLabel.Text = "✅ Deteksi Rod selesai. Copy dan kirim ke Moe!"
+    StatusLabel.Text = "✅ Deteksi Rod selesai. Gunakan INSTRUKSI untuk copy!"
 end
 
 -- Fungsi deteksi Weather
@@ -375,7 +376,7 @@ local function scanWeather()
     end
     
     ResultBox.Text = resultText
-    StatusLabel.Text = "✅ Deteksi Weather selesai. Copy dan kirim ke Moe!"
+    StatusLabel.Text = "✅ Deteksi Weather selesai. Gunakan INSTRUKSI untuk copy!"
 end
 
 -- Tombol Scan
@@ -391,128 +392,37 @@ ScanButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Tombol Copy
-CopyButton.MouseButton1Click:Connect(function()
-    if ResultBox.Text ~= "" then
-        setclipboard and setclipboard(ResultBox.Text)
-        StatusLabel.Text = "✅ Teks telah dicopy ke clipboard!"
-        task.wait(1)
-        StatusLabel.Text = "🟡 Pilih tab dan klik SCAN"
-    else
-        StatusLabel.Text = "❌ Tidak ada teks untuk dicopy"
-    end
+-- Tombol INSTRUKSI (ganti COPY)
+InfoButton.MouseButton1Click:Connect(function()
+    ResultBox.Text = [[
+📋 CARA COPY HASIL SCAN:
+
+Karena executor tidak mendukung copy otomatis,
+ikuti langkah berikut:
+
+1. Tekan dan tahan di dalam kotak teks ini
+2. Pilih "SELECT ALL" (Pilih Semua)
+3. Pilih "COPY" (Salin)
+4. Buka chat/notes
+5. Paste (Tempel) hasilnya
+
+🎯 Tips: Hasil scan akan muncul di sini
+setelah kamu klik tombol SCAN.
+
+📌 UNTUK DAFTAR LENGKAP:
+Coba cek juga di folder:
+- ReplicatedStorage.RF
+- ReplicatedStorage.RE
+- game:GetService("MarketplaceService")
+
+Kadang daftar item ada di ModuleScript!
+]]
+    
+    StatusLabel.Text = "ℹ️ Ikuti langkah di atas untuk copy manual"
 end)
 
 -- Auto scan remotes pas pertama buka
 task.spawn(function()
     task.wait(0.5)
     scanRemotes()
-end)                    for key, value in pairs(data) do
-                        if type(key) == "string" and not table.find(results.Rods, key) then
-                            results.Rods[key] = value
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    -- 3. DETEKSI WEATHER dari RE/WeatherCommand
-    print("🔍 MENDETEKSI WEATHER...")
-    local weatherCmd = ReplicatedStorage:FindFirstChild("RE") and ReplicatedStorage.RE:FindFirstChild("WeatherCommand")
-    if weatherCmd then
-        -- Weather umum
-        local commonWeather = {"Clear", "Rain", "Storm", "Fog", "Night", "Day", "Windy", "Snow", "Thunder", "Hurricane", "Tornado", "Heatwave", "Blizzard", "Sandstorm"}
-        for _, w in ipairs(commonWeather) do
-            table.insert(results.Weathers, w)
-        end
-        
-        -- Cek di module
-        for _, module in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-            if module:IsA("ModuleScript") and module.Name:lower():find("weather") then
-                local success, data = pcall(function()
-                    return require(module)
-                end)
-                if success and type(data) == "table" then
-                    for key, value in pairs(data) do
-                        if type(key) == "string" and not table.find(results.Weathers, key) then
-                            table.insert(results.Weathers, key)
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    -- TAMPILKAN HASIL
-    print("\n" .. string.rep("=", 50))
-    print("📋 DAFTAR ITEM YANG TERDETEKSI")
-    print(string.rep("=", 50))
-    
-    print("\n🎣 BAIT (" .. #results.Baits .. " item):")
-    if #results.Baits > 0 then
-        table.sort(results.Baits)
-        for i, bait in ipairs(results.Baits) do
-            print(string.format("%2d. %s", i, bait))
-        end
-    else
-        print("   [Tidak ada bait terdeteksi - mungkin perlu method lain]")
-    end
-    
-    print("\n🎣 FISHING ROD (" .. #results.Rods .. " item):")
-    if #results.Rods > 0 then
-        table.sort(results.Rods)
-        for i, rod in ipairs(results.Rods) do
-            print(string.format("%2d. %s", i, rod))
-        end
-    else
-        print("   [Tidak ada rod terdeteksi - mungkin perlu method lain]")
-    end
-    
-    print("\n☁️ WEATHER (" .. #results.Weathers .. " item):")
-    if #results.Weathers > 0 then
-        table.sort(results.Weathers)
-        for i, weather in ipairs(results.Weathers) do
-            print(string.format("%2d. %s", i, weather))
-        end
-    else
-        print("   [Tidak ada weather terdeteksi - mungkin perlu method lain]")
-    end
-    
-    print("\n" .. string.rep("=", 50))
-    print("✅ DETEKSI SELESAI")
-    print("📝 Copy list di atas dan kirim ke saya!")
-    print(string.rep("=", 50) .. "\n")
-    
-    -- Format untuk di-copy
-    local copyText = "-- DAFTAR BAIT:\n"
-    for _, bait in ipairs(results.Baits) do
-        copyText = copyText .. '    "' .. bait .. '",\n'
-    end
-    
-    copyText = copyText .. "\n-- DAFTAR ROD:\n"
-    for _, rod in ipairs(results.Rods) do
-        copyText = copyText .. '    "' .. rod .. '",\n'
-    end
-    
-    copyText = copyText .. "\n-- DAFTAR WEATHER:\n"
-    for _, weather in ipairs(results.Weathers) do
-        copyText = copyText .. '    "' .. weather .. '",\n'
-    end
-    
-    return copyText
-end
-
--- Tombol copy
-button.MouseButton1Click:Connect(function()
-    local text = detectItems()
-    setclipboard and setclipboard(text) or notify("Clipboard tidak tersedia")
-    status.Text = "✅ List sudah di-copy!\nLihat console (F9) untuk detail"
 end)
-
--- Auto detect saat buka
-task.wait(1)
-detectItems()
-
-print("\n🔄 MOE DETECTOR READY")
-print("Klik tombol 'COPY TO CLIPBOARD' untuk menyalin list")
