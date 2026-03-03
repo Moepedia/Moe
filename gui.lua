@@ -1,5 +1,5 @@
--- Moe V1.0 GUI for FISH IT - EXPLOIT EDITION
--- Dengan fitur exploit berdasarkan analisis kelemahan
+-- Moe V1.0 GUI for FISH IT - ADVANCED EXPLOIT EDITION
+-- Fokus pada bagian paling ribet untuk developer
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -35,58 +35,26 @@ for name, _ in pairs(TeleportLocations) do
 end
 table.sort(TeleportNames)
 
--- ===== DATA BAIT =====
+-- ===== DATA UNTUK EXPLOIT =====
 local BaitNames = {
-    "Starter Bait",
-    "Topwater Bait",
-    "Luck Bait",
-    "Midnight Bait",
-    "Nature Bait",
-    "Chroma Bait",
-    "Royal Bait",
-    "Dark Matter Bait",
-    "Corrupt Bait",
-    "Aether Bait",
-    "Floral Bait",
-    "Singularity Bait"
+    "Starter Bait", "Topwater Bait", "Luck Bait", "Midnight Bait",
+    "Nature Bait", "Chroma Bait", "Royal Bait", "Dark Matter Bait",
+    "Corrupt Bait", "Aether Bait", "Floral Bait", "Singularity Bait"
 }
 
--- ===== DATA ROD =====
 local RodNames = {
-    "Starter Rod",
-    "Luck Rod",
-    "Carbon Rod",
-    "Toy Rod",
-    "Grass Rod",
-    "Damascus Rod",
-    "Ice Rod",
-    "Lava Rod",
-    "Lucky Rod",
-    "Midnight Rod",
-    "Steampunk Rod",
-    "Chrome Rod",
-    "Fluorescent Rod",
-    "Astral Rod",
-    "Hazmat Rod",
-    "Ares Rod",
-    "Angler Rod",
-    "Ghostfinn Rod",
-    "Bamboo Rod",
-    "Element Rod",
-    "Diamond Rod"
+    "Starter Rod", "Luck Rod", "Carbon Rod", "Toy Rod", "Grass Rod",
+    "Damascus Rod", "Ice Rod", "Lava Rod", "Lucky Rod", "Midnight Rod",
+    "Steampunk Rod", "Chrome Rod", "Fluorescent Rod", "Astral Rod",
+    "Hazmat Rod", "Ares Rod", "Angler Rod", "Ghostfinn Rod",
+    "Bamboo Rod", "Element Rod", "Diamond Rod"
 }
 
--- ===== DATA WEATHER =====
 local WeatherNames = {
-    "Wind",
-    "Cloudy",
-    "Snow",
-    "Storm",
-    "Radiant",
-    "Shark Hunt"
+    "Wind", "Cloudy", "Snow", "Storm", "Radiant", "Shark Hunt"
 }
 
--- ===== REMOTE FUNCTIONS DARI PACKAGES (DENGAN HASH) =====
+-- ===== REMOTE FUNCTIONS DENGAN HASH =====
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local function getRemoteFromPackages(folder, hashName)
@@ -107,44 +75,42 @@ local function getRemoteFromPackages(folder, hashName)
     return nil
 end
 
--- Remote references dengan hash yang benar dari hasil scan
 local Remote = {
-    -- KRITIS - CELAH BESAR
-    CatchFish = getRemoteFromPackages("RF", "76b3e3c8c811abe6c6ef36d0f6ec91de75fffd97bff713a4cb421303410ccb84"), -- RF/CatchFishCompleted
-    SellAll = getRemoteFromPackages("RF", "478362a898e12ac6421d7a6b918dab8385b48c04cfaba211fdb6dd48111107e6"), -- RF/SellAllItems
-    SellItem = getRemoteFromPackages("RF", "61ac0f04b309d722f1df60502b90edcd4bca7cd395c192e06bc5497d5ce0b598"), -- RF/SellItem
-    ClaimDaily = getRemoteFromPackages("RF", "91f555bbe3531dd9d8461f63f1b5ed9fdfe8275e29df3d6b4bf50d016c58cf6e"), -- RF/ClaimDailyLogin
-    ClaimBounty = getRemoteFromPackages("RF", "970dc117e86b893579c095f746bfd11bb5ad743effa48a4b11f9b3acaab40e1b"), -- RF/ClaimBounty
-    ClaimPercentile = getRemoteFromPackages("RF", "28ac64e07a0a2cfe835a4d6c979e13cfbc1b2c3a0612424751f9ff1125dc2919"), -- RF/ClaimPercentileReward
-    
     -- Fishing
+    CatchFish = getRemoteFromPackages("RF", "76b3e3c8c811abe6c6ef36d0f6ec91de75fffd97bff713a4cb421303410ccb84"),
     ChargeRod = getRemoteFromPackages("RF", "aae67692fc443eb0cd6545ac1a4069ced9a4285e239b3e6b7d323b7d17070b5a"),
     FishingMinigame = getRemoteFromPackages("RE", "609e281eb1fbf03c9f0721e7dde16b73b4d06ff1fec785fe4db2dfe51e9a0caa"),
-    FishingStopped = getRemoteFromPackages("RE", "c383f9c214e1c1e0762958ea102068a6e4afd3982ea6e9a51680b761cca74ad6"),
-    RequestMinigame = getRemoteFromPackages("RF", "5bb84866ad161084fd12642cc898f39385bdc087cfb4d6946aab18e64acc7399"),
-    CancelFishing = getRemoteFromPackages("RF", "c6367d6617944584bb0ef40e9b32f8ff72f63384bced4991544f9b805f11f93f"),
     
-    -- Bait
+    -- RNG & Stats
+    UpdateAutoFishingState = getRemoteFromPackages("RF", "94f69d1fe654653d32e8ce264d0510234dfad1f597f1e8026b89a35e7aeb977b"),
+    UpdateFishingRadar = getRemoteFromPackages("RF", "e891e49139efacafbe0b8985e76925ad48731386926a299333acf4e79436751b"),
+    UpdateAutoSellThreshold = getRemoteFromPackages("RF", "6648b1e3b7a67a01afd03d3318cd0269c0726fb80a6985c5b8d10dfd20c08fac"),
+    
+    -- Purchase
     PurchaseBait = getRemoteFromPackages("RF", "749e74fbc5fc3d196df3235c7e0e96639484e875de7bfe82629d1b86a0c6f01d"),
-    EquipBait = getRemoteFromPackages("RE", "55a2c14da700896b9e9aed3b7e18c550a7ae5b43f1a5715012d08695da66744e"),
-    
-    -- Rod
     PurchaseRod = getRemoteFromPackages("RF", "631361fdb4712a1bbd2df65a1c5fd948e6f85e5f30ef746c022a4ba1bf5c3399"),
-    EquipRodSkin = getRemoteFromPackages("RE", "bbeb56f30d491f113e3b3ed28b781b1d62cf54a8acc66ab53a287d4b928fc60e"),
-    
-    -- Weather
     PurchaseWeather = getRemoteFromPackages("RF", "f7df2819493cf037d3870073bcb17495569565c5a08c7bd2b3632f440a361335"),
-    WeatherCommand = getRemoteFromPackages("RE", "33e2a9e4854072028b2dc6cb66fe1365ad2d0bebf72421f844ccb80e780e2f4f"),
     
-    -- Teleport
-    SubmarineTP = getRemoteFromPackages("RE", "08ad2bcf5a0af3edb493588043f0a994dd33514a272a67578891ad2a6be01671"),
-    SubmarineTP2 = getRemoteFromPackages("RF", "6203ae7bb361769999702f03e4dbaef00297b1664c8ec7733886476daabb88c1"),
-    BoatTeleport = getRemoteFromPackages("RE", "067b63bd57d92bdb13769386e6591dc769c45b37b3bb7144b5c3368f1cc7dec2"),
-    
-    -- Other
+    -- Claim
+    ClaimDaily = getRemoteFromPackages("RF", "91f555bbe3531dd9d8461f63f1b5ed9fdfe8275e29df3d6b4bf50d016c58cf6e"),
+    ClaimBounty = getRemoteFromPackages("RF", "970dc117e86b893579c095f746bfd11bb5ad743effa48a4b11f9b3acaab40e1b"),
     ClaimEvent = getRemoteFromPackages("RE", "3205d5ea83639e08c73e6c8a2605acf32e604bd7785761e488cbf47971cd9021"),
-    UseGift = getRemoteFromPackages("RF", "93e7bd4ee545856c489046f58d520b38f9960a9f438d20ac7d3c9bf9fdac5da3"),
+    
+    -- Sell
+    SellAll = getRemoteFromPackages("RF", "478362a898e12ac6421d7a6b918dab8385b48c04cfaba211fdb6dd48111107e6"),
+    SellItem = getRemoteFromPackages("RF", "61ac0f04b309d722f1df60502b90edcd4bca7cd395c192e06bc5497d5ce0b598"),
+    
+    -- Weather & Teleport
+    WeatherCommand = getRemoteFromPackages("RE", "33e2a9e4854072028b2dc6cb66fe1365ad2d0bebf72421f844ccb80e780e2f4f"),
+    SubmarineTP = getRemoteFromPackages("RE", "08ad2bcf5a0af3edb493588043f0a994dd33514a272a67578891ad2a6be01671"),
+    
+    -- Potion & Buff
     ConsumePotion = getRemoteFromPackages("RF", "9d6f9a67eecd6285efabf46e099b4514e0b92f1c2ab04529ab5c446cc3e5f449"),
+    ActivateLuck = getRemoteFromPackages("RE", "f9b04b9f4b0e13bd3b79a804ae780ae3d6c1afee20b8c5fb439db5a08e6ea52a"),
+    
+    -- Inventory
+    UseGift = getRemoteFromPackages("RF", "93e7bd4ee545856c489046f58d520b38f9960a9f438d20ac7d3c9bf9fdac5da3"),
+    FavoriteItem = getRemoteFromPackages("RE", "164aa91f67a8713d9a2f93fcc48a1af4fec6205548bd36621d505097f9394037"),
 }
 
 -- ===== NOTIFY =====
@@ -156,450 +122,402 @@ local function notify(title, text)
     })
 end
 
--- ===== EXPLOIT FUNCTIONS =====
-
--- 🔴 KRITIS 1: Instant Fish (Tanpa Mancing)
-local function instantFish()
-    if not Remote.CatchFish then
-        notify("Error", "Remote CatchFish tidak ditemukan")
-        return
-    end
-    
-    -- Coba berbagai parameter untuk test celah
-    local testParams = {
-        {"Legendary Fish", 100, "Mythical"},
-        {"Secret Fish", 999, "Secret"},
-        {"Megalodon", 1000, "Boss"},
-        {true, "Legendary"},
-        {1, "Epic", 50}
-    }
-    
-    for _, params in ipairs(testParams) do
-        spawn(function()
-            Remote.CatchFish:FireServer(unpack(params))
-            task.wait(0.1)
-        end)
-    end
-    
-    notify("Exploit", "Instant Fish - Cek console untuk hasil")
-end
-
--- 🔴 KRITIS 2: Unlimited Money (Sell Spoof)
-local function unlimitedMoney()
-    if not Remote.SellAll then
-        notify("Error", "Remote SellAll tidak ditemukan")
-        return
-    end
-    
-    -- Test race condition (spam)
-    for i = 1, 20 do
-        spawn(function()
-            Remote.SellAll:FireServer()
-        end)
-    end
-    
-    -- Test parameter ekstrem
-    if Remote.SellItem then
-        Remote.SellItem:FireServer(999999) -- Jual item dengan ID tidak ada
-        Remote.SellItem:FireServer(-1) -- Negative ID
-        Remote.SellItem:FireServer("any") -- String sebagai ID
-    end
-    
-    notify("Exploit", "Unlimited Money - Cek saldo")
-end
-
--- 🔴 KRITIS 3: Unlimited Daily Rewards
-local function unlimitedDaily()
-    if not Remote.ClaimDaily then
-        notify("Error", "Remote ClaimDaily tidak ditemukan")
-        return
-    end
-    
-    -- Spam claim (test cooldown)
-    for i = 1, 50 do
-        spawn(function()
-            Remote.ClaimDaily:FireServer()
-        end)
-    end
-    
-    if Remote.ClaimBounty then
-        for i = 1, 20 do
-            Remote.ClaimBounty:FireServer()
-        end
-    end
-    
-    if Remote.ClaimPercentile then
-        Remote.ClaimPercentile:FireServer(1)
-        Remote.ClaimPercentile:FireServer(999)
-    end
-    
-    notify("Exploit", "Unlimited Daily - Cek reward")
-end
-
--- 🔴 KRITIS 4: Free Items (Purchase Bypass)
-local function freeItems()
-    if not Remote.PurchaseBait then
-        notify("Error", "Remote PurchaseBait tidak ditemukan")
-        return
-    end
-    
-    -- Test parameter harga 0
-    Remote.PurchaseBait:FireServer("Corrupt Bait", 0)
-    Remote.PurchaseBait:FireServer("Royal Bait", 0)
-    
-    -- Test parameter negative
-    Remote.PurchaseBait:FireServer("Aether Bait", -1000)
-    
-    -- Test nil parameter
-    Remote.PurchaseBait:FireServer(nil, nil)
-    
-    if Remote.PurchaseRod then
-        Remote.PurchaseRod:FireServer("Ares Rod", 0)
-        Remote.PurchaseRod:FireServer("Element Rod", -1)
-    end
-    
-    notify("Exploit", "Free Items - Cek inventory")
-end
-
--- 🔴 KRITIS 5: Bypass Minigame
-local function bypassMinigame()
-    if not Remote.FishingMinigame or not Remote.CatchFish then
-        notify("Error", "Remote tidak ditemukan")
-        return
-    end
-    
-    -- Langsung menang tanpa minigame
-    Remote.FishingMinigame:FireServer(true)
-    
-    -- Langsung dapat ikan
-    Remote.CatchFish:FireServer("Mythical Fish", 100, "Legendary")
-    
-    notify("Exploit", "Minigame Bypassed - Langsung dapat ikan")
-end
-
--- 🔴 KRITIS 6: Race Condition Test
-local function raceCondition()
-    local remotes = {
-        Remote.SellAll,
-        Remote.ClaimDaily,
-        Remote.CatchFish
-    }
-    
-    for _, remote in ipairs(remotes) do
-        if remote then
-            for i = 1, 100 do
-                spawn(function()
-                    remote:FireServer()
-                end)
-            end
-        end
-    end
-    
-    notify("Exploit", "Race Condition Test - Cek response server")
-end
-
--- 🔴 KRITIS 7: Parameter Fuzzing
-local function parameterFuzzing()
-    local testValues = {
-        nil,
-        true,
-        false,
-        0,
-        999999,
-        -1,
-        math.huge,
-        -math.huge,
-        "any",
-        {"nested"},
-        {1,2,3},
-        function() end
-    }
-    
-    if Remote.PurchaseBait then
-        for _, val in ipairs(testValues) do
-            spawn(function()
-                pcall(function()
-                    Remote.PurchaseBait:FireServer(val, val)
-                end)
-            end)
-        end
-    end
-    
-    notify("Exploit", "Parameter Fuzzing - Cek server crash")
-end
-
--- ===== UI ELEMENTS (SAMA SEPERTI SEBELUMNYA) =====
--- [Saya pertahankan semua fungsi UI dari script sebelumnya]
--- ...
-
--- ===== MENU FUNCTIONS DENGAN TAMBAHAN EXPLOIT =====
-
--- Fishing Menu (dengan tambahan exploit)
-local function showFishing()
-    clearFeatures()
-    contentTitle.Text = "Fishing Features"
-    
-    createLabel(featuresContainer, "⚡ NORMAL FEATURES")
-    createButton(featuresContainer, "CHARGE ROD", function()
-        if Remote.ChargeRod then
-            Remote.ChargeRod:FireServer()
-            notify("Fishing", "Rod charged")
-        end
-    end)
-    
-    createButton(featuresContainer, "CATCH FISH", function()
-        if Remote.CatchFish then
-            Remote.CatchFish:FireServer()
-            notify("Fishing", "Fish caught")
-        end
-    end)
-    
-    createLabel(featuresContainer, "🔥 EXPLOIT FEATURES")
-    createButton(featuresContainer, "⚡ INSTANT FISH (NO MINIGAME)", instantFish)
-    createButton(featuresContainer, "🎯 BYPASS MINIGAME", bypassMinigame)
-    createButton(featuresContainer, "⚡ RACE CONDITION TEST", raceCondition)
-end
-
--- Bait Menu (dengan tambahan exploit)
-local function showBait()
-    clearFeatures()
-    contentTitle.Text = "Bait Shop"
-    
-    createLabel(featuresContainer, "🛒 NORMAL SHOP")
-    
-    local selectedBait = BaitNames[1]
-    
-    createDropdown(featuresContainer, BaitNames, BaitNames[1], function(selected)
-        selectedBait = selected
-        notify("Bait", "Selected: " .. selected)
-    end)
-    
-    createButton(featuresContainer, "BUY SELECTED BAIT", function()
-        if Remote.PurchaseBait then
-            Remote.PurchaseBait:FireServer(selectedBait, 1)
-            notify("Bait", "Purchased " .. selectedBait)
-        end
-    end)
-    
-    createLabel(featuresContainer, "🔥 EXPLOIT FEATURES")
-    createButton(featuresContainer, "💰 FREE ITEMS (PRICE 0)", freeItems)
-    createButton(featuresContainer, "🎲 PARAMETER FUZZING", parameterFuzzing)
-end
-
--- Rod Menu (dengan tambahan exploit)
-local function showRod()
-    clearFeatures()
-    contentTitle.Text = "Rod Shop"
-    
-    createLabel(featuresContainer, "🛒 NORMAL SHOP")
-    
-    local selectedRod = RodNames[1]
-    
-    createDropdown(featuresContainer, RodNames, RodNames[1], function(selected)
-        selectedRod = selected
-        notify("Rod", "Selected: " .. selected)
-    end)
-    
-    createButton(featuresContainer, "BUY SELECTED ROD", function()
-        if Remote.PurchaseRod then
-            Remote.PurchaseRod:FireServer(selectedRod, 1)
-            notify("Rod", "Purchased " .. selectedRod)
-        end
-    end)
-    
-    createLabel(featuresContainer, "🔥 EXPLOIT FEATURES")
-    createButton(featuresContainer, "💰 FREE RODS", freeItems)
-end
-
--- Weather Menu
-local function showWeather()
-    clearFeatures()
-    contentTitle.Text = "Weather Control"
-    
-    createLabel(featuresContainer, "☁️ WEATHER")
-    
-    local selectedWeather = WeatherNames[1]
-    
-    createDropdown(featuresContainer, WeatherNames, WeatherNames[1], function(selected)
-        selectedWeather = selected
-        notify("Weather", "Selected: " .. selected)
-    end)
-    
-    createButton(featuresContainer, "ACTIVATE WEATHER", function()
-        if Remote.WeatherCommand then
-            Remote.WeatherCommand:FireServer(selectedWeather)
-            notify("Weather", "Activated " .. selectedWeather)
-        end
-    end)
-end
-
--- Teleport Menu
-local function showTeleport()
-    clearFeatures()
-    contentTitle.Text = "Teleport"
-    
-    createLabel(featuresContainer, "📍 LOCATIONS")
-    
-    local selectedLoc = TeleportNames[1]
-    
-    createDropdown(featuresContainer, TeleportNames, TeleportNames[1], function(selected)
-        selectedLoc = selected
-    end)
-    
-    createButton(featuresContainer, "TELEPORT NOW", function()
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local cframe = TeleportLocations[selectedLoc]
-            if cframe then
-                char.HumanoidRootPart.CFrame = cframe
-                notify("Teleport", "Teleported to " .. selectedLoc)
-            end
-        end
-    end)
-end
-
--- Quest Menu (dengan tambahan exploit)
-local function showQuest()
-    clearFeatures()
-    contentTitle.Text = "Quests"
-    
-    createLabel(featuresContainer, "📋 NORMAL QUESTS")
-    
-    createButton(featuresContainer, "CLAIM DAILY LOGIN", function()
-        if Remote.ClaimDaily then
-            Remote.ClaimDaily:FireServer()
-            notify("Quest", "Daily login claimed")
-        end
-    end)
-    
-    createButton(featuresContainer, "CLAIM BOUNTY", function()
-        if Remote.ClaimBounty then
-            Remote.ClaimBounty:FireServer()
-            notify("Quest", "Bounty claimed")
-        end
-    end)
-    
-    createLabel(featuresContainer, "🔥 EXPLOIT FEATURES")
-    createButton(featuresContainer, "💰 UNLIMITED DAILY", unlimitedDaily)
-    createButton(featuresContainer, "💰 UNLIMITED MONEY", unlimitedMoney)
-end
-
--- Exploit Menu (BARU)
-local function showExploit()
-    clearFeatures()
-    contentTitle.Text = "Exploit Hub"
-    
-    createLabel(featuresContainer, "🔴 KRITICAL EXPLOITS")
-    createButton(featuresContainer, "🎣 INSTANT FISH (NO MINIGAME)", instantFish)
-    createButton(featuresContainer, "💰 UNLIMITED MONEY", unlimitedMoney)
-    createButton(featuresContainer, "📅 UNLIMITED DAILY", unlimitedDaily)
-    createButton(featuresContainer, "🛒 FREE ITEMS", freeItems)
-    createButton(featuresContainer, "🎯 BYPASS MINIGAME", bypassMinigame)
-    
-    createLabel(featuresContainer, "⚡ ADVANCED EXPLOITS")
-    createButton(featuresContainer, "🔄 RACE CONDITION TEST", raceCondition)
-    createButton(featuresContainer, "🎲 PARAMETER FUZZING", parameterFuzzing)
-    
-    createLabel(featuresContainer, "📊 STATUS REMOTE")
-    local status = "CatchFish: " .. (Remote.CatchFish and "✅" or "❌") .. "\n"
-    status = status .. "SellAll: " .. (Remote.SellAll and "✅" or "❌") .. "\n"
-    status = status .. "ClaimDaily: " .. (Remote.ClaimDaily and "✅" or "❌") .. "\n"
-    status = status .. "PurchaseBait: " .. (Remote.PurchaseBait and "✅" or "❌") .. "\n"
-    
-    local infoBox = Instance.new("TextLabel")
-    infoBox.Size = UDim2.new(1, 0, 0, 80)
-    infoBox.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
-    infoBox.BackgroundTransparency = 0.2
-    infoBox.Text = status
-    infoBox.TextColor3 = Color3.new(0.3, 1, 0.3)
-    infoBox.Font = Enum.Font.Code
-    infoBox.TextSize = 12
-    infoBox.TextXAlignment = Enum.TextXAlignment.Left
-    infoBox.Parent = featuresContainer
-    
-    local infoCorner = Instance.new("UICorner")
-    infoCorner.CornerRadius = UDim.new(0, 6)
-    infoCorner.Parent = infoBox
-end
-
--- ===== CREATE LEFT MENU BUTTONS =====
-local menuButtons = {
-    {name = "Fishing", func = showFishing},
-    {name = "Bait", func = showBait},
-    {name = "Rod", func = showRod},
-    {name = "Weather", func = showWeather},
-    {name = "Teleport", func = showTeleport},
-    {name = "Quest", func = showQuest},
-    {name = "Exploit", func = showExploit} -- Menu baru
-}
-
-local currentMenu = ""
-
-for _, btnData in ipairs(menuButtons) do
+-- ===== UI ELEMENTS =====
+local function createButton(parent, text, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 100, 0, 35)
-    btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    btn.BackgroundTransparency = 0.3
-    btn.Text = btnData.name
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+    btn.BackgroundTransparency = 0.2
+    btn.Text = text
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamBold
-    btn.Parent = leftMenu
+    btn.Parent = parent
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = btn
     
-    btn.MouseEnter:Connect(function()
-        if currentMenu ~= btnData.name then
-            btn.BackgroundTransparency = 0.1
-        end
-    end)
-    
-    btn.MouseLeave:Connect(function()
-        if currentMenu ~= btnData.name then
-            btn.BackgroundTransparency = 0.3
-        end
-    end)
-    
-    btn.MouseButton1Click:Connect(function()
-        for _, b in pairs(leftMenu:GetChildren()) do
-            if b:IsA("TextButton") then
-                b.BackgroundTransparency = 0.3
-            end
-        end
-        btn.BackgroundTransparency = 0
-        currentMenu = btnData.name
-        btnData.func()
-    end)
+    btn.MouseButton1Click:Connect(callback)
 end
 
--- Show Fishing menu by default
-task.wait(0.1)
-showFishing()
+local function createLabel(parent, text)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 25)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextSize = 14
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = parent
+end
 
--- ===== DRAG FUNCTIONALITY =====
+local function createDropdown(parent, options, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 35)
+    frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    frame.BackgroundTransparency = 0.2
+    frame.Parent = parent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = frame
+    
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = default or options[1]
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.Gotham
+    btn.Parent = frame
+    
+    local dropdownFrame = Instance.new("Frame")
+    dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
+    dropdownFrame.Position = UDim2.new(0, 0, 0, 35)
+    dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    dropdownFrame.Visible = false
+    dropdownFrame.Parent = frame
+    dropdownFrame.ZIndex = 10
+    dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
+    
+    for i, opt in ipairs(options) do
+        local optBtn = Instance.new("TextButton")
+        optBtn.Size = UDim2.new(1, 0, 0, 30)
+        optBtn.BackgroundTransparency = 1
+        optBtn.Text = opt
+        optBtn.TextColor3 = Color3.new(1, 1, 1)
+        optBtn.TextSize = 13
+        optBtn.Font = Enum.Font.Gotham
+        optBtn.Parent = dropdownFrame
+        optBtn.ZIndex = 11
+        
+        optBtn.MouseButton1Click:Connect(function()
+            btn.Text = opt
+            dropdownFrame.Visible = false
+            callback(opt)
+        end)
+    end
+    
+    btn.MouseButton1Click:Connect(function()
+        dropdownFrame.Visible = not dropdownFrame.Visible
+    end)
+    
+    return frame
+end
+
+-- ===== MAIN FRAME =====
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 700, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -350, 0.5, -250)
+mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+mainFrame.BackgroundTransparency = 0.15
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = gui
+
+local corners = Instance.new("UICorner")
+corners.CornerRadius = UDim.new(0, 12)
+corners.Parent = mainFrame
+
+-- Header
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 40)
+header.BackgroundTransparency = 1
+header.Parent = mainFrame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0, 150, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "Moe V1.0"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 20
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -40, 0, 5)
+closeBtn.BackgroundColor3 = Color3.new(1, 0.3, 0.3)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.TextSize = 16
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = header
+closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
+
+-- Content
+local contentFrame = Instance.new("ScrollingFrame")
+contentFrame.Size = UDim2.new(1, -20, 1, -60)
+contentFrame.Position = UDim2.new(0, 10, 0, 50)
+contentFrame.BackgroundTransparency = 1
+contentFrame.ScrollBarThickness = 4
+contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+contentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+contentFrame.Parent = mainFrame
+
+local featuresContainer = Instance.new("Frame")
+featuresContainer.Size = UDim2.new(1, 0, 0, 0)
+featuresContainer.BackgroundTransparency = 1
+featuresContainer.Parent = contentFrame
+featuresContainer.AutomaticSize = Enum.AutomaticSize.Y
+
+local featuresLayout = Instance.new("UIListLayout")
+featuresLayout.Padding = UDim.new(0, 8)
+featuresLayout.Parent = featuresContainer
+
+-- ===== CLEAR FEATURES =====
+local function clearFeatures()
+    for _, child in pairs(featuresContainer:GetChildren()) do
+        if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+end
+
+-- ===== 🎯 EXPLOIT 1: RNG MODIFIER STACKING =====
+-- Developer paling ribet: Menghitung total Luck dari berbagai sumber
+local function exploitRNGStacking()
+    clearFeatures()
+    
+    createLabel(featuresContainer, "🎲 RNG MODIFIER STACKING")
+    createLabel(featuresContainer, "Target: Stack Luck + Weather + Event + Potion")
+    
+    createButton(featuresContainer, "⚠️ ACTIVATE ALL BUFFS", function()
+        -- Stack semua kemungkinan buff
+        if Remote.ActivateLuck then
+            Remote.ActivateLuck:FireServer(true)
+        end
+        
+        if Remote.ConsumePotion then
+            Remote.ConsumePotion:FireServer("Luck Potion")
+            Remote.ConsumePotion:FireServer("Rare Potion")
+            Remote.ConsumePotion:FireServer("Legendary Potion")
+        end
+        
+        if Remote.WeatherCommand then
+            Remote.WeatherCommand:FireServer("Radiant") -- +Shiny chance
+            Remote.WeatherCommand:FireServer("Storm") -- +Luck
+        end
+        
+        notify("RNG", "All buffs activated - Cek luck increase")
+    end)
+    
+    createButton(featuresContainer, "⚡ OVERFLOW LUCK TEST", function()
+        -- Coba buat luck overflow (kalau server pake integer)
+        for i = 1, 100 do
+            spawn(function()
+                Remote.ActivateLuck:FireServer(true)
+            end)
+        end
+    end)
+    
+    createLabel(featuresContainer, "📊 Teori:")
+    createLabel(featuresContainer, "• Luck + Weather + Event + Potion")
+    createLabel(featuresContainer, "• Developer harus hitung semua")
+    createLabel(featuresContainer, "• Kalau overflow? Bisa jadi 0 atau negatif")
+end
+
+-- ===== 🎯 EXPLOIT 2: AUTO FISHING VS MANUAL FISHING =====
+-- Developer ribet: Sinkronisasi state
+local function exploitAutoManual()
+    clearFeatures()
+    
+    createLabel(featuresContainer, "🎣 AUTO VS MANUAL STATE")
+    createLabel(featuresContainer, "Target: Konflik state Auto/Manual")
+    
+    createButton(featuresContainer, "⚠️ START AUTO FISHING", function()
+        if Remote.UpdateAutoFishingState then
+            Remote.UpdateAutoFishingState:FireServer(true)
+        end
+    end)
+    
+    createButton(featuresContainer, "⚡ CAST MANUAL (SAME TIME)", function()
+        if Remote.ChargeRod then
+            Remote.ChargeRod:FireServer()
+        end
+    end)
+    
+    createButton(featuresContainer, "🔥 RACE CONDITION", function()
+        -- Kirim auto dan manual bersamaan
+        for i = 1, 20 do
+            spawn(function()
+                if Remote.UpdateAutoFishingState then
+                    Remote.UpdateAutoFishingState:FireServer(true)
+                end
+            end)
+            spawn(function()
+                if Remote.ChargeRod then
+                    Remote.ChargeRod:FireServer()
+                end
+            end)
+        end
+    end)
+    
+    createLabel(featuresContainer, "📊 Teori:")
+    createLabel(featuresContainer, "• State machine complex")
+    createLabel(featuresContainer, "• Auto vs Manual conflict")
+    createLabel(featuresContainer, "• Bisa double catch atau free catch")
+end
+
+-- ===== 🎯 EXPLOIT 3: INVENTORY LIMIT BYPASS =====
+-- Developer ribet: Inventory management
+local function exploitInventory()
+    clearFeatures()
+    
+    createLabel(featuresContainer, "📦 INVENTORY LIMIT BYPASS")
+    createLabel(featuresContainer, "Target: Melebihi stack limit / inventory size")
+    
+    createButton(featuresContainer, "⚠️ SPAM PURCHASE", function()
+        if not Remote.PurchaseBait then return end
+        
+        for i = 1, 1000 do
+            spawn(function()
+                Remote.PurchaseBait:FireServer("Starter Bait", 999)
+            end)
+        end
+    end)
+    
+    createButton(featuresContainer, "⚡ GIFT SPAM", function()
+        if Remote.UseGift then
+            for i = 1, 100 do
+                spawn(function()
+                    Remote.UseGift:FireServer("Gift Box")
+                end)
+            end
+        end
+    end)
+    
+    createButton(featuresContainer, "🔥 SELL WHILE FULL", function()
+        -- Jual di tengah-tengah spam
+        if Remote.SellAll then
+            Remote.SellAll:FireServer()
+        end
+    end)
+    
+    createLabel(featuresContainer, "📊 Teori:")
+    createLabel(featuresContainer, "• Inventory limit check")
+    createLabel(featuresContainer, "• Race condition pas penuh")
+    createLabel(featuresContainer, "• Bisa overflow inventory")
+end
+
+-- ===== 🎯 EXPLOIT 4: TRADING SYSTEM BYPASS =====
+-- Developer ribet: Trade validation
+local function exploitTrading()
+    clearFeatures()
+    
+    createLabel(featuresContainer, "🔄 TRADING SYSTEM")
+    createLabel(featuresContainer, "Target: Duplicate items via trade")
+    
+    createButton(featuresContainer, "⚠️ SEND TRADE REQUEST", function()
+        if Remote.ClaimBounty then
+            -- Coba kirim request trade (kalau ada)
+            Remote.ClaimBounty:FireServer()
+        end
+    end)
+    
+    createButton(featuresContainer, "⚡ ACCEPT TRADE WHILE LAGGING", function()
+        -- Simulasi lag saat trade
+        for i = 1, 10 do
+            spawn(function()
+                if Remote.ClaimBounty then
+                    Remote.ClaimBounty:FireServer()
+                end
+                task.wait(0.01)
+                if Remote.SellAll then
+                    Remote.SellAll:FireServer()
+                end
+            end)
+        end
+    end)
+    
+    createLabel(featuresContainer, "📊 Teori:")
+    createLabel(featuresContainer, "• Trade validation complex")
+    createLabel(featuresContainer, "• Lag bisa bikin double item")
+    createLabel(featuresContainer, "• Cancel trade di tengah proses")
+end
+
+-- ===== 🎯 EXPLOIT 5: WEATHER + EVENT STACK =====
+-- Developer ribet: Event duration & stacking
+local function exploitWeatherEvent()
+    clearFeatures()
+    
+    createLabel(featuresContainer, "☁️ WEATHER + EVENT STACK")
+    createLabel(featuresContainer, "Target: Stack multiple weather/event")
+    
+    createButton(featuresContainer, "⚠️ STACK ALL WEATHER", function()
+        if not Remote.WeatherCommand then return end
+        
+        local weathers = {"Radiant", "Storm", "Shark Hunt", "Fog"}
+        for _, w in ipairs(weathers) do
+            spawn(function()
+                Remote.WeatherCommand:FireServer(w)
+            end)
+        end
+    end)
+    
+    createButton(featuresContainer, "⚡ EXTEND DURATION", function()
+        -- Coba perpanjang durasi dengan spam
+        for i = 1, 50 do
+            spawn(function()
+                Remote.WeatherCommand:FireServer("Shark Hunt")
+            end)
+        end
+    end)
+    
+    createLabel(featuresContainer, "📊 Teori:")
+    createLabel(featuresContainer, "• Weather duration tracking")
+    createLabel(featuresContainer, "• Multiple events overlap")
+    createLabel(featuresContainer, "• Bisa infinite event")
+end
+
+-- ===== MAIN MENU =====
+local menuFrame = Instance.new("Frame")
+menuFrame.Size = UDim2.new(1, 0, 0, 40)
+menuFrame.BackgroundTransparency = 1
+menuFrame.Parent = mainFrame
+
+local menuLayout = Instance.new("UIListLayout")
+menuLayout.FillDirection = Enum.FillDirection.Horizontal
+menuLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+menuLayout.Padding = UDim.new(0, 10)
+menuLayout.Parent = menuFrame
+
+-- Create menu buttons
+local function createMenuButton(name, func)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 100, 0, 30)
+    btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    btn.Text = name
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = menuFrame
+    
+    btn.MouseButton1Click:Connect(func)
+end
+
+createMenuButton("RNG Stack", exploitRNGStacking)
+createMenuButton("Auto/Manual", exploitAutoManual)
+createMenuButton("Inventory", exploitInventory)
+createMenuButton("Trading", exploitTrading)
+createMenuButton("Weather", exploitWeatherEvent)
+
+-- Default menu
+exploitRNGStacking()
+
+-- ===== DRAG =====
 local dragging = false
-local dragStart
-local startPos
-
 mainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
     end
 end)
 
 mainFrame.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+        mainFrame.Position = UDim2.new(0, mouse.X - 350, 0, mouse.Y - 250)
     end
 end)
 
@@ -609,6 +527,5 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
-print("Moe V1.0 GUI Loaded - EXPLOIT EDITION")
-print("🔥 7 Exploit features siap digunakan")
-print("⚠️ Gunakan dengan risiko sendiri!")
+print("🔥 Moe V1.0 - Developer Nightmare Edition")
+print("🎯 Target: 5 titik paling ribet untuk developer")
