@@ -1,5 +1,4 @@
--- [[ DARK ZEPHYR REMOTE SCANNER v2.0 - NO CLIPBOARD ]]
--- Scan semua remote dan tampilkan dalam GUI dengan fitur select all
+-- [[ DARK ZEPHYR REMOTE SCANNER v3.0 - FIXED ]]
 
 local player = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
@@ -9,8 +8,8 @@ gui.Parent = player:WaitForChild("PlayerGui")
 
 -- Main frame
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 700, 0, 500)
-frame.Position = UDim2.new(0.5, -350, 0.5, -250)
+frame.Size = UDim2.new(0, 750, 0, 550)
+frame.Position = UDim2.new(0.5, -375, 0.5, -275)
 frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -24,9 +23,9 @@ corner.Parent = frame
 
 -- Title
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 35)
+title.Size = UDim2.new(1, 0, 0, 40)
 title.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-title.Text = "🔍 DARK ZEPHYR REMOTE SCANNER"
+title.Text = "🔍 DARK ZEPHYR REMOTE SCANNER v3.0"
 title.TextColor3 = Color3.new(1, 0, 0)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
@@ -39,7 +38,7 @@ titleCorner.Parent = title
 -- Close button
 local close = Instance.new("TextButton")
 close.Size = UDim2.new(0, 30, 0, 30)
-close.Position = UDim2.new(1, -35, 0, 2.5)
+close.Position = UDim2.new(1, -35, 0, 5)
 close.BackgroundColor3 = Color3.new(1, 0, 0)
 close.Text = "X"
 close.TextColor3 = Color3.new(1, 1, 1)
@@ -53,10 +52,9 @@ end)
 
 -- Status bar
 local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -20, 0, 25)
-status.Position = UDim2.new(0, 10, 0, 40)
+status.Size = UDim2.new(1, -20, 0, 30)
+status.Position = UDim2.new(0, 10, 0, 45)
 status.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-status.BackgroundTransparency = 0.5
 status.Text = "🔍 Scanning remotes..."
 status.TextColor3 = Color3.new(1, 1, 0)
 status.Font = Enum.Font.Gotham
@@ -67,59 +65,80 @@ local statusCorner = Instance.new("UICorner")
 statusCorner.CornerRadius = UDim.new(0, 4)
 statusCorner.Parent = status
 
--- TextBox untuk hasil scan (bisa di-select semua)
-local textBox = Instance.new("ScrollingFrame")
-textBox.Size = UDim2.new(1, -20, 1, -120)
-textBox.Position = UDim2.new(0, 10, 0, 70)
+-- TextBox untuk hasil scan (bisa di-copy)
+local textBox = Instance.new("TextBox")
+textBox.Size = UDim2.new(1, -20, 1, -160)
+textBox.Position = UDim2.new(0, 10, 0, 80)
 textBox.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
-textBox.BorderSizePixel = 0
+textBox.TextColor3 = Color3.new(0, 1, 0)
+textBox.Font = Enum.Font.Code
+textBox.TextSize = 12
+textBox.TextXAlignment = Enum.TextXAlignment.Left
+textBox.TextYAlignment = Enum.TextYAlignment.Top
+textBox.TextWrapped = true
+textBox.ClearTextOnFocus = false
+textBox.MultiLine = true
+textBox.Text = "Starting scan..."
 textBox.Parent = frame
 
 local boxCorner = Instance.new("UICorner")
 boxCorner.CornerRadius = UDim.new(0, 4)
 boxCorner.Parent = textBox
 
--- TextLabel untuk menampilkan hasil (bisa select text)
-local textLabel = Instance.new("TextLabel")
-textLabel.Size = UDim2.new(1, -10, 0, 0)
-textLabel.Position = UDim2.new(0, 5, 0, 5)
-textLabel.BackgroundTransparency = 1
-textLabel.Text = "Starting scan..."
-textLabel.TextColor3 = Color3.new(0, 1, 0)
-textLabel.TextXAlignment = Enum.TextXAlignment.Left
-textLabel.TextYAlignment = Enum.TextYAlignment.Top
-textLabel.Font = Enum.Font.Code
-textLabel.TextSize = 12
-textLabel.RichText = true
-textLabel.Parent = textBox
-textLabel.AutomaticSize = Enum.AutomaticSize.Y
-textLabel.TextSelectable = true -- Bisa di-select
+-- Progress bar
+local progressFrame = Instance.new("Frame")
+progressFrame.Size = UDim2.new(1, -20, 0, 20)
+progressFrame.Position = UDim2.new(0, 10, 0, 350)
+progressFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+progressFrame.Parent = frame
+
+local progressCorner = Instance.new("UICorner")
+progressCorner.CornerRadius = UDim.new(0, 4)
+progressCorner.Parent = progressFrame
+
+local progressBar = Instance.new("Frame")
+progressBar.Size = UDim2.new(0, 0, 1, 0)
+progressBar.BackgroundColor3 = Color3.new(0, 0.8, 0)
+progressBar.Parent = progressFrame
+
+local progressCorner2 = Instance.new("UICorner")
+progressCorner2.CornerRadius = UDim.new(0, 4)
+progressCorner2.Parent = progressBar
+
+local progressText = Instance.new("TextLabel")
+progressText.Size = UDim2.new(1, 0, 1, 0)
+progressText.BackgroundTransparency = 1
+progressText.Text = "0%"
+progressText.TextColor3 = Color3.new(1, 1, 1)
+progressText.Font = Enum.Font.GothamBold
+progressText.TextSize = 12
+progressText.Parent = progressFrame
 
 -- Button frame
 local buttonFrame = Instance.new("Frame")
-buttonFrame.Size = UDim2.new(1, -20, 0, 35)
-buttonFrame.Position = UDim2.new(0, 10, 1, -40)
+buttonFrame.Size = UDim2.new(1, -20, 0, 40)
+buttonFrame.Position = UDim2.new(0, 10, 1, -45)
 buttonFrame.BackgroundTransparency = 1
 buttonFrame.Parent = frame
 
--- Select All button
-local selectBtn = Instance.new("TextButton")
-selectBtn.Size = UDim2.new(0, 120, 0, 30)
-selectBtn.Position = UDim2.new(0, 0, 0, 2.5)
-selectBtn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.8)
-selectBtn.Text = "📋 SELECT ALL"
-selectBtn.TextColor3 = Color3.new(1, 1, 1)
-selectBtn.Font = Enum.Font.GothamBold
-selectBtn.TextSize = 12
-selectBtn.Parent = buttonFrame
+-- Copy button (manual instruction)
+local copyBtn = Instance.new("TextButton")
+copyBtn.Size = UDim2.new(0, 120, 0, 35)
+copyBtn.Position = UDim2.new(0, 0, 0, 2.5)
+copyBtn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.8)
+copyBtn.Text = "📋 COPY INSTRUCTION"
+copyBtn.TextColor3 = Color3.new(1, 1, 1)
+copyBtn.Font = Enum.Font.GothamBold
+copyBtn.TextSize = 12
+copyBtn.Parent = buttonFrame
 
-local selectCorner = Instance.new("UICorner")
-selectCorner.CornerRadius = UDim.new(0, 4)
-selectCorner.Parent = selectBtn
+local copyCorner = Instance.new("UICorner")
+copyCorner.CornerRadius = UDim.new(0, 4)
+copyCorner.Parent = copyBtn
 
 -- Rescan button
 local rescanBtn = Instance.new("TextButton")
-rescanBtn.Size = UDim2.new(0, 100, 0, 30)
+rescanBtn.Size = UDim2.new(0, 100, 0, 35)
 rescanBtn.Position = UDim2.new(0, 130, 0, 2.5)
 rescanBtn.BackgroundColor3 = Color3.new(1, 0.5, 0)
 rescanBtn.Text = "🔄 RESCAN"
@@ -132,45 +151,39 @@ local rescanCorner = Instance.new("UICorner")
 rescanCorner.CornerRadius = UDim.new(0, 4)
 rescanCorner.Parent = rescanBtn
 
--- Save/Load buttons
-local saveBtn = Instance.new("TextButton")
-saveBtn.Size = UDim2.new(0, 80, 0, 30)
-saveBtn.Position = UDim2.new(1, -170, 0, 2.5)
-saveBtn.BackgroundColor3 = Color3.new(0, 0.7, 0)
-saveBtn.Text = "💾 SAVE"
-saveBtn.TextColor3 = Color3.new(1, 1, 1)
-saveBtn.Font = Enum.Font.GothamBold
-saveBtn.TextSize = 12
-saveBtn.Parent = buttonFrame
+-- Clear button
+local clearBtn = Instance.new("TextButton")
+clearBtn.Size = UDim2.new(0, 100, 0, 35)
+clearBtn.Position = UDim2.new(0, 240, 0, 2.5)
+clearBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+clearBtn.Text = "🗑️ CLEAR"
+clearBtn.TextColor3 = Color3.new(1, 1, 1)
+clearBtn.Font = Enum.Font.GothamBold
+clearBtn.TextSize = 12
+clearBtn.Parent = buttonFrame
 
-local saveCorner = Instance.new("UICorner")
-saveCorner.CornerRadius = UDim.new(0, 4)
-saveCorner.Parent = saveBtn
-
-local loadBtn = Instance.new("TextButton")
-loadBtn.Size = UDim2.new(0, 80, 0, 30)
-loadBtn.Position = UDim2.new(1, -85, 0, 2.5)
-loadBtn.BackgroundColor3 = Color3.new(0.7, 0, 0.7)
-loadBtn.Text = "📂 LOAD"
-loadBtn.TextColor3 = Color3.new(1, 1, 1)
-loadBtn.Font = Enum.Font.GothamBold
-loadBtn.TextSize = 12
-loadBtn.Parent = buttonFrame
-
-local loadCorner = Instance.new("UICorner")
-loadCorner.CornerRadius = UDim.new(0, 4)
-loadCorner.Parent = loadBtn
+local clearCorner = Instance.new("UICorner")
+clearCorner.CornerRadius = UDim.new(0, 4)
+clearCorner.Parent = clearBtn
 
 -- Variable untuk menyimpan hasil
 local scanResults = {}
 local remoteList = {}
+local totalInstances = 0
+local scannedInstances = 0
+
+-- Fungsi untuk update progress
+local function updateProgress(percent, text)
+    progressBar.Size = UDim2.new(percent, 0, 1, 0)
+    progressText.Text = text or math.floor(percent * 100) .. "%"
+end
 
 -- Fungsi untuk format path
 local function getFullPath(instance)
     local path = instance.Name
     local parent = instance.Parent
     while parent and parent ~= game do
-        path = parent.Name .. "." .. path
+        path = parent.Name .. "/" .. path
         parent = parent.Parent
     end
     return path
@@ -178,18 +191,18 @@ end
 
 -- Fungsi untuk scan remotes
 local function scanRemotes()
-    status.Text = "🔍 Scanning... (0 found)"
+    status.Text = "🔍 Scanning remotes..."
     status.TextColor3 = Color3.new(1, 1, 0)
-    textLabel.Text = "SCANNING REMOTES...\n\n"
+    textBox.Text = "SCANNING REMOTES...\n\n"
     scanResults = {}
     remoteList = {}
     
     local total = 0
-    local scanned = 0
-    
-    -- Cari semua remote di game
     local allDescendants = game:GetDescendants()
-    status.Text = string.format("🔍 Scanning %d instances...", #allDescendants)
+    totalInstances = #allDescendants
+    scannedInstances = 0
+    
+    updateProgress(0, "0%")
     
     for i, child in ipairs(allDescendants) do
         if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") or child:IsA("UnreliableRemoteEvent") then
@@ -198,136 +211,114 @@ local function scanRemotes()
             local remoteInfo = {
                 name = child.Name,
                 class = child.ClassName,
-                path = path,
-                fullPath = child:GetFullName()
+                path = path
             }
             table.insert(remoteList, remoteInfo)
-            table.insert(scanResults, string.format("[%d] 🔹 %s: %s", total, child.ClassName, path))
+            table.insert(scanResults, string.format("[%d] %s ➜ %s", total, child.ClassName, path))
         end
         
-        -- Update progress setiap 1000 instance
-        if i % 1000 == 0 then
-            status.Text = string.format("🔍 Scanning... %d/%d (%d found)", i, #allDescendants, total)
-            task.wait() -- Biar gak freeze
+        -- Update progress setiap 500 instance
+        if i % 500 == 0 then
+            scannedInstances = i
+            local percent = i / totalInstances
+            updateProgress(percent, string.format("%d%% (%d/%d)", math.floor(percent*100), i, totalInstances))
+            status.Text = string.format("🔍 Scanning... %d remotes found", total)
+            task.wait()
         end
     end
     
     -- Format hasil akhir
     if total > 0 then
-        local resultText = string.format("=== REMOTE SCAN RESULTS ===\nTotal ditemukan: %d\n\n", total)
+        local resultText = string.format("=== REMOTE SCAN RESULTS ===\nTotal ditemukan: %d\nWaktu: %s\n\n", total, os.date("%H:%M:%S"))
         resultText = resultText .. table.concat(scanResults, "\n")
         
-        -- Tambahkan summary per folder
-        local folders = {}
+        -- Tambahkan summary
+        resultText = resultText .. "\n\n=== SUMMARY ===\n"
+        local remoteEvents = 0
+        local remoteFunctions = 0
+        local unreliable = 0
+        
         for _, remote in ipairs(remoteList) do
-            local parts = string.split(remote.path, ".")
-            if #parts > 1 then
-                local folder = parts[#parts - 1]
-                folders[folder] = (folders[folder] or 0) + 1
+            if remote.class == "RemoteEvent" then
+                remoteEvents = remoteEvents + 1
+            elseif remote.class == "RemoteFunction" then
+                remoteFunctions = remoteFunctions + 1
+            elseif remote.class == "UnreliableRemoteEvent" then
+                unreliable = unreliable + 1
             end
         end
         
-        resultText = resultText .. "\n\n=== SUMMARY PER FOLDER ===\n"
-        for folder, count in pairs(folders) do
-            resultText = resultText .. string.format("📁 %s: %d remotes\n", folder, count)
-        end
+        resultText = resultText .. string.format("RemoteEvents: %d\nRemoteFunctions: %d\nUnreliable: %d", remoteEvents, remoteFunctions, unreliable)
         
-        textLabel.Text = resultText
-        status.Text = string.format("✅ Scan selesai! Ditemukan %d remote", total)
+        textBox.Text = resultText
+        status.Text = string.format("✅ Selesai! Ditemukan %d remote", total)
         status.TextColor3 = Color3.new(0, 1, 0)
+        updateProgress(1, "100%")
     else
-        textLabel.Text = "❌ TIDAK ADA REMOTE DITEMUKAN!\n\n" ..
-                        "Kemungkinan penyebab:\n" ..
-                        "1. Game menggunakan BindableEvent (client-side only)\n" ..
-                        "2. Remote tersembunyi di dalam ModuleScript\n" ..
-                        "3. Game menggunakan sistem networking kustom\n\n" ..
-                        "Mencoba metode deep scan..."
-        status.Text = "⚠️ Melakukan deep scan..."
-        status.TextColor3 = Color3.new(1, 0.5, 0)
+        textBox.Text = "❌ TIDAK ADA REMOTE DITEMUKAN!\n\n" ..
+                       "Kemungkinan game menggunakan sistem:\n" ..
+                       "1. BindableEvent (client-side only)\n" ..
+                       "2. Remote tersembunyi di ModuleScript\n" ..
+                       "3. Sistem networking kustom\n\n" ..
+                       "Mencari ModuleScripts untuk referensi..."
         
-        -- Deep scan: cari di semua module scripts
-        task.wait(1)
-        textLabel.Text = textLabel.Text .. "\n\nDEEP SCAN RESULTS:\n"
-        
-        local moduleCount = 0
+        -- Cari ModuleScripts sebagai referensi
+        local modules = {}
         for _, child in ipairs(allDescendants) do
             if child:IsA("ModuleScript") then
-                moduleCount = moduleCount + 1
-                if moduleCount <= 50 then -- Batasi biar gak terlalu banyak
-                    textLabel.Text = textLabel.Text .. string.format("📦 Module: %s\n", getFullPath(child))
-                end
+                table.insert(modules, getFullPath(child))
             end
         end
         
-        textLabel.Text = textLabel.Text .. string.format("\nTotal ModuleScripts: %d", moduleCount)
-        status.Text = "❌ Deep scan selesai - Tidak ada remote, hanya modules"
+        if #modules > 0 then
+            textBox.Text = textBox.Text .. "\n\n=== MODULES DITEMUKAN ===\n"
+            for i = 1, math.min(20, #modules) do
+                textBox.Text = textBox.Text .. string.format("📦 %s\n", modules[i])
+            end
+            if #modules > 20 then
+                textBox.Text = textBox.Text .. string.format("... dan %d lainnya", #modules - 20)
+            end
+        end
+        
+        status.Text = "❌ Tidak ada remote ditemukan"
         status.TextColor3 = Color3.new(1, 0, 0)
+        updateProgress(1, "GAGAL")
     end
 end
 
--- Select All function (manual)
-selectBtn.MouseButton1Click:Connect(function()
-    -- Method manual: user bisa select text dengan mouse
-    status.Text = "✅ Gunakan mouse untuk select text (Ctrl+A)"
+-- Copy instruction
+copyBtn.MouseButton1Click:Connect(function()
+    textBox.Text = textBox.Text .. "\n\n[INSTRUKSI COPY]\n" ..
+                   "1. Klik di dalam text box ini\n" ..
+                   "2. Tekan Ctrl+A untuk select all\n" ..
+                   "3. Tekan Ctrl+C untuk copy\n" ..
+                   "4. Paste di chat atau file"
+    
+    status.Text = "✅ Gunakan Ctrl+A dan Ctrl+C untuk copy"
     status.TextColor3 = Color3.new(0, 1, 0)
     
-    -- Focus ke textLabel
-    textLabel:CaptureFocus()
+    -- Focus ke textBox
+    textBox:CaptureFocus()
+    textBox.CursorPosition = #textBox.Text
 end)
 
 -- Rescan
-rescanBtn.MouseButton1Click:Connect(scanRemotes)
-
--- Save results
-saveBtn.MouseButton1Click:Connect(function()
-    if #scanResults == 0 then
-        status.Text = "❌ Tidak ada data untuk disave"
-        status.TextColor3 = Color3.new(1, 0, 0)
-        return
-    end
-    
-    local success, err = pcall(function()
-        writefile("DarkZephyr_RemoteScan.txt", textLabel.Text)
-    end)
-    
-    if success then
-        status.Text = "✅ Saved to DarkZephyr_RemoteScan.txt"
-        status.TextColor3 = Color3.new(0, 1, 0)
-        saveBtn.BackgroundColor3 = Color3.new(0, 1, 0)
-        task.wait(1)
-        saveBtn.BackgroundColor3 = Color3.new(0, 0.7, 0)
-    else
-        status.Text = "❌ Gagal save (gunakan copy manual)"
-        status.TextColor3 = Color3.new(1, 0, 0)
-    end
+rescanBtn.MouseButton1Click:Connect(function()
+    scanRemotes()
 end)
 
--- Load results
-loadBtn.MouseButton1Click:Connect(function()
-    local success, data = pcall(function()
-        return readfile("DarkZephyr_RemoteScan.txt")
-    end)
-    
-    if success and data then
-        textLabel.Text = data
-        status.Text = "✅ Loaded from file"
-        status.TextColor3 = Color3.new(0, 1, 0)
-    else
-        status.Text = "❌ No saved file found"
-        status.TextColor3 = Color3.new(1, 0, 0)
-    end
+-- Clear
+clearBtn.MouseButton1Click:Connect(function()
+    textBox.Text = ""
+    scanResults = {}
+    remoteList = {}
+    status.Text = "Cleared"
+    status.TextColor3 = Color3.new(1, 1, 1)
+    updateProgress(0, "0%")
 end)
 
 -- Start scan
 scanRemotes()
 
--- Instructions
-local instr = Instance.new("TextLabel")
-instr.Size = UDim2.new(1, -20, 0, 20)
-instr.Position = UDim2.new(0, 10, 1, -20)
-instr.BackgroundTransparency = 1
-instr.Text = "💡 Klik SELECT ALL, lalu tekan Ctrl+A dan Ctrl+C untuk copy"
-instr.TextColor3 = Color3.new(0.5, 0.5, 0.5)
-instr.TextSize = 10
-instr.Font = Enum.Font.Gotham
-instr.Parent = frame
+-- Auto focus biar gampang copy
+textBox:CaptureFocus()
