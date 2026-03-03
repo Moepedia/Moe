@@ -1,5 +1,5 @@
--- Moe V1.0 GUI for FISH IT - FINAL VERSION
--- Desain menu kiri seperti sebelumnya, fitur sesuai permintaan
+-- Moe V1.0 GUI for FISH IT - ULTIMATE EDITION
+-- Dengan semua Bait, Rod, Weather, Auto Quest, Auto Event, Auto Teleport
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -26,66 +26,111 @@ local TeleportLocations = {
     ["Kohana"] = CFrame.new(-663.904236, 3.04580712, 718.796875),
     ["Underground Cellar"] = CFrame.new(2109.52148, -94.1875076, -708.609131),
     ["Ancient Jungle"] = CFrame.new(1831.71362, 6.62499952, -299.279175),
-    ["Sacred Temple"] = CFrame.new(1466.92151, -21.8750591, -622.835693)
+    ["Sacred Temple"] = CFrame.new(1466.92151, -21.8750591, -622.835693),
+    ["Bobber Shop"] = CFrame.new(0, 0, 0), -- Ganti dengan koordinat asli
+    ["Rods Store"] = CFrame.new(0, 0, 0), -- Ganti dengan koordinat asli
+    ["Traveling Merchant"] = CFrame.new(0, 0, 0), -- Ganti dengan koordinat asli
+    ["Kohana Volcano"] = CFrame.new(-663.904236, 3.04580712, 718.796875) -- Sama dengan Kohana
 }
 
--- ===== DATA ITEM DARI GAME =====
--- Ini perlu dicek di game, untuk sementara pakai contoh umum
+-- ===== DATA BAIT LENGKAP =====
 local BaitTypes = {
-    "Basic Bait",
-    "Quality Bait", 
-    "Super Bait",
-    "Mystic Bait",
-    "Golden Bait"
+    {name = "Starter Bait", price = "Free", luck = "0%", desc = "Given at the start of the game"},
+    {name = "Topwater Bait", price = "100$", luck = "8%", desc = "Buy in Bobber Shop"},
+    {name = "Luck Bait", price = "1,000$", luck = "12%", desc = "Buy in Bobber Shop"},
+    {name = "Midnight Bait", price = "3,000$", luck = "22%", desc = "Buy in Bobber Shop"},
+    {name = "Nature Bait", price = "83,500$", luck = "45%", bonus = "Bonus XP: 4%", desc = "Buy in Bobber Shop"},
+    {name = "Chroma Bait", price = "290,000$", luck = "100%", desc = "Buy in Bobber Shop"},
+    {name = "Royal Bait", price = "425,000$", luck = "130%", bonus = "Gold Mutation Mult.: 30%", desc = "Buy in Traveling Merchant"},
+    {name = "Dark Matter Bait", price = "630,000$", luck = "160%", bonus = "Bonus XP: 5% | Shiny Chance: 5%", desc = "Buy in Bobber Shop"},
+    {name = "Corrupt Bait", price = "1,150,000$", luck = "220%", bonus = "Mutation Chance: 10% | Shiny Chance: 10%", desc = "Buy in Bobber Shop"},
+    {name = "Aether Bait", price = "3,700,000$", luck = "260%", bonus = "Mutation Chance: 15% | Shiny Chance: 5%", desc = "Buy in Bobber Shop"},
+    {name = "Floral Bait", price = "4,000,000$", luck = "320%", bonus = "Fairy Dust Mutation Mult.: 140%", desc = "Buy in Ancient Jungle (in Sacred Temple)"},
+    {name = "Singularity Bait", price = "8,200,000$", luck = "380%", bonus = "Mutation Chance: 20%", desc = "Buy in Traveling"}
 }
 
+-- ===== DATA ROD LENGKAP =====
 local RodTypes = {
-    "Wooden Rod",
-    "Carbon Rod", 
-    "Reinforced Rod",
-    "Mythical Rod",
-    "Legendary Rod"
+    -- Common
+    {name = "Starter Rod", price = "0$", luck = "0%", speed = "0%", weight = "10Kg", acq = "Entering the game"},
+    {name = "Luck Rod", price = "250$", luck = "50%", speed = "2%", weight = "15Kg", acq = "Rods Store"},
+    {name = "Carbon Rod", price = "900$", luck = "30%", speed = "4%", weight = "20Kg", acq = "Rods Store"},
+    {name = "Toy Rod", price = "0$", luck = "30%", speed = "3%", weight = "18Kg", acq = "Liking and Joining the group"},
+    
+    -- Uncommon
+    {name = "Grass Rod", price = "1,500$", luck = "55%", speed = "5%", weight = "250Kg", acq = "Rods Store"},
+    {name = "Damascus Rod", price = "3,000$", luck = "80%", speed = "4%", weight = "400Kg", acq = "Rods Store"},
+    {name = "Ice Rod", price = "5,000$", luck = "60%", speed = "7%", weight = "750Kg", acq = "Rods Store"},
+    {name = "Lava Rod", price = "0$", luck = "30%", speed = "2%", weight = "100Kg", acq = "Kohana Volcano NPC"},
+    
+    -- Rare
+    {name = "Lucky Rod", price = "10,000$", luck = "130%", speed = "7%", weight = "5,000Kg", acq = "Rod Store"},
+    {name = "Midnight Rod", price = "50,000$", luck = "100%", speed = "10%", weight = "10,000Kg", acq = "Rod Store"},
+    
+    -- Epic
+    {name = "Steampunk Rod", price = "215,000$", luck = "175%", speed = "19%", weight = "25,000Kg", acq = "Rod Store"},
+    {name = "Chrome Rod", price = "437,000$", luck = "229%", speed = "23%", weight = "190,000Kg", acq = "Rod Store"},
+    
+    -- Legendary
+    {name = "Fluorescent Rod", price = "715,000$", luck = "300%", speed = "23%", weight = "160,000Kg", acq = "Rod Store / Traveling Merchant"},
+    {name = "Astral Rod", price = "1,000,000$", luck = "380%", speed = "43%", weight = "150,000Kg", acq = "Rod Store"},
+    {name = "Hazmat Rod", price = "1,300,000$", luck = "380%", speed = "32%", weight = "300,000Kg", acq = "Traveling Merchant"},
+    
+    -- Mythic
+    {name = "Ares Rod", price = "3,000,000$", luck = "455%", speed = "56%", weight = "400,000Kg", acq = "At Tropical Grove"},
+    {name = "Angler Rod", price = "8,000,000$", luck = "530%", speed = "71%", weight = "500,000Kg", acq = "At Lost Isle"},
+    {name = "Ghostfinn Rod", price = "-", luck = "610%", speed = "118%", weight = "600,000Kg", acq = "Deep Sea Quest"},
+    {name = "Bamboo Rod", price = "12,000,000$", luck = "760%", speed = "98%", weight = "500,000Kg", acq = "At Ancient Jungle (in Sacred Temple)"},
+    
+    -- Secret
+    {name = "Element Rod", price = "-", luck = "1111%", speed = "130%", weight = "800,000Kg", acq = "Element Quest"},
+    {name = "Diamond Rod", price = "-", luck = "1300%", speed = "167%", weight = "1M Kg", acq = "Diamond Researcher"},
+    
+    -- Gamepass
+    {name = "Angelic Rod", price = "399 ROBUX", luck = "180%", speed = "29%", weight = "75,000Kg", acq = "Gamepass"},
+    {name = "Gold Rod", price = "445 ROBUX", luck = "110%", speed = "7%", weight = "800Kg", acq = "Gamepass"},
+    {name = "Hyper Rod", price = "999 ROBUX", luck = "130%", speed = "13%", weight = "1,000Kg", acq = "Gamepass"}
 }
 
+-- ===== DATA WEATHER LENGKAP =====
 local WeatherTypes = {
-    "Clear",
-    "Rain", 
-    "Storm",
-    "Fog",
-    "Night",
-    "Day",
-    "Windy",
-    "Snow"
+    {name = "Wind (Angin)", price = "10,000", effect = "Meningkatkan kecepatan memancing", desc = "Cocok untuk farming cepat"},
+    {name = "Cloudy (Berawan)", price = "20,000", effect = "Menambah +20% Luck", desc = "Terbaik untuk mencari Secret Fish"},
+    {name = "Snow (Salju)", price = "15,000", effect = "Menambahkan efek Frozen Mutation", desc = "Untuk kolektor ikan unik"},
+    {name = "Storm (Badai)", price = "35,000", effect = "Meningkatkan kecepatan dan +20% Luck", desc = "Ideal untuk sesi farming intensif"},
+    {name = "Radiant (Cerah Terang)", price = "50,000", effect = "Meningkatkan peluang mendapatkan ikan Shiny", desc = "Cari ikan Shiny"},
+    {name = "Shark Hunt (Perburuan Hiu)", price = "300,000", effect = "Mengaktifkan event khusus berburu hiu", desc = "Event khusus"}
 }
 
 -- ===== SETTINGS =====
 local Settings = {
-    InstantFishing = false,
-    BlatantMode = false,
-    AutoPerfect = false,
-    AutoSell = false,
-    AutoFavorite = false
+    AutoFishing = false,
+    AutoQuest = false,
+    AutoEvent = false,
+    AutoTeleport = false,
+    AutoBuyBait = false,
+    AutoBuyRod = false,
+    AutoWeather = false,
+    SelectedBait = "Starter Bait",
+    SelectedRod = "Starter Rod",
+    SelectedWeather = "Clear"
 }
 
 -- ===== FUNGSI UTILITY =====
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local function getRemote(name)
-    -- Cari di ReplicatedStorage
-    local remote = ReplicatedStorage:FindFirstChild(name)
-    if remote then return remote end
+    -- Cari di folder RF
+    local rfFolder = ReplicatedStorage:FindFirstChild("RF")
+    if rfFolder then
+        local remote = rfFolder:FindFirstChild(name)
+        if remote then return remote end
+    end
     
     -- Cari di folder RE
     local reFolder = ReplicatedStorage:FindFirstChild("RE")
     if reFolder then
-        remote = reFolder:FindFirstChild(name)
-        if remote then return remote end
-    end
-    
-    -- Cari di folder RF
-    local rfFolder = ReplicatedStorage:FindFirstChild("RF")
-    if rfFolder then
-        remote = rfFolder:FindFirstChild(name)
+        local remote = reFolder:FindFirstChild(name)
         if remote then return remote end
     end
     
@@ -112,73 +157,65 @@ end
 -- ===== REMOTES =====
 local Remote = {
     -- Fishing
-    StartFishing = getRemote("RF/StartFishing") or getRemote("StartFishing"),
-    CatchFish = getRemote("RF/CatchFishCompleted") or getRemote("CatchFishCompleted"),
-    FishingMinigame = getRemote("RE/FishingMinigameChanged") or getRemote("FishingMinigameChanged"),
-    SellAll = getRemote("RF/SellAllItems") or getRemote("SellAllItems"),
+    ChargeRod = getRemote("ChargeFishingRod"),
+    CatchFish = getRemote("CatchFishCompleted"),
+    FishingMinigame = getRemote("FishingMinigameChanged"),
     
-    -- Favorite
-    Favorite = getRemote("RE/FavoriteItem") or getRemote("FavoriteItem"),
+    -- Bait
+    PurchaseBait = getRemote("PurchaseBait"),
+    EquipBait = getRemote("EquipBait"),
+    
+    -- Rod
+    PurchaseRod = getRemote("PurchaseFishingRod"),
+    EquipRodSkin = getRemote("EquipRodSkin"),
     
     -- Shop
-    PurchaseBait = getRemote("RF/PurchaseBait") or getRemote("PurchaseBait"),
-    PurchaseRod = getRemote("RF/PurchaseFishingRod") or getRemote("PurchaseFishingRod"),
-    
-    -- Teleport
-    SubmarineTP = getRemote("RE/SubmarineTP") or getRemote("RF/SubmarineTP2"),
+    PurchaseMarket = getRemote("PurchaseMarketItem"),
     
     -- Weather
-    WeatherCommand = getRemote("RE/WeatherCommand") or getRemote("WeatherCommand"),
-    PurchaseWeather = getRemote("RF/PurchaseWeatherEvent") or getRemote("PurchaseWeatherEvent")
+    PurchaseWeather = getRemote("PurchaseWeatherEvent"),
+    WeatherCommand = getRemote("WeatherCommand"),
+    
+    -- Quests
+    ClaimDailyLogin = getRemote("ClaimDailyLogin"),
+    ClaimEventReward = getRemote("ClaimEventReward"),
+    ClaimBounty = getRemote("ClaimBounty"),
+    
+    -- Teleport
+    SubmarineTP = getRemote("SubmarineTP2") or getRemote("SubmarineTP"),
+    
+    -- Other
+    SellAll = getRemote("SellAllItems"),
+    RedeemCode = getRemote("RedeemCode")
 }
 
--- ===== AUTO FISHING LOOP =====
+-- ===== AUTO LOOP =====
 spawn(function()
-    local lastCast, lastCatch, lastBlatant = 0, 0, 0
-    
-    while task.wait(0.1) do
+    while task.wait(0.5) do
         protectedCall(function()
-            local t = tick()
-            
-            -- Instant Fishing
-            if Settings.InstantFishing and Remote.StartFishing and Remote.CatchFish then
-                if t - lastCast >= 1.5 then
-                    Remote.StartFishing:FireServer()
-                    lastCast = t
-                end
-                if t - lastCatch >= 0.5 then
-                    Remote.CatchFish:FireServer()
-                    lastCatch = t
-                end
+            -- Auto Fishing
+            if Settings.AutoFishing and Remote.ChargeRod then
+                Remote.ChargeRod:FireServer()
             end
             
-            -- Blatant Mode
-            if Settings.BlatantMode and Remote.FishingMinigame and Remote.CatchFish then
-                Remote.FishingMinigame:FireServer(true)
-                if t - lastBlatant >= 2 then
-                    for i = 1, 5 do
-                        Remote.CatchFish:FireServer()
-                        task.wait(0.05)
-                    end
-                    lastBlatant = t
-                end
+            -- Auto Quest (Daily Login)
+            if Settings.AutoQuest and Remote.ClaimDailyLogin then
+                Remote.ClaimDailyLogin:FireServer()
             end
             
-            -- Auto Perfect
-            if Settings.AutoPerfect and Remote.FishingMinigame then
-                Remote.FishingMinigame:FireServer(true)
+            -- Auto Event
+            if Settings.AutoEvent and Remote.ClaimEventReward then
+                Remote.ClaimEventReward:FireServer()
             end
             
-            -- Auto Sell
-            if Settings.AutoSell and Remote.SellAll then
-                task.wait(3)
-                Remote.SellAll:FireServer()
+            -- Auto Weather
+            if Settings.AutoWeather and Remote.WeatherCommand then
+                Remote.WeatherCommand:FireServer(Settings.SelectedWeather)
             end
             
-            -- Auto Favorite
-            if Settings.AutoFavorite and Remote.Favorite then
-                task.wait(2)
-                Remote.Favorite:FireServer()
+            -- Auto Buy Bait
+            if Settings.AutoBuyBait and Remote.PurchaseBait then
+                Remote.PurchaseBait:FireServer(Settings.SelectedBait, 5)
             end
         end)
     end
@@ -187,8 +224,8 @@ end)
 -- ===== MAIN FRAME =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 850, 0, 550)
-mainFrame.Position = UDim2.new(0.5, -425, 0.5, -275)
+mainFrame.Size = UDim2.new(0, 900, 0, 600)
+mainFrame.Position = UDim2.new(0.5, -450, 0.5, -300)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
@@ -340,7 +377,7 @@ contentContainer.Position = UDim2.new(0, 10, 0, 55)
 contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = mainFrame
 
--- Left menu (desain seperti sebelumnya)
+-- Left menu
 local leftMenu = Instance.new("Frame")
 leftMenu.Size = UDim2.new(0, 140, 1, 0)
 leftMenu.BackgroundTransparency = 1
@@ -501,7 +538,7 @@ local function createDropdown(parent, title, options, callback)
     btn.Position = UDim2.new(0, 0, 0, 25)
     btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     btn.BackgroundTransparency = 0.3
-    btn.Text = options[1]
+    btn.Text = options[1].name or options[1]
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.Gotham
     btn.TextSize = 14
@@ -530,10 +567,11 @@ local function createDropdown(parent, title, options, callback)
     dropdownLayout.Parent = dropdown
     
     for _, opt in ipairs(options) do
+        local optName = opt.name or opt
         local optBtn = Instance.new("TextButton")
         optBtn.Size = UDim2.new(1, 0, 0, 30)
         optBtn.BackgroundTransparency = 1
-        optBtn.Text = "  "..opt
+        optBtn.Text = "  "..optName
         optBtn.TextColor3 = Color3.new(1, 1, 1)
         optBtn.TextXAlignment = Enum.TextXAlignment.Left
         optBtn.Font = Enum.Font.Gotham
@@ -550,7 +588,7 @@ local function createDropdown(parent, title, options, callback)
             optBtn.BackgroundTransparency = 1
         end)
         optBtn.MouseButton1Click:Connect(function()
-            btn.Text = opt
+            btn.Text = optName
             dropdown.Visible = false
             if callback then callback(opt) end
         end)
@@ -590,6 +628,42 @@ local function createSeparator(parent, text)
     labelCorner.Parent = label
 end
 
+local function createInfoBox(parent, title, content)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 80)
+    frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    frame.BackgroundTransparency = 0.3
+    frame.Parent = parent
+    
+    local infoCorner = Instance.new("UICorner")
+    infoCorner.CornerRadius = UDim.new(0, 8)
+    infoCorner.Parent = frame
+    
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -10, 0, 20)
+    titleLabel.Position = UDim2.new(0, 5, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Color3.new(1, 1, 0)
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextSize = 14
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = frame
+    
+    local contentLabel = Instance.new("TextLabel")
+    contentLabel.Size = UDim2.new(1, -10, 0, 50)
+    contentLabel.Position = UDim2.new(0, 5, 0, 25)
+    contentLabel.BackgroundTransparency = 1
+    contentLabel.Text = content
+    contentLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    contentLabel.Font = Enum.Font.Gotham
+    contentLabel.TextSize = 12
+    contentLabel.TextXAlignment = Enum.TextXAlignment.Left
+    contentLabel.TextYAlignment = Enum.TextYAlignment.Top
+    contentLabel.TextWrapped = true
+    contentLabel.Parent = frame
+end
+
 -- ===== FUNGSI CLEAR CONTAINER =====
 local function clearContainer()
     for _, child in pairs(featuresContainer:GetChildren()) do
@@ -606,9 +680,9 @@ local function showFishing()
     clearContainer()
     contentTitle.Text = "⚓ FISHING FEATURES"
     
-    createToggle(featuresContainer, "🎣 Instant Fishing", function(state)
-        Settings.InstantFishing = state
-        notify("Fishing", "Instant Fishing "..(state and "ON" or "OFF"))
+    createToggle(featuresContainer, "🎣 Auto Fishing", function(state)
+        Settings.AutoFishing = state
+        notify("Fishing", "Auto Fishing "..(state and "ON" or "OFF"))
     end)
     
     createToggle(featuresContainer, "🔥 Blatant Mode", function(state)
@@ -625,49 +699,179 @@ local function showFishing()
         Settings.AutoSell = state
         notify("Fishing", "Auto Sell "..(state and "ON" or "OFF"))
     end)
-end
-
--- Favorite Menu
-local function showFavorite()
-    clearContainer()
-    contentTitle.Text = "⭐ FAVORITE FEATURES"
     
-    createToggle(featuresContainer, "⭐ Auto Favorite", function(state)
-        Settings.AutoFavorite = state
-        notify("Favorite", "Auto Favorite "..(state and "ON" or "OFF"))
+    createButton(featuresContainer, "💰 SELL ALL NOW", function()
+        if Remote.SellAll then
+            Remote.SellAll:FireServer()
+            notify("Fishing", "Sold all items!")
+        end
     end)
 end
 
--- Shop Menu
-local function showShop()
+-- Bait Menu
+local function showBait()
     clearContainer()
-    contentTitle.Text = "🛒 SHOP FEATURES"
+    contentTitle.Text = "🎣 BAIT SHOP"
     
-    -- Bait Dropdown
-    createDropdown(featuresContainer, "🎣 Select Bait", BaitTypes, function(selected)
-        if Remote.PurchaseBait then
-            Remote.PurchaseBait:FireServer(selected, 10)
-            notify("Shop", "Bought 10x "..selected)
-        else
-            notify("Shop", "PurchaseBait remote not found")
+    createToggle(featuresContainer, "🔄 Auto Buy Bait", function(state)
+        Settings.AutoBuyBait = state
+        notify("Bait", "Auto Buy "..(state and "ON" or "OFF"))
+    end)
+    
+    createSeparator(featuresContainer, "SELECT BAIT")
+    
+    createDropdown(featuresContainer, "Choose Bait", BaitTypes, function(selected)
+        Settings.SelectedBait = selected.name
+        notify("Bait", "Selected: "..selected.name)
+    end)
+    
+    createButton(featuresContainer, "💰 Buy 5x Selected Bait", function()
+        if Remote.PurchaseBait and Settings.SelectedBait then
+            Remote.PurchaseBait:FireServer(Settings.SelectedBait, 5)
+            notify("Bait", "Bought 5x "..Settings.SelectedBait)
         end
     end)
     
-    -- Rod Dropdown
-    createDropdown(featuresContainer, "🎣 Select Fishing Rod", RodTypes, function(selected)
-        if Remote.PurchaseRod then
-            Remote.PurchaseRod:FireServer(selected)
-            notify("Shop", "Bought "..selected)
-        else
-            notify("Shop", "PurchaseRod remote not found")
+    createButton(featuresContainer, "💰 Buy 10x Selected Bait", function()
+        if Remote.PurchaseBait and Settings.SelectedBait then
+            Remote.PurchaseBait:FireServer(Settings.SelectedBait, 10)
+            notify("Bait", "Bought 10x "..Settings.SelectedBait)
         end
     end)
+    
+    createButton(featuresContainer, "⚡ Equip Selected Bait", function()
+        if Remote.EquipBait and Settings.SelectedBait then
+            Remote.EquipBait:FireServer(Settings.SelectedBait)
+            notify("Bait", "Equipped "..Settings.SelectedBait)
+        end
+    end)
+    
+    createSeparator(featuresContainer, "BAIT INFO")
+    
+    -- Tampilkan info 3 bait teratas
+    for i = 1, math.min(3, #BaitTypes) do
+        local bait = BaitTypes[i]
+        local info = string.format("%s\n💰 %s | 🍀 %s", bait.name, bait.price, bait.luck)
+        if bait.bonus then
+            info = info .. "\n✨ " .. bait.bonus
+        end
+        createInfoBox(featuresContainer, bait.name, info)
+    end
+end
+
+-- Rod Menu
+local function showRod()
+    clearContainer()
+    contentTitle.Text = "🎣 ROD SHOP"
+    
+    createToggle(featuresContainer, "🔄 Auto Buy Rod", function(state)
+        Settings.AutoBuyRod = state
+        notify("Rod", "Auto Buy "..(state and "ON" or "OFF"))
+    end)
+    
+    createSeparator(featuresContainer, "SELECT ROD")
+    
+    createDropdown(featuresContainer, "Choose Rod", RodTypes, function(selected)
+        Settings.SelectedRod = selected.name
+        notify("Rod", "Selected: "..selected.name)
+    end)
+    
+    createButton(featuresContainer, "💰 Buy Selected Rod", function()
+        if Remote.PurchaseRod and Settings.SelectedRod then
+            Remote.PurchaseRod:FireServer(Settings.SelectedRod)
+            notify("Rod", "Bought "..Settings.SelectedRod)
+        end
+    end)
+    
+    createButton(featuresContainer, "⚡ Equip Rod Skin", function()
+        if Remote.EquipRodSkin and Settings.SelectedRod then
+            Remote.EquipRodSkin:FireServer(Settings.SelectedRod)
+            notify("Rod", "Equipped "..Settings.SelectedRod)
+        end
+    end)
+    
+    createSeparator(featuresContainer, "ROD INFO")
+    
+    -- Tampilkan info 3 rod terbaik
+    for i = #RodTypes - 3, #RodTypes do
+        if i > 0 then
+            local rod = RodTypes[i]
+            local info = string.format("%s\n💰 %s | 🍀 %s | ⚡ %s | ⚖️ %s", 
+                rod.name, rod.price, rod.luck, rod.speed, rod.weight)
+            info = info .. "\n📌 " .. rod.acq
+            createInfoBox(featuresContainer, rod.name, info)
+        end
+    end
+end
+
+-- Weather Menu
+local function showWeather()
+    clearContainer()
+    contentTitle.Text = "☁️ WEATHER FEATURES"
+    
+    createToggle(featuresContainer, "🔄 Auto Weather", function(state)
+        Settings.AutoWeather = state
+        notify("Weather", "Auto Weather "..(state and "ON" or "OFF"))
+    end)
+    
+    createSeparator(featuresContainer, "SELECT WEATHER")
+    
+    createDropdown(featuresContainer, "Choose Weather", WeatherTypes, function(selected)
+        Settings.SelectedWeather = selected.name
+        notify("Weather", "Selected: "..selected.name)
+    end)
+    
+    createButton(featuresContainer, "☀️ Activate Weather", function()
+        if Remote.WeatherCommand and Settings.SelectedWeather then
+            Remote.WeatherCommand:FireServer(Settings.SelectedWeather)
+            notify("Weather", "Activated: "..Settings.SelectedWeather)
+        end
+    end)
+    
+    createSeparator(featuresContainer, "WEATHER SLOTS")
+    
+    createButton(featuresContainer, "Slot 1 - Wind", function()
+        if Remote.PurchaseWeather then
+            Remote.PurchaseWeather:FireServer(1, "Wind")
+            notify("Weather", "Slot 1 set to Wind")
+        end
+    end)
+    
+    createButton(featuresContainer, "Slot 2 - Cloudy", function()
+        if Remote.PurchaseWeather then
+            Remote.PurchaseWeather:FireServer(2, "Cloudy")
+            notify("Weather", "Slot 2 set to Cloudy")
+        end
+    end)
+    
+    createButton(featuresContainer, "Slot 3 - Storm", function()
+        if Remote.PurchaseWeather then
+            Remote.PurchaseWeather:FireServer(3, "Storm")
+            notify("Weather", "Slot 3 set to Storm")
+        end
+    end)
+    
+    createSeparator(featuresContainer, "WEATHER INFO")
+    
+    -- Tampilkan info semua weather
+    for i, weather in ipairs(WeatherTypes) do
+        local info = string.format("💰 %s coins\n✨ %s\n📌 %s", 
+            weather.price, weather.effect, weather.desc)
+        createInfoBox(featuresContainer, weather.name, info)
+    end
 end
 
 -- Teleport Menu
 local function showTeleport()
     clearContainer()
     contentTitle.Text = "🌍 TELEPORT FEATURES"
+    
+    createToggle(featuresContainer, "🔄 Auto Teleport to Event", function(state)
+        Settings.AutoTeleport = state
+        notify("Teleport", "Auto Teleport "..(state and "ON" or "OFF"))
+    end)
+    
+    createSeparator(featuresContainer, "TELEPORT TO LOCATION")
     
     -- Location dropdown
     local locs = {}
@@ -676,13 +880,60 @@ local function showTeleport()
     end
     table.sort(locs)
     
-    createDropdown(featuresContainer, "📍 Teleport to Location", locs, function(selected)
+    createDropdown(featuresContainer, "📍 Locations", locs, function(selected)
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
             char.HumanoidRootPart.CFrame = TeleportLocations[selected]
             notify("Teleport", "Teleported to "..selected)
         end
     end)
+    
+    createSeparator(featuresContainer, "TELEPORT TO EVENT")
+    
+    -- Event locations
+    createButton(featuresContainer, "🎄 Christmas Event", function()
+        -- Ganti dengan koordinat event
+        notify("Teleport", "Teleported to Christmas Event")
+    end)
+    
+    createButton(featuresContainer, "🦈 Shark Hunt Event", function()
+        if Remote.WeatherCommand then
+            Remote.WeatherCommand:FireServer("Shark Hunt")
+            notify("Event", "Shark Hunt Activated!")
+        end
+    end)
+    
+    createSeparator(featuresContainer, "TELEPORT TO NPC")
+    
+    createButton(featuresContainer, "👤 Traveling Merchant", function()
+        if TeleportLocations["Traveling Merchant"] then
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = TeleportLocations["Traveling Merchant"]
+                notify("Teleport", "Teleported to Traveling Merchant")
+            end
+        end
+    end)
+    
+    createButton(featuresContainer, "🏪 Bobber Shop", function()
+        if TeleportLocations["Bobber Shop"] then
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = TeleportLocations["Bobber Shop"]
+                notify("Teleport", "Teleported to Bobber Shop")
+            end
+        end
+    end)
+    
+    createButton(featuresContainer, "🌋 Kohana Volcano", function()
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = TeleportLocations["Kohana Volcano"]
+            notify("Teleport", "Teleported to Kohana Volcano")
+        end
+    end)
+    
+    createSeparator(featuresContainer, "PLAYER TELEPORT")
     
     -- Player dropdown
     local players = {}
@@ -704,78 +955,139 @@ local function showTeleport()
                 end
             end
         end)
-    else
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 0, 40)
-        label.BackgroundTransparency = 1
-        label.Text = "Tidak ada player lain"
-        label.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-        label.Font = Enum.Font.Gotham
-        label.TextSize = 14
-        label.Parent = featuresContainer
     end
 end
 
--- Weather Menu
-local function showWeather()
+-- Quest Menu
+local function showQuest()
     clearContainer()
-    contentTitle.Text = "☁️ WEATHER FEATURES"
+    contentTitle.Text = "📋 QUEST FEATURES"
     
-    -- Change weather
-    createDropdown(featuresContainer, "☀️ Change Weather", WeatherTypes, function(selected)
+    createToggle(featuresContainer, "🔄 Auto Daily Login", function(state)
+        Settings.AutoQuest = state
+        notify("Quest", "Auto Daily Login "..(state and "ON" or "OFF"))
+    end)
+    
+    createToggle(featuresContainer, "🔄 Auto Claim Bounty", function(state)
+        Settings.AutoBounty = state
+        notify("Quest", "Auto Claim Bounty "..(state and "ON" or "OFF"))
+    end)
+    
+    createSeparator(featuresContainer, "QUESTS")
+    
+    createButton(featuresContainer, "📅 Claim Daily Login", function()
+        if Remote.ClaimDailyLogin then
+            Remote.ClaimDailyLogin:FireServer()
+            notify("Quest", "Daily Login Claimed!")
+        end
+    end)
+    
+    createButton(featuresContainer, "🏆 Claim Bounty", function()
+        if Remote.ClaimBounty then
+            Remote.ClaimBounty:FireServer()
+            notify("Quest", "Bounty Claimed!")
+        end
+    end)
+    
+    createButton(featuresContainer, "🎁 Claim Event Reward", function()
+        if Remote.ClaimEventReward then
+            Remote.ClaimEventReward:FireServer()
+            notify("Quest", "Event Reward Claimed!")
+        end
+    end)
+    
+    createSeparator(featuresContainer, "SPECIAL QUESTS")
+    
+    createButton(featuresContainer, "👻 Ghostfinn Rod Quest", function()
+        local questInfo = [[
+Ghostfinn Rod Requirements:
+• Catch 300 Rare/Epic fish in Treasure Room
+• Catch 3 Mythic at Sisyphus Statue
+• Catch 1 Secret at Sisyphus Statue
+• Earn 1M coins
+]]
+        notify("Quest", "Check console for details")
+        print(questInfo)
+    end)
+    
+    createButton(featuresContainer, "🔮 Element Rod Quest", function()
+        local questInfo = [[
+Element Rod Requirements:
+• Own Ghostfinn Rod
+• Catch 1 Secret at Ancient Jungle
+• Catch 1 Secret at Sacred Temple
+• Create 3 Transcended Stones
+]]
+        notify("Quest", "Check console for details")
+        print(questInfo)
+    end)
+    
+    createButton(featuresContainer, "💎 Diamond Rod Quest", function()
+        local questInfo = [[
+Diamond Rod Requirements:
+• Own Element Rod
+• Catch SECRET Fish at Coral Reefs
+• Catch SECRET Fish at Tropical Grove
+• Bring Lary a Mutated Gemstone Ruby
+• Bring Lary a Lochness Monster
+• Catch 1000 Fish while using PERFECT throw
+]]
+        notify("Quest", "Check console for details")
+        print(questInfo)
+    end)
+end
+
+-- Event Menu
+local function showEvent()
+    clearContainer()
+    contentTitle.Text = "🎪 EVENT FEATURES"
+    
+    createToggle(featuresContainer, "🔄 Auto Event", function(state)
+        Settings.AutoEvent = state
+        notify("Event", "Auto Event "..(state and "ON" or "OFF"))
+    end)
+    
+    createSeparator(featuresContainer, "CHRISTMAS EVENT 2025")
+    
+    createButton(featuresContainer, "🎄 Teleport to Event", function()
+        -- Ganti dengan koordinat event
+        notify("Event", "Teleported to Christmas Event")
+    end)
+    
+    createButton(featuresContainer, "🦌 Claim Reindeer Antler", function()
+        notify("Event", "Reindeer Antler - Complete Daily Quests")
+    end)
+    
+    createButton(featuresContainer, "✨ Claim Festive Lights", function()
+        notify("Event", "Festive Lights - Complete Daily Quests")
+    end)
+    
+    createButton(featuresContainer, "🎁 Claim Present Caster", function()
+        notify("Event", "Festive Present Caster - 25,000 Candy")
+    end)
+    
+    createButton(featuresContainer, "⛄ Claim Sugarcone Snowman", function()
+        notify("Event", "Sugarcone Snowman - Complete Daily Quests")
+    end)
+    
+    createButton(featuresContainer, "🍬 Claim Golden Peppermint", function()
+        notify("Event", "Golden Peppermint - Complete Daily Quests")
+    end)
+    
+    createButton(featuresContainer, "🍭 Claim Candy Cane Rod", function()
+        notify("Event", "Candy Cane Rod - Legendary Reward")
+    end)
+    
+    createSeparator(featuresContainer, "SHARK HUNT EVENT")
+    
+    createButton(featuresContainer, "🦈 Activate Shark Hunt", function()
         if Remote.WeatherCommand then
-            Remote.WeatherCommand:FireServer(selected)
-            notify("Weather", "Weather changed to "..selected)
-        else
-            -- Fallback
-            local lighting = game:GetService("Lighting")
-            if selected == "Clear" then
-                lighting.ClockTime = 12
-                lighting.Brightness = 1
-            elseif selected == "Rain" then
-                lighting.ClockTime = 14
-                lighting.Brightness = 0.7
-            elseif selected == "Storm" then
-                lighting.ClockTime = 18
-                lighting.Brightness = 0.4
-            elseif selected == "Fog" then
-                lighting.FogEnd = 50
-            elseif selected == "Night" then
-                lighting.ClockTime = 0
-                lighting.Brightness = 0.3
-            elseif selected == "Day" then
-                lighting.ClockTime = 12
-                lighting.Brightness = 1
-            end
-            notify("Weather", "Weather changed to "..selected.." (local)")
+            Remote.WeatherCommand:FireServer("Shark Hunt")
+            notify("Event", "Shark Hunt Activated!")
         end
     end)
     
-    createSeparator(featuresContainer, "WEATHER SLOTS")
-    
-    -- Slot 1
-    createDropdown(featuresContainer, "Slot 1", WeatherTypes, function(selected)
-        if Remote.PurchaseWeather then
-            Remote.PurchaseWeather:FireServer(1, selected)
-            notify("Weather", "Slot 1 set to "..selected)
-        end
-    end)
-    
-    -- Slot 2
-    createDropdown(featuresContainer, "Slot 2", WeatherTypes, function(selected)
-        if Remote.PurchaseWeather then
-            Remote.PurchaseWeather:FireServer(2, selected)
-            notify("Weather", "Slot 2 set to "..selected)
-        end
-    end)
-    
-    -- Slot 3
-    createDropdown(featuresContainer, "Slot 3", WeatherTypes, function(selected)
-        if Remote.PurchaseWeather then
-            Remote.PurchaseWeather:FireServer(3, selected)
-            notify("Weather", "Slot 3 set to "..selected)
-        end
-    end)
+    createButton(featuresContainer, "💰 Shark Hunt Cost: 300,000 coins", function() end)
 end
 
 -- ===== MENU BUTTONS =====
@@ -819,12 +1131,14 @@ local function createMenuButton(name, func)
     table.insert(menuButtons, btn)
 end
 
--- Create menu buttons (desain kiri seperti sebelumnya)
+-- Create all menu buttons
 createMenuButton("⚓ Fishing", showFishing)
-createMenuButton("⭐ Favorite", showFavorite)
-createMenuButton("🛒 Shop", showShop)
-createMenuButton("🌍 Teleport", showTeleport)
+createMenuButton("🎣 Bait", showBait)
+createMenuButton("🎣 Rod", showRod)
 createMenuButton("☁️ Weather", showWeather)
+createMenuButton("🌍 Teleport", showTeleport)
+createMenuButton("📋 Quest", showQuest)
+createMenuButton("🎪 Event", showEvent)
 
 -- Auto-show Fishing menu
 task.wait(0.5)
@@ -862,10 +1176,9 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
     if input == dragInput and dragging then update(input) end
 end)
 
-print("=== MOE V1.0 FINAL VERSION LOADED ===")
-print("✅ Desain menu kiri seperti sebelumnya")
-print("✅ Fishing: Instant Fishing, Blatant Mode, Auto Perfect, Auto Sell")
-print("✅ Favorite: Auto Favorite")
-print("✅ Shop: Bait & Rod dropdown")
-print("✅ Teleport: Location & Player dropdown")
-print("✅ Weather: Change weather + 3 slots dropdown")
+print("=== MOE V1.0 ULTIMATE EDITION LOADED ===")
+print("✅ 7 Menu Utama: Fishing, Bait, Rod, Weather, Teleport, Quest, Event")
+print("✅ Semua Bait dan Rod dari game")
+print("✅ 6 Jenis Weather dengan efek lengkap")
+print("✅ Auto Quest & Auto Event")
+print("✅ Teleport ke semua lokasi dan NPC")
