@@ -179,18 +179,6 @@ local function stopAutoFishing()
     notify("Auto Fishing", "Auto fishing stopped!", 2)
 end
 
--- ===== FUNCTION TO GET PLAYER LIST =====
-local function getPlayerList()
-    local players = {}
-    for _, p in ipairs(game.Players:GetPlayers()) do
-        if p ~= player then
-            table.insert(players, p.Name)
-        end
-    end
-    table.sort(players)
-    return players
-end
-
 -- ===== MAIN FRAME (650x400) =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
@@ -200,8 +188,6 @@ mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = gui
-mainFrame.Active = true
-mainFrame.Selectable = false
 
 -- Rounded corners
 local corners = Instance.new("UICorner")
@@ -228,7 +214,6 @@ logo.Position = UDim2.new(0, 8, 0.5, -12.5)
 logo.BackgroundTransparency = 1
 logo.Image = "rbxassetid://115935586997848"
 logo.ScaleType = Enum.ScaleType.Fit
-logo.ResampleMode = Enum.ResamplerMode.Pixelated
 logo.Parent = headerFrame
 
 -- Title
@@ -254,8 +239,6 @@ minButton.TextColor3 = Color3.new(1, 1, 1)
 minButton.TextSize = 16
 minButton.Font = Enum.Font.GothamBold
 minButton.Parent = headerFrame
-minButton.AutoButtonColor = false
-minButton.Selectable = false
 
 local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 4)
@@ -272,14 +255,12 @@ closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.TextSize = 14
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Parent = headerFrame
-closeBtn.AutoButtonColor = false
-closeBtn.Selectable = false
 
 local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
--- ===== FLOATING LOGO =====
+-- ===== FLOATING LOGO (FIXED) =====
 local floatingLogo = Instance.new("Frame")
 floatingLogo.Size = UDim2.new(0, 50, 0, 50)
 floatingLogo.Position = UDim2.new(0.9, -25, 0.9, -25)
@@ -288,30 +269,34 @@ floatingLogo.BackgroundTransparency = 0.2
 floatingLogo.Parent = gui
 floatingLogo.Visible = false
 floatingLogo.ZIndex = 1000
-floatingLogo.Active = true
 
-local floatLogoCorner = Instance.new("UICorner")
-floatLogoCorner.CornerRadius = UDim.new(0, 25)
-floatLogoCorner.Parent = floatingLogo
+-- Rounded corners for floating logo
+local floatFrameCorner = Instance.new("UICorner")
+floatFrameCorner.CornerRadius = UDim.new(0, 25)
+floatFrameCorner.Parent = floatingLogo
 
+-- Border for floating logo
+local floatStroke = Instance.new("UIStroke")
+floatStroke.Thickness = 1
+floatStroke.Color = Color3.new(1, 1, 1)
+floatStroke.Transparency = 0.5
+floatStroke.Parent = floatingLogo
+
+-- Logo image
 local floatLogoImg = Instance.new("ImageLabel")
-floatLogoImg.Size = UDim2.new(0.8, 0, 0.8, 0)
-floatLogoImg.Position = UDim2.new(0.1, 0, 0.1, 0)
+floatLogoImg.Size = UDim2.new(1, -10, 1, -10)
+floatLogoImg.Position = UDim2.new(0, 5, 0, 5)
 floatLogoImg.BackgroundTransparency = 1
 floatLogoImg.Image = "rbxassetid://115935586997848"
 floatLogoImg.ScaleType = Enum.ScaleType.Fit
-floatLogoImg.ResampleMode = Enum.ResamplerMode.Pixelated
 floatLogoImg.Parent = floatingLogo
-floatLogoImg.ZIndex = 1001
 
+-- Button to restore
 local floatButton = Instance.new("TextButton")
 floatButton.Size = UDim2.new(1, 0, 1, 0)
 floatButton.BackgroundTransparency = 1
 floatButton.Text = ""
 floatButton.Parent = floatingLogo
-floatButton.ZIndex = 1002
-floatButton.AutoButtonColor = false
-floatButton.Selectable = false
 
 -- Minimize functions
 minButton.MouseButton1Click:Connect(function()
@@ -371,7 +356,6 @@ contentArea.Position = UDim2.new(0, 140, 0, 0)
 contentArea.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
 contentArea.BackgroundTransparency = 0.3
 contentArea.Parent = contentContainer
-contentArea.ClipsDescendants = true
 
 local contentCorner = Instance.new("UICorner")
 contentCorner.CornerRadius = UDim.new(0, 8)
@@ -399,7 +383,6 @@ scrollFrame.ScrollBarThickness = 4
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scrollFrame.Parent = contentArea
-scrollFrame.Selectable = false
 
 local featuresContainer = Instance.new("Frame")
 featuresContainer.Size = UDim2.new(1, 0, 0, 0)
@@ -413,9 +396,10 @@ featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 featuresLayout.Padding = UDim.new(0, 8)
 featuresLayout.Parent = featuresContainer
 
--- ===== UI ELEMENTS FUNCTIONS =====
+-- ===== GLOBAL VARIABLES FOR DROPDOWNS =====
 local activeDropdown = nil
 
+-- Function to close all dropdowns
 local function closeAllDropdowns()
     if activeDropdown then
         activeDropdown.Visible = false
@@ -423,14 +407,18 @@ local function closeAllDropdowns()
     end
 end
 
+-- Click detection to close dropdowns
+mouse.Button1Down:Connect(function()
+    closeAllDropdowns()
+end)
+
+-- ===== UI ELEMENTS FUNCTIONS =====
 local function createDropdown(parent, options, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 35)
     frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
     frame.BackgroundTransparency = 0.2
     frame.Parent = parent
-    frame.ClipsDescendants = false
-    frame.ZIndex = 5
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
@@ -444,9 +432,6 @@ local function createDropdown(parent, options, default, callback)
     btn.TextSize = 13
     btn.Font = Enum.Font.Gotham
     btn.Parent = frame
-    btn.ZIndex = 6
-    btn.AutoButtonColor = false
-    btn.Selectable = false
     
     local arrow = Instance.new("TextLabel")
     arrow.Size = UDim2.new(0, 20, 1, 0)
@@ -456,7 +441,6 @@ local function createDropdown(parent, options, default, callback)
     arrow.TextColor3 = Color3.new(0.8, 0.8, 0.8)
     arrow.TextSize = 12
     arrow.Parent = frame
-    arrow.ZIndex = 6
     
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
@@ -478,73 +462,59 @@ local function createDropdown(parent, options, default, callback)
     dropdownList.Padding = UDim.new(0, 2)
     dropdownList.Parent = dropdownFrame
     
-    -- Buat background gelap untuk menutupi elemen di belakang dropdown
-    local modalBackground = Instance.new("Frame")
-    modalBackground.Size = UDim2.new(1, 0, 1, 0)
-    modalBackground.BackgroundTransparency = 1
-    modalBackground.Parent = frame
-    modalBackground.ZIndex = 9
-    modalBackground.Visible = false
-    
-    local function showDropdown()
-        closeAllDropdowns()
-        dropdownFrame.Visible = true
-        activeDropdown = dropdownFrame
-        modalBackground.Visible = true
-        frame.ZIndex = 10
-    end
-    
-    local function hideDropdown()
-        dropdownFrame.Visible = false
-        modalBackground.Visible = false
-        frame.ZIndex = 5
-        if activeDropdown == dropdownFrame then
-            activeDropdown = nil
+    -- Function to populate dropdown
+    local function updateDropdown(newOptions)
+        -- Clear existing options
+        for _, child in pairs(dropdownFrame:GetChildren()) do
+            if child:IsA("TextButton") then
+                child:Destroy()
+            end
+        end
+        
+        -- Add new options
+        for i, opt in ipairs(newOptions) do
+            local optBtn = Instance.new("TextButton")
+            optBtn.Size = UDim2.new(1, 0, 0, 30)
+            optBtn.BackgroundTransparency = 1
+            optBtn.Text = opt
+            optBtn.TextColor3 = Color3.new(1, 1, 1)
+            optBtn.TextSize = 13
+            optBtn.Font = Enum.Font.Gotham
+            optBtn.Parent = dropdownFrame
+            optBtn.ZIndex = 11
+            
+            optBtn.MouseEnter:Connect(function()
+                optBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+                optBtn.BackgroundTransparency = 0.3
+            end)
+            
+            optBtn.MouseLeave:Connect(function()
+                optBtn.BackgroundTransparency = 1
+            end)
+            
+            optBtn.MouseButton1Click:Connect(function()
+                btn.Text = opt
+                dropdownFrame.Visible = false
+                activeDropdown = nil
+                callback(opt)
+            end)
         end
     end
     
-    for i, opt in ipairs(options) do
-        local optBtn = Instance.new("TextButton")
-        optBtn.Size = UDim2.new(1, 0, 0, 30)
-        optBtn.BackgroundTransparency = 1
-        optBtn.Text = opt
-        optBtn.TextColor3 = Color3.new(1, 1, 1)
-        optBtn.TextSize = 13
-        optBtn.Font = Enum.Font.Gotham
-        optBtn.Parent = dropdownFrame
-        optBtn.ZIndex = 11
-        optBtn.AutoButtonColor = false
-        optBtn.Selectable = false
-        
-        optBtn.MouseEnter:Connect(function()
-            optBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-            optBtn.BackgroundTransparency = 0.3
-        end)
-        
-        optBtn.MouseLeave:Connect(function()
-            optBtn.BackgroundTransparency = 1
-        end)
-        
-        optBtn.MouseButton1Click:Connect(function()
-            btn.Text = opt
-            hideDropdown()
-            callback(opt)
-        end)
-    end
+    -- Initial population
+    updateDropdown(options)
     
-    btn.MouseButton1Click:Connect(function()
+    btn.MouseButton1Click:Connect(function(event)
+        event:StopPropagation()
+        closeAllDropdowns()
+        dropdownFrame.Visible = not dropdownFrame.Visible
         if dropdownFrame.Visible then
-            hideDropdown()
-        else
-            showDropdown()
+            activeDropdown = dropdownFrame
         end
     end)
     
-    -- Klik di luar dropdown untuk menutup
-    modalBackground.MouseButton1Click:Connect(hideDropdown)
-    modalBackground.MouseButton2Click:Connect(hideDropdown)
-    
-    return frame
+    -- Return functions to update dropdown
+    return frame, updateDropdown
 end
 
 local function createButton(parent, text, callback)
@@ -557,14 +527,17 @@ local function createButton(parent, text, callback)
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamBold
     btn.Parent = parent
-    btn.AutoButtonColor = false
-    btn.Selectable = false
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = btn
     
-    btn.MouseButton1Click:Connect(callback)
+    btn.MouseButton1Click:Connect(function(event)
+        event:StopPropagation()
+        closeAllDropdowns()
+        callback()
+    end)
+    
     return btn
 end
 
@@ -611,8 +584,6 @@ local function createToggle(parent, text, default, callback)
     toggleBtn.TextSize = 11
     toggleBtn.Font = Enum.Font.GothamBold
     toggleBtn.Parent = frame
-    toggleBtn.AutoButtonColor = false
-    toggleBtn.Selectable = false
     
     local toggleCorner = Instance.new("UICorner")
     toggleCorner.CornerRadius = UDim.new(0, 4)
@@ -620,7 +591,9 @@ local function createToggle(parent, text, default, callback)
     
     local state = default
     
-    toggleBtn.MouseButton1Click:Connect(function()
+    toggleBtn.MouseButton1Click:Connect(function(event)
+        event:StopPropagation()
+        closeAllDropdowns()
         state = not state
         toggleBtn.Text = state and "ON" or "OFF"
         toggleBtn.BackgroundColor3 = state and Color3.new(0, 0.6, 0) or Color3.new(0.3, 0.3, 0.3)
@@ -631,7 +604,6 @@ local function createToggle(parent, text, default, callback)
 end
 
 local function clearFeatures()
-    closeAllDropdowns()
     for _, child in pairs(featuresContainer:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("TextButton") then
             child:Destroy()
@@ -729,16 +701,15 @@ local function showTeleport()
     clearFeatures()
     contentTitle.Text = "Teleport"
     
-    -- Bagian Teleport ke Lokasi
     createLabel(featuresContainer, "Teleport to Location")
     
     local selectedLoc = TeleportLocations[1]
     
-    createDropdown(featuresContainer, TeleportLocations, TeleportLocations[1], function(selected)
+    local locDropdown, locUpdate = createDropdown(featuresContainer, TeleportLocations, TeleportLocations[1], function(selected)
         selectedLoc = selected
     end)
     
-    createButton(featuresContainer, "TELEPORT TO LOCATION", function()
+    createButton(featuresContainer, "TELEPORT", function()
         local cframe = LOCATIONS[selectedLoc]
         if cframe then
             local char = player.Character
@@ -749,125 +720,64 @@ local function showTeleport()
         end
     end)
     
-    -- Bagian Teleport ke Player
     createLabel(featuresContainer, "Teleport to Player")
     
-    -- Variable untuk menyimpan player terpilih
-    local selectedPlayer = ""
+    -- Function to get player list
+    local function getPlayerList()
+        local players = {}
+        for _, p in ipairs(game.Players:GetPlayers()) do
+            if p ~= player then
+                table.insert(players, p.Name)
+            end
+        end
+        return players
+    end
     
-    -- Dapatkan daftar player
-    local players = getPlayerList()
+    local playerList = getPlayerList()
+    local selectedPlayer = playerList[1] or "No players"
     
-    if #players > 0 then
-        selectedPlayer = players[1]
-        
-        -- Frame untuk dropdown dan refresh button
-        local playerRowFrame = Instance.new("Frame")
-        playerRowFrame.Size = UDim2.new(1, 0, 0, 35)
-        playerRowFrame.BackgroundTransparency = 1
-        playerRowFrame.Parent = featuresContainer
-        
-        -- Dropdown untuk player
-        local playerDropdown = createDropdown(playerRowFrame, players, players[1], function(selected)
-            selectedPlayer = selected
-            print("Selected player:", selectedPlayer) -- Debug
-        end)
-        playerDropdown.Size = UDim2.new(0.8, -5, 1, 0)
-        playerDropdown.Parent = playerRowFrame
-        
-        -- Refresh button
-        local refreshBtn = Instance.new("TextButton")
-        refreshBtn.Size = UDim2.new(0.2, -5, 1, 0)
-        refreshBtn.Position = UDim2.new(0.8, 5, 0, 0)
-        refreshBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
-        refreshBtn.BackgroundTransparency = 0.2
-        refreshBtn.Text = "↻"
-        refreshBtn.TextColor3 = Color3.new(1, 1, 1)
-        refreshBtn.TextSize = 18
-        refreshBtn.Font = Enum.Font.GothamBold
-        refreshBtn.Parent = playerRowFrame
-        refreshBtn.AutoButtonColor = false
-        refreshBtn.Selectable = false
-        
-        local refreshCorner = Instance.new("UICorner")
-        refreshCorner.CornerRadius = UDim.new(0, 6)
-        refreshCorner.Parent = refreshBtn
-        
-        -- Tombol Teleport ke Player
-        local tpToPlayerBtn = createButton(featuresContainer, "TELEPORT TO PLAYER", function()
-            if selectedPlayer and selectedPlayer ~= "" then
-                local target = game.Players:FindFirstChild(selectedPlayer)
-                if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                    local char = player.Character
-                    if char and char:FindFirstChild("HumanoidRootPart") then
-                        char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
-                        notify("Teleport", "Teleported to " .. selectedPlayer)
-                    end
-                else
-                    notify("Teleport", "Player not found or invalid", 2)
+    -- Create dropdown for players
+    local playerDropdown, playerUpdate = createDropdown(featuresContainer, playerList, playerList[1] or "No players", function(selected)
+        selectedPlayer = selected
+    end)
+    
+    -- Refresh button
+    local refreshFrame = Instance.new("Frame")
+    refreshFrame.Size = UDim2.new(1, 0, 0, 35)
+    refreshFrame.BackgroundTransparency = 1
+    refreshFrame.Parent = featuresContainer
+    
+    local refreshButton = createButton(refreshFrame, "REFRESH PLAYER LIST", function()
+        local newPlayerList = getPlayerList()
+        if #newPlayerList > 0 then
+            playerUpdate(newPlayerList)
+            selectedPlayer = newPlayerList[1]
+            notify("Player List", "Refreshed! " .. #newPlayerList .. " players online")
+        else
+            playerUpdate({"No players"})
+            selectedPlayer = "No players"
+            notify("Player List", "No other players online")
+        end
+    end)
+    refreshButton.Size = UDim2.new(1, 0, 0, 35)
+    
+    -- Teleport to player button
+    createButton(featuresContainer, "TELEPORT TO PLAYER", function()
+        if selectedPlayer and selectedPlayer ~= "No players" then
+            local target = game.Players:FindFirstChild(selectedPlayer)
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                local char = player.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+                    notify("Teleport", "Teleported to " .. selectedPlayer)
                 end
             else
-                notify("Teleport", "No player selected", 2)
+                notify("Error", "Player not found or has no character")
             end
-        end)
-        
-        -- Fungsi refresh
-        refreshBtn.MouseButton1Click:Connect(function()
-            -- Hapus dropdown lama
-            playerDropdown:Destroy()
-            
-            -- Dapatkan daftar player baru
-            local newPlayers = getPlayerList()
-            
-            if #newPlayers > 0 then
-                selectedPlayer = newPlayers[1]
-                
-                -- Buat dropdown baru
-                local newDropdown = createDropdown(playerRowFrame, newPlayers, newPlayers[1], function(selected)
-                    selectedPlayer = selected
-                    print("Selected player:", selectedPlayer) -- Debug
-                end)
-                newDropdown.Size = UDim2.new(0.8, -5, 1, 0)
-                newDropdown.Position = UDim2.new(0, 0, 0, 0)
-                
-                notify("Player List", "Refreshed! " .. #newPlayers .. " players online", 1)
-            else
-                -- Tidak ada player lain
-                local noPlayersLabel = Instance.new("TextLabel")
-                noPlayersLabel.Size = UDim2.new(0.8, -5, 1, 0)
-                noPlayersLabel.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-                noPlayersLabel.BackgroundTransparency = 0.2
-                noPlayersLabel.Text = "No other players"
-                noPlayersLabel.TextColor3 = Color3.new(1, 1, 0)
-                noPlayersLabel.TextSize = 13
-                noPlayersLabel.Font = Enum.Font.Gotham
-                noPlayersLabel.Parent = playerRowFrame
-                
-                local noPlayersCorner = Instance.new("UICorner")
-                noPlayersCorner.CornerRadius = UDim.new(0, 6)
-                noPlayersCorner.Parent = noPlayersLabel
-                
-                selectedPlayer = ""
-                notify("Player List", "No other players online", 1)
-            end
-        end)
-        
-    else
-        -- Tidak ada player lain
-        local noPlayersLabel = Instance.new("TextLabel")
-        noPlayersLabel.Size = UDim2.new(1, 0, 0, 35)
-        noPlayersLabel.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-        noPlayersLabel.BackgroundTransparency = 0.2
-        noPlayersLabel.Text = "No other players online"
-        noPlayersLabel.TextColor3 = Color3.new(1, 1, 0)
-        noPlayersLabel.TextSize = 13
-        noPlayersLabel.Font = Enum.Font.Gotham
-        noPlayersLabel.Parent = featuresContainer
-        
-        local noPlayersCorner = Instance.new("UICorner")
-        noPlayersCorner.CornerRadius = UDim.new(0, 6)
-        noPlayersCorner.Parent = noPlayersLabel
-    end
+        else
+            notify("Error", "No player selected")
+        end
+    end)
 end
 
 -- ===== CREATE LEFT MENU BUTTONS =====
@@ -888,8 +798,6 @@ for _, btnData in ipairs(menuButtons) do
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamBold
     btn.Parent = leftMenu
-    btn.AutoButtonColor = false
-    btn.Selectable = false
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
@@ -907,7 +815,8 @@ for _, btnData in ipairs(menuButtons) do
         end
     end)
     
-    btn.MouseButton1Click:Connect(function()
+    btn.MouseButton1Click:Connect(function(event)
+        event:StopPropagation()
         closeAllDropdowns()
         for _, b in pairs(leftMenu:GetChildren()) do
             if b:IsA("TextButton") then
@@ -955,18 +864,10 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- Klik di luar dropdown untuk menutup
-mouse.Button1Down:Connect(function()
-    if activeDropdown then
-        activeDropdown.Visible = false
-        activeDropdown = nil
-    end
-end)
-
 -- Cleanup on gui destroy
 gui.Destroying:Connect(function()
     stopAutoFishing()
 end)
 
-print("Moe V1.0 GUI Loaded with Teleport to Player")
+print("Moe V1.0 GUI Loaded with Fixed Logo and Dropdown")
 notify("Moe V1.0", "GUI Loaded Successfully!", 3)
