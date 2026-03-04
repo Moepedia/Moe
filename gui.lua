@@ -179,6 +179,18 @@ local function stopAutoFishing()
     notify("Auto Fishing", "Auto fishing stopped!", 2)
 end
 
+-- ===== FUNCTION TO GET PLAYER LIST =====
+local function getPlayerList()
+    local players = {}
+    for _, p in ipairs(game.Players:GetPlayers()) do
+        if p ~= player then
+            table.insert(players, p.Name)
+        end
+    end
+    table.sort(players)
+    return players
+end
+
 -- ===== MAIN FRAME (650x400) =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
@@ -209,7 +221,7 @@ headerFrame.Size = UDim2.new(1, 0, 0, 35)
 headerFrame.BackgroundTransparency = 1
 headerFrame.Parent = mainFrame
 
--- Logo (menggunakan image label dengan loading strategy)
+-- Logo
 local logo = Instance.new("ImageLabel")
 logo.Size = UDim2.new(0, 25, 0, 25)
 logo.Position = UDim2.new(0, 8, 0.5, -12.5)
@@ -717,6 +729,7 @@ local function showTeleport()
     clearFeatures()
     contentTitle.Text = "Teleport"
     
+    -- Bagian Teleport ke Lokasi
     createLabel(featuresContainer, "Teleport to Location")
     
     local selectedLoc = TeleportLocations[1]
@@ -725,7 +738,7 @@ local function showTeleport()
         selectedLoc = selected
     end)
     
-    createButton(featuresContainer, "TELEPORT", function()
+    createButton(featuresContainer, "TELEPORT TO LOCATION", function()
         local cframe = LOCATIONS[selectedLoc]
         if cframe then
             local char = player.Character
@@ -736,35 +749,124 @@ local function showTeleport()
         end
     end)
     
+    -- Bagian Teleport ke Player dengan Refresh Button
     createLabel(featuresContainer, "Teleport to Player")
     
-    local players = {}
-    for _, p in ipairs(game.Players:GetPlayers()) do
-        if p ~= player then
-            table.insert(players, p.Name)
+    -- Frame untuk dropdown dan refresh button
+    local playerRowFrame = Instance.new("Frame")
+    playerRowFrame.Size = UDim2.new(1, 0, 0, 35)
+    playerRowFrame.BackgroundTransparency = 1
+    playerRowFrame.Parent = featuresContainer
+    
+    local playerDropdownFrame = Instance.new("Frame")
+    playerDropdownFrame.Size = UDim2.new(0.8, -5, 1, 0)
+    playerDropdownFrame.BackgroundTransparency = 1
+    playerDropdownFrame.Parent = playerRowFrame
+    
+    local refreshBtn = Instance.new("TextButton")
+    refreshBtn.Size = UDim2.new(0.2, -5, 1, 0)
+    refreshBtn.Position = UDim2.new(0.8, 5, 0, 0)
+    refreshBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+    refreshBtn.BackgroundTransparency = 0.2
+    refreshBtn.Text = "↻"
+    refreshBtn.TextColor3 = Color3.new(1, 1, 1)
+    refreshBtn.TextSize = 18
+    refreshBtn.Font = Enum.Font.GothamBold
+    refreshBtn.Parent = playerRowFrame
+    refreshBtn.AutoButtonColor = false
+    refreshBtn.Selectable = false
+    
+    local refreshCorner = Instance.new("UICorner")
+    refreshCorner.CornerRadius = UDim.new(0, 6)
+    refreshCorner.Parent = refreshBtn
+    
+    -- Function to update player list
+    local function updatePlayerList()
+        local players = getPlayerList()
+        local playerDropdown = playerDropdownFrame:FindFirstChildOfClass("Frame")
+        if playerDropdown then
+            playerDropdown:Destroy()
+        end
+        
+        if #players > 0 then
+            local selectedPlayer = players[1]
+            
+            local newDropdown = createDropdown(playerDropdownFrame, players, players[1], function(selected)
+                selectedPlayer = selected
+            end)
+            
+            -- Tombol teleport terpisah
+            local teleportBtn = featuresContainer:FindFirstChild("TeleportToPlayerBtn")
+            if teleportBtn then
+                teleportBtn:Destroy()
+            end
+            
+            local tpBtn = createButton(featuresContainer, "TELEPORT TO PLAYER", function()
+                local target = game.Players:FindFirstChild(selectedPlayer)
+                if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                    local char = player.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+                        notify("Teleport", "Teleported to " .. selectedPlayer)
+                    end
+                else
+                    notify("Teleport", "Player not found or invalid", 2)
+                end
+            end)
+            tpBtn.Name = "TeleportToPlayerBtn"
+        else
+            local noPlayersLabel = Instance.new("TextLabel")
+            noPlayersLabel.Size = UDim2.new(1, 0, 0, 35)
+            noPlayersLabel.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+            noPlayersLabel.BackgroundTransparency = 0.2
+            noPlayersLabel.Text = "No other players online"
+            noPlayersLabel.TextColor3 = Color3.new(1, 1, 0)
+            noPlayersLabel.TextSize = 13
+            noPlayersLabel.Font = Enum.Font.Gotham
+            noPlayersLabel.Parent = playerDropdownFrame
+            
+            local noPlayersCorner = Instance.new("UICorner")
+            noPlayersCorner.CornerRadius = UDim.new(0, 6)
+            noPlayersCorner.Parent = noPlayersLabel
         end
     end
     
-    if #players > 0 then
-        local selectedPlayer = players[1]
-        
-        createDropdown(featuresContainer, players, players[1], function(selected)
-            selectedPlayer = selected
-        end)
-        
-        createButton(featuresContainer, "TELEPORT TO PLAYER", function()
-            local target = game.Players:FindFirstChild(selectedPlayer)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
-                    notify("Teleport", "Teleported to " .. selectedPlayer)
+    -- Initial player list
+    updatePlayerList()
+    
+    -- Refresh button functionality
+    refreshBtn.MouseButton1Click:Connect(function()
+        updatePlayerList()
+        notify("Player List", "Refreshed!", 1)
+    end)
+    
+    -- Auto-refresh every 10 seconds
+    local refreshConnection
+    refreshConnection = game:GetService("RunService").Stepped:Connect(function()
+        if currentMenu == "Teleport" then
+            updatePlayerList()
+            if refreshConnection then
+                refreshConnection:Disconnect()
+            end
+        end
+    end)
+    task.wait(0.1)
+    if refreshConnection then
+        refreshConnection:Disconnect()
+    end
+    
+    -- Periodic refresh every 10 seconds while in teleport menu
+    local function startPeriodicRefresh()
+        spawn(function()
+            while currentMenu == "Teleport" do
+                task.wait(10)
+                if currentMenu == "Teleport" then
+                    updatePlayerList()
                 end
             end
         end)
-    else
-        createLabel(featuresContainer, "No other players online")
     end
+    startPeriodicRefresh()
 end
 
 -- ===== CREATE LEFT MENU BUTTONS =====
@@ -865,5 +967,5 @@ gui.Destroying:Connect(function()
     stopAutoFishing()
 end)
 
-print("Moe V1.0 GUI Loaded with Fixed Dropdown and Logo")
+print("Moe V1.0 GUI Loaded with Teleport to Player and Refresh")
 notify("Moe V1.0", "GUI Loaded Successfully!", 3)
