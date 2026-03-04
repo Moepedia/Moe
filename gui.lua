@@ -382,7 +382,7 @@ local contentTitle = Instance.new("TextLabel")
 contentTitle.Size = UDim2.new(1, -10, 0, 25)
 contentTitle.Position = UDim2.new(0, 5, 0, 5)
 contentTitle.BackgroundTransparency = 1
-contentTitle.Text = "Teleport Menu"
+contentTitle.Text = "Fishing Features"
 contentTitle.TextColor3 = Color3.new(1, 1, 1)
 contentTitle.TextSize = 14
 contentTitle.Font = Enum.Font.GothamBold
@@ -413,28 +413,6 @@ featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 featuresLayout.Padding = UDim.new(0, 8)
 featuresLayout.Parent = featuresContainer
 
--- ===== GLOBAL MODAL BACKGROUND UNTUK DROPDOWN =====
-local modalBackground = Instance.new("TextButton")
-modalBackground.Size = UDim2.new(1, 0, 1, 0)
-modalBackground.Position = UDim2.new(0, 0, 0, 0)
-modalBackground.BackgroundTransparency = 0.5
-modalBackground.BackgroundColor3 = Color3.new(0, 0, 0)
-modalBackground.Text = ""
-modalBackground.Parent = gui
-modalBackground.ZIndex = 90
-modalBackground.Visible = false
-modalBackground.AutoButtonColor = false
-modalBackground.Selectable = false
-modalBackground.Active = true
-
-modalBackground.MouseButton1Click:Connect(function()
-    if activeDropdown then
-        activeDropdown.Visible = false
-        activeDropdown = nil
-        modalBackground.Visible = false
-    end
-end)
-
 -- ===== UI ELEMENTS FUNCTIONS =====
 local activeDropdown = nil
 
@@ -442,7 +420,6 @@ local function closeAllDropdowns()
     if activeDropdown then
         activeDropdown.Visible = false
         activeDropdown = nil
-        modalBackground.Visible = false
     end
 end
 
@@ -488,7 +465,7 @@ local function createDropdown(parent, options, default, callback)
     dropdownFrame.BackgroundTransparency = 0.1
     dropdownFrame.Visible = false
     dropdownFrame.Parent = frame
-    dropdownFrame.ZIndex = 95
+    dropdownFrame.ZIndex = 10
     dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
     dropdownFrame.ClipsDescendants = true
     
@@ -505,8 +482,7 @@ local function createDropdown(parent, options, default, callback)
         closeAllDropdowns()
         dropdownFrame.Visible = true
         activeDropdown = dropdownFrame
-        modalBackground.Visible = true
-        frame.ZIndex = 95
+        frame.ZIndex = 10
     end
     
     local function hideDropdown()
@@ -514,7 +490,6 @@ local function createDropdown(parent, options, default, callback)
         frame.ZIndex = 5
         if activeDropdown == dropdownFrame then
             activeDropdown = nil
-            modalBackground.Visible = false
         end
     end
     
@@ -527,7 +502,7 @@ local function createDropdown(parent, options, default, callback)
         optBtn.TextSize = 13
         optBtn.Font = Enum.Font.Gotham
         optBtn.Parent = dropdownFrame
-        optBtn.ZIndex = 96
+        optBtn.ZIndex = 11
         optBtn.AutoButtonColor = false
         optBtn.Selectable = false
         
@@ -738,10 +713,10 @@ end
 -- ===== TELEPORT MENU =====
 local function showTeleport()
     clearFeatures()
-    contentTitle.Text = "Teleport Menu"
+    contentTitle.Text = "Teleport"
     
-    -- ===== SECTION 1: TELEPORT TO LOCATION =====
-    createLabel(featuresContainer, "📍 Teleport to Location")
+    -- Bagian Teleport ke Lokasi
+    createLabel(featuresContainer, "Teleport to Location")
     
     local selectedLoc = TeleportLocations[1]
     
@@ -749,7 +724,7 @@ local function showTeleport()
         selectedLoc = selected
     end)
     
-    createButton(featuresContainer, "🚀 TELEPORT TO LOCATION", function()
+    createButton(featuresContainer, "TELEPORT TO LOCATION", function()
         local cframe = LOCATIONS[selectedLoc]
         if cframe then
             local char = player.Character
@@ -760,14 +735,8 @@ local function showTeleport()
         end
     end)
     
-    -- Spacer
-    local spacer = Instance.new("Frame")
-    spacer.Size = UDim2.new(1, 0, 0, 10)
-    spacer.BackgroundTransparency = 1
-    spacer.Parent = featuresContainer
-    
-    -- ===== SECTION 2: TELEPORT TO PLAYER =====
-    createLabel(featuresContainer, "👤 Teleport to Player")
+    -- Bagian Teleport ke Player
+    createLabel(featuresContainer, "Teleport to Player")
     
     -- Variable untuk menyimpan player terpilih
     local selectedPlayer = ""
@@ -787,24 +756,26 @@ local function showTeleport()
         -- Dropdown untuk player
         createDropdown(playerDropdownFrame, players, players[1], function(selected)
             selectedPlayer = selected
+            print("Selected player:", selectedPlayer)
         end)
         
-        -- Frame untuk refresh button
-        local refreshFrame = Instance.new("Frame")
-        refreshFrame.Size = UDim2.new(1, 0, 0, 35)
-        refreshFrame.BackgroundTransparency = 1
-        refreshFrame.Parent = featuresContainer
+        -- Frame untuk refresh button dan teleport button dalam satu baris
+        local buttonRowFrame = Instance.new("Frame")
+        buttonRowFrame.Size = UDim2.new(1, 0, 0, 35)
+        buttonRowFrame.BackgroundTransparency = 1
+        buttonRowFrame.Parent = featuresContainer
         
-        -- Refresh Button
+        -- Refresh Button (kiri)
         local refreshBtn = Instance.new("TextButton")
-        refreshBtn.Size = UDim2.new(1, 0, 1, 0)
+        refreshBtn.Size = UDim2.new(0.2, -5, 1, 0)
+        refreshBtn.Position = UDim2.new(0, 0, 0, 0)
         refreshBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
         refreshBtn.BackgroundTransparency = 0.2
-        refreshBtn.Text = "🔄 Refresh Player List"
+        refreshBtn.Text = "↻ Refresh"
         refreshBtn.TextColor3 = Color3.new(1, 1, 1)
-        refreshBtn.TextSize = 13
+        refreshBtn.TextSize = 12
         refreshBtn.Font = Enum.Font.GothamBold
-        refreshBtn.Parent = refreshFrame
+        refreshBtn.Parent = buttonRowFrame
         refreshBtn.AutoButtonColor = false
         refreshBtn.Selectable = false
         
@@ -812,8 +783,26 @@ local function showTeleport()
         refreshCorner.CornerRadius = UDim.new(0, 6)
         refreshCorner.Parent = refreshBtn
         
-        -- Teleport to Player Button
-        local tpToPlayerBtn = createButton(featuresContainer, "👥 TELEPORT TO PLAYER", function()
+        -- Teleport to Player Button (kanan)
+        local tpToPlayerBtn = Instance.new("TextButton")
+        tpToPlayerBtn.Size = UDim2.new(0.8, -5, 1, 0)
+        tpToPlayerBtn.Position = UDim2.new(0.2, 5, 0, 0)
+        tpToPlayerBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+        tpToPlayerBtn.BackgroundTransparency = 0.2
+        tpToPlayerBtn.Text = "TELEPORT TO PLAYER"
+        tpToPlayerBtn.TextColor3 = Color3.new(1, 1, 1)
+        tpToPlayerBtn.TextSize = 12
+        tpToPlayerBtn.Font = Enum.Font.GothamBold
+        tpToPlayerBtn.Parent = buttonRowFrame
+        tpToPlayerBtn.AutoButtonColor = false
+        tpToPlayerBtn.Selectable = false
+        
+        local tpCorner = Instance.new("UICorner")
+        tpCorner.CornerRadius = UDim.new(0, 6)
+        tpCorner.Parent = tpToPlayerBtn
+        
+        -- Fungsi Teleport
+        tpToPlayerBtn.MouseButton1Click:Connect(function()
             if selectedPlayer and selectedPlayer ~= "" then
                 local target = game.Players:FindFirstChild(selectedPlayer)
                 if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
@@ -832,6 +821,15 @@ local function showTeleport()
         
         -- Fungsi Refresh
         refreshBtn.MouseButton1Click:Connect(function()
+            -- Hapus isi featuresContainer bagian teleport player saja
+            for _, child in pairs(featuresContainer:GetChildren()) do
+                if child:IsA("Frame") and child ~= playerDropdownFrame and child ~= buttonRowFrame then
+                    if child:FindFirstChild("TextButton") then
+                        -- Hanya hapus frame yang berisi dropdown player dan button
+                    end
+                end
+            end
+            
             -- Update dropdown dengan player list baru
             local newPlayers = getPlayerList()
             
@@ -844,6 +842,7 @@ local function showTeleport()
                 -- Buat dropdown baru
                 createDropdown(playerDropdownFrame, newPlayers, newPlayers[1], function(selected)
                     selectedPlayer = selected
+                    print("Selected player:", selectedPlayer)
                 end)
                 
                 selectedPlayer = newPlayers[1]
@@ -981,10 +980,18 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
+-- Klik di luar dropdown untuk menutup
+mouse.Button1Down:Connect(function()
+    if activeDropdown then
+        activeDropdown.Visible = false
+        activeDropdown = nil
+    end
+end)
+
 -- Cleanup on gui destroy
 gui.Destroying:Connect(function()
     stopAutoFishing()
 end)
 
-print("Moe V1.0 GUI Loaded with Fixed Dropdown and Separated Menus")
+print("Moe V1.0 GUI Loaded with Fixed Teleport to Player")
 notify("Moe V1.0", "GUI Loaded Successfully!", 3)
