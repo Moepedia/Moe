@@ -366,6 +366,7 @@ contentArea.BackgroundTransparency = 0.3
 contentArea.Parent = contentContainer
 contentArea.Active = true
 contentArea.Selectable = true
+contentArea.ClipsDescendants = true
 
 local contentCorner = Instance.new("UICorner")
 contentCorner.CornerRadius = UDim.new(0, 8)
@@ -384,7 +385,7 @@ contentTitle.TextXAlignment = Enum.TextXAlignment.Left
 contentTitle.Parent = contentArea
 contentTitle.ZIndex = 5
 
--- Scrolling frame for features - FIXED: No AutomaticSize.Y
+-- Scrolling frame for features
 local scrollFrame = Instance.new("ScrollingFrame")
 scrollFrame.Size = UDim2.new(1, -10, 1, -35)
 scrollFrame.Position = UDim2.new(0, 5, 0, 30)
@@ -392,40 +393,28 @@ scrollFrame.BackgroundTransparency = 1
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 4
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
--- REMOVED: scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scrollFrame.ScrollBarImageColor3 = Color3.new(0.5, 0.5, 0.5)
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scrollFrame.Parent = contentArea
 scrollFrame.ZIndex = 5
 scrollFrame.Active = true
 scrollFrame.Selectable = true
-scrollFrame.ClipsDescendants = true -- This is fine, but dropdowns will be positioned outside
+scrollFrame.ClipsDescendants = true
 
--- Features container - NO AutomaticSize.Y, we'll manually size it
+-- IMPORTANT FIX: Container untuk features dengan ZIndex tinggi
 local featuresContainer = Instance.new("Frame")
 featuresContainer.Size = UDim2.new(1, 0, 0, 0)
 featuresContainer.BackgroundTransparency = 1
 featuresContainer.Parent = scrollFrame
-featuresContainer.ZIndex = 5
+featuresContainer.AutomaticSize = Enum.AutomaticSize.Y
+featuresContainer.ZIndex = 10  -- ZIndex tinggi untuk container
 featuresContainer.Active = true
--- REMOVED: featuresContainer.AutomaticSize = Enum.AutomaticSize.Y
+featuresContainer.Selectable = true
 
 local featuresLayout = Instance.new("UIListLayout")
 featuresLayout.FillDirection = Enum.FillDirection.Vertical
 featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 featuresLayout.Padding = UDim.new(0, 8)
 featuresLayout.Parent = featuresContainer
-
--- Update canvas size when layout changes
-local function updateCanvasSize()
-    local contentHeight = featuresLayout.AbsoluteContentSize.Y
-    featuresContainer.Size = UDim2.new(1, 0, 0, contentHeight)
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight + 10)
-end
-
-featuresLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
--- Initial update
-task.wait(0.1)
-updateCanvasSize()
 
 -- ===== GLOBAL VARIABLES FOR DROPDOWNS =====
 local activeDropdown = nil
@@ -439,46 +428,41 @@ local function closeAllDropdowns()
     end
 end
 
--- Function to setup input tracking for dropdowns - FIXED: Better click detection
+-- Function to setup input tracking for dropdowns (FIXED)
 local function setupInputTracking()
-    -- Use UserInputService for better click detection
-    local UserInputService = game:GetService("UserInputService")
+    -- Handle mouse button clicks with proper UI detection
+    local userInputService = game:GetService("UserInputService")
     
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    userInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             -- Small delay to let the click event propagate
             task.wait(0.05)
             
+            -- Check if we have an active dropdown
             if not activeDropdown then return end
             
             -- Get mouse position
-            local mousePos = UserInputService:GetMouseLocation()
+            local mousePos = userInputService:GetMouseLocation()
             
-            -- Check if click is inside any part of the dropdown system
+            -- Get the GUI objects at mouse position
+            local objects = gui:GetGuiObjectsAtPosition(mousePos.X, mousePos.Y)
+            
             local clickedOnDropdown = false
             
-            -- Find the parent dropdown frame (the container)
-            local dropdownParent = activeDropdown.Parent
-            if dropdownParent and dropdownParent:IsA("Frame") then
-                -- Check main dropdown button
-                local absPos, absSize = dropdownParent.AbsolutePosition, dropdownParent.AbsoluteSize
-                local buttonRect = Rect.new(absPos, absPos + absSize)
-                
-                if buttonRect:Contains(mousePos) then
-                    clickedOnDropdown = true
-                end
-                
-                -- Check dropdown options
-                if activeDropdown and activeDropdown.Visible then
-                    absPos, absSize = activeDropdown.AbsolutePosition, activeDropdown.AbsoluteSize
-                    local dropdownRect = Rect.new(absPos, absPos + absSize)
-                    
-                    if dropdownRect:Contains(mousePos) then
+            -- Check if any of the objects is part of our dropdown
+            for _, obj in ipairs(objects) do
+                -- Traverse up to find if this object belongs to dropdown
+                local current = obj
+                while current do
+                    if current == activeDropdown or current == activeDropdown.Parent then
                         clickedOnDropdown = true
+                        break
                     end
+                    current = current.Parent
                 end
+                if clickedOnDropdown then break end
             end
             
             -- If not clicked on dropdown, close it
@@ -499,10 +483,9 @@ local function createDropdown(parent, options, default, callback)
     frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
     frame.BackgroundTransparency = 0.2
     frame.Parent = parent
-    frame.ZIndex = 10
+    frame.ZIndex = 20  -- Increased ZIndex
     frame.Active = true
     frame.Selectable = true
-    frame.ClipsDescendants = false -- FIXED: Important! Allow dropdown to overflow
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
@@ -516,7 +499,7 @@ local function createDropdown(parent, options, default, callback)
     btn.TextSize = 13
     btn.Font = Enum.Font.Gotham
     btn.Parent = frame
-    btn.ZIndex = 11
+    btn.ZIndex = 21  -- Increased ZIndex
     btn.Active = true
     btn.Selectable = true
     btn.AutoButtonColor = false
@@ -529,19 +512,18 @@ local function createDropdown(parent, options, default, callback)
     arrow.TextColor3 = Color3.new(0.8, 0.8, 0.8)
     arrow.TextSize = 12
     arrow.Parent = frame
-    arrow.ZIndex = 11
+    arrow.ZIndex = 21  -- Increased ZIndex
     
-    -- FIXED: Dropdown frame - Positioned absolutely, not relative to parent with clipping
+    -- FIX: Dropdown frame dengan posisi absolute dan parent ke GUI
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
-    dropdownFrame.Position = UDim2.new(0, 0, 1, 0) -- Position right below the button
     dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     dropdownFrame.BackgroundTransparency = 0
     dropdownFrame.Visible = false
-    dropdownFrame.Parent = frame -- Parent to frame, not to scrolling frame
-    dropdownFrame.ZIndex = 100 -- High z-index to appear above everything
+    dropdownFrame.Parent = gui  -- Langsung parent ke GUI, bukan ke frame
+    dropdownFrame.ZIndex = 1000  -- ZIndex sangat tinggi
     dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
-    dropdownFrame.ClipsDescendants = false -- FIXED: Don't clip the content
+    dropdownFrame.ClipsDescendants = false  -- Jangan clip descendants
     dropdownFrame.BorderSizePixel = 1
     dropdownFrame.BorderColor3 = Color3.new(0.3, 0.3, 0.3)
     dropdownFrame.Active = true
@@ -555,6 +537,13 @@ local function createDropdown(parent, options, default, callback)
     dropdownList.FillDirection = Enum.FillDirection.Vertical
     dropdownList.Padding = UDim.new(0, 2)
     dropdownList.Parent = dropdownFrame
+    
+    -- Function to update dropdown position
+    local function updateDropdownPosition()
+        local absPos = frame.AbsolutePosition
+        local absSize = frame.AbsoluteSize
+        dropdownFrame.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
+    end
     
     -- Function to populate dropdown
     local function updateDropdown(newOptions)
@@ -576,7 +565,7 @@ local function createDropdown(parent, options, default, callback)
             optBtn.TextSize = 13
             optBtn.Font = Enum.Font.Gotham
             optBtn.Parent = dropdownFrame
-            optBtn.ZIndex = 101
+            optBtn.ZIndex = 1001  -- ZIndex sangat tinggi
             optBtn.BorderSizePixel = 0
             optBtn.Active = true
             optBtn.Selectable = true
@@ -598,9 +587,7 @@ local function createDropdown(parent, options, default, callback)
                 btn.Text = opt
                 dropdownFrame.Visible = false
                 activeDropdown = nil
-                if callback then
-                    callback(opt)
-                end
+                callback(opt)
             end)
         end
     end
@@ -608,95 +595,407 @@ local function createDropdown(parent, options, default, callback)
     -- Initial population
     updateDropdown(options)
     
-    -- Toggle dropdown on button click
     btn.MouseButton1Click:Connect(function()
+        -- Close any other open dropdown
+        if activeDropdown and activeDropdown ~= dropdownFrame then
+            activeDropdown.Visible = false
+        end
+        
+        -- Update position before showing
+        updateDropdownPosition()
+        
+        -- Toggle this dropdown
+        dropdownFrame.Visible = not dropdownFrame.Visible
+        activeDropdown = dropdownFrame.Visible and dropdownFrame or nil
+    end)
+    
+    -- Update position on frame move/resize
+    frame:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
         if dropdownFrame.Visible then
-            dropdownFrame.Visible = false
-            activeDropdown = nil
+            updateDropdownPosition()
+        end
+    end)
+    
+    -- Cleanup when frame is destroyed
+    frame.Destroying:Connect(function()
+        dropdownFrame:Destroy()
+    end)
+    
+    return frame, updateDropdown
+end
+
+local function createButton(parent, text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+    btn.BackgroundTransparency = 0.2
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = parent
+    btn.ZIndex = 20  -- Increased ZIndex
+    btn.Active = true
+    btn.Selectable = true
+    btn.AutoButtonColor = false
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+    
+    btn.MouseButton1Click:Connect(function()
+        closeAllDropdowns()
+        callback()
+    end)
+    
+    return btn
+end
+
+local function createLabel(parent, text)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 25)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextSize = 14
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = parent
+    label.ZIndex = 20  -- Increased ZIndex
+end
+
+local function createToggle(parent, text, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 35)
+    frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    frame.BackgroundTransparency = 0.2
+    frame.Parent = parent
+    frame.ZIndex = 20  -- Increased ZIndex
+    frame.Active = true
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = frame
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0, 150, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextSize = 13
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    label.ZIndex = 21  -- Increased ZIndex
+    
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(0, 50, 0, 25)
+    toggleBtn.Position = UDim2.new(1, -60, 0.5, -12.5)
+    toggleBtn.BackgroundColor3 = default and Color3.new(0, 0.6, 0) or Color3.new(0.3, 0.3, 0.3)
+    toggleBtn.Text = default and "ON" or "OFF"
+    toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+    toggleBtn.TextSize = 11
+    toggleBtn.Font = Enum.Font.GothamBold
+    toggleBtn.Parent = frame
+    toggleBtn.ZIndex = 21  -- Increased ZIndex
+    toggleBtn.Active = true
+    toggleBtn.Selectable = true
+    toggleBtn.AutoButtonColor = false
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 4)
+    toggleCorner.Parent = toggleBtn
+    
+    local state = default
+    
+    toggleBtn.MouseButton1Click:Connect(function()
+        closeAllDropdowns()
+        state = not state
+        toggleBtn.Text = state and "ON" or "OFF"
+        toggleBtn.BackgroundColor3 = state and Color3.new(0, 0.6, 0) or Color3.new(0.3, 0.3, 0.3)
+        callback(state)
+    end)
+    
+    return toggleBtn
+end
+
+local function clearFeatures()
+    for _, child in pairs(featuresContainer:GetChildren()) do
+        if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+end
+
+-- ===== AUTO FISHING TOGGLE REFERENCE =====
+local autoFishToggle = nil
+
+-- ===== FISHING MENU =====
+local function showFishing()
+    clearFeatures()
+    contentTitle.Text = "Fishing Features"
+    
+    createLabel(featuresContainer, "Auto Fishing")
+    
+    -- Auto Fishing Toggle
+    autoFishToggle = createToggle(featuresContainer, "Auto Fishing", false, function(state)
+        if state then
+            startAutoFishing()
         else
-            -- Close any other open dropdown
-            closeAllDropdowns()
-            
-            -- Show this dropdown
-            dropdownFrame.Visible = true
-            activeDropdown = dropdownFrame
-            
-            -- FIXED: Ensure dropdown stays within screen bounds
-            task.wait(0.1) -- Wait for layout to update
-            
-            local absPos = dropdownFrame.AbsolutePosition
-            local absSize = dropdownFrame.AbsoluteSize
-            local viewportSize = workspace.CurrentCamera.ViewportSize
-            
-            -- Check if dropdown goes off screen at bottom
-            if absPos.Y + absSize.Y > viewportSize.Y - 20 then
-                -- Position above instead
-                dropdownFrame.Position = UDim2.new(0, 0, 0, -absSize.Y)
+            stopAutoFishing()
+        end
+    end)
+    
+    createLabel(featuresContainer, "Manual Fishing")
+    
+    createButton(featuresContainer, "Cast Line", function()
+        castLine()
+    end)
+    
+    createButton(featuresContainer, "Reel In", function()
+        reelIn()
+    end)
+    
+    -- Stats display
+    local statsFrame = Instance.new("Frame")
+    statsFrame.Size = UDim2.new(1, 0, 0, 60)
+    statsFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
+    statsFrame.BackgroundTransparency = 0.2
+    statsFrame.Parent = featuresContainer
+    statsFrame.ZIndex = 20
+    statsFrame.Active = true
+    
+    local statsCorner = Instance.new("UICorner")
+    statsCorner.CornerRadius = UDim.new(0, 6)
+    statsCorner.Parent = statsFrame
+    
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Size = UDim2.new(1, -10, 0, 20)
+    statusLabel.Position = UDim2.new(0, 5, 0, 5)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = "Status: Idle"
+    statusLabel.TextColor3 = Color3.new(1, 1, 0)
+    statusLabel.TextSize = 12
+    statusLabel.Font = Enum.Font.GothamBold
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.Parent = statsFrame
+    statusLabel.ZIndex = 21
+    
+    local bobberLabel = Instance.new("TextLabel")
+    bobberLabel.Size = UDim2.new(1, -10, 0, 20)
+    bobberLabel.Position = UDim2.new(0, 5, 0, 25)
+    bobberLabel.BackgroundTransparency = 1
+    bobberLabel.Text = "Bobber: Not found"
+    bobberLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    bobberLabel.TextSize = 11
+    bobberLabel.Font = Enum.Font.Gotham
+    bobberLabel.TextXAlignment = Enum.TextXAlignment.Left
+    bobberLabel.Parent = statsFrame
+    bobberLabel.ZIndex = 21
+    
+    -- Update stats
+    coroutine.wrap(function()
+        while featuresContainer and featuresContainer.Parent do
+            if autoFishing then
+                statusLabel.Text = "Status: Auto Fishing Active"
+                statusLabel.TextColor3 = Color3.new(0, 1, 0)
             else
-                dropdownFrame.Position = UDim2.new(0, 0, 1, 0)
+                statusLabel.Text = "Status: Manual Mode"
+                statusLabel.TextColor3 = Color3.new(1, 1, 0)
+            end
+            
+            bobber = findBobber()
+            if bobber then
+                bobberLabel.Text = "Bobber: Found"
+                bobberLabel.TextColor3 = Color3.new(0, 1, 0)
+            else
+                bobberLabel.Text = "Bobber: Not found"
+                bobberLabel.TextColor3 = Color3.new(1, 0, 0)
+            end
+            task.wait(0.5)
+        end
+    end)()
+end
+
+-- ===== TELEPORT MENU =====
+local function showTeleport()
+    clearFeatures()
+    contentTitle.Text = "Teleport"
+    
+    createLabel(featuresContainer, "Teleport to Location")
+    
+    local selectedLoc = TeleportLocations[1]
+    
+    local locDropdown, locUpdate = createDropdown(featuresContainer, TeleportLocations, TeleportLocations[1], function(selected)
+        selectedLoc = selected
+    end)
+    
+    createButton(featuresContainer, "TELEPORT", function()
+        local cframe = LOCATIONS[selectedLoc]
+        if cframe then
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = cframe
+                notify("Teleport", "Teleported to " .. selectedLoc)
             end
         end
     end)
     
-    return frame
+    createLabel(featuresContainer, "Teleport to Player")
+    
+    -- Function to get player list
+    local function getPlayerList()
+        local players = {}
+        for _, p in ipairs(game.Players:GetPlayers()) do
+            if p ~= player then
+                table.insert(players, p.Name)
+            end
+        end
+        return players
+    end
+    
+    local playerList = getPlayerList()
+    local selectedPlayer = playerList[1] or "No players"
+    
+    -- Create dropdown for players
+    local playerDropdown, playerUpdate = createDropdown(featuresContainer, playerList, playerList[1] or "No players", function(selected)
+        selectedPlayer = selected
+    end)
+    
+    -- Refresh button
+    local refreshFrame = Instance.new("Frame")
+    refreshFrame.Size = UDim2.new(1, 0, 0, 35)
+    refreshFrame.BackgroundTransparency = 1
+    refreshFrame.Parent = featuresContainer
+    refreshFrame.ZIndex = 20
+    
+    local refreshButton = createButton(refreshFrame, "REFRESH PLAYER LIST", function()
+        local newPlayerList = getPlayerList()
+        if #newPlayerList > 0 then
+            playerUpdate(newPlayerList)
+            selectedPlayer = newPlayerList[1]
+            notify("Player List", "Refreshed! " .. #newPlayerList .. " players online")
+        else
+            playerUpdate({"No players"})
+            selectedPlayer = "No players"
+            notify("Player List", "No other players online")
+        end
+    end)
+    refreshButton.Size = UDim2.new(1, 0, 0, 35)
+    
+    -- Teleport to player button
+    createButton(featuresContainer, "TELEPORT TO PLAYER", function()
+        if selectedPlayer and selectedPlayer ~= "No players" then
+            local target = game.Players:FindFirstChild(selectedPlayer)
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                local char = player.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+                    notify("Teleport", "Teleported to " .. selectedPlayer)
+                end
+            else
+                notify("Error", "Player not found or has no character")
+            end
+        else
+            notify("Error", "No player selected")
+        end
+    end)
 end
 
--- ===== CREATE FISHING FEATURES =====
--- Auto Fishing Toggle
-local autoFishFrame = Instance.new("Frame")
-autoFishFrame.Size = UDim2.new(1, 0, 0, 35)
-autoFishFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-autoFishFrame.BackgroundTransparency = 0.2
-autoFishFrame.Parent = featuresContainer
-autoFishFrame.ZIndex = 5
+-- ===== CREATE LEFT MENU BUTTONS =====
+local menuButtons = {
+    {name = "Fishing", func = showFishing},
+    {name = "Teleport", func = showTeleport}
+}
 
-local autoFishCorner = Instance.new("UICorner")
-autoFishCorner.CornerRadius = UDim.new(0, 6)
-autoFishCorner.Parent = autoFishFrame
+local currentMenu = ""
 
-local autoFishLabel = Instance.new("TextLabel")
-autoFishLabel.Size = UDim2.new(0.7, -5, 1, 0)
-autoFishLabel.Position = UDim2.new(0, 8, 0, 0)
-autoFishLabel.BackgroundTransparency = 1
-autoFishLabel.Text = "Auto Fishing"
-autoFishLabel.TextColor3 = Color3.new(1, 1, 1)
-autoFishLabel.TextSize = 13
-autoFishLabel.Font = Enum.Font.Gotham
-autoFishLabel.TextXAlignment = Enum.TextXAlignment.Left
-autoFishLabel.Parent = autoFishFrame
-autoFishLabel.ZIndex = 5
+for _, btnData in ipairs(menuButtons) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 100, 0, 35)
+    btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    btn.BackgroundTransparency = 0.3
+    btn.Text = btnData.name
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = leftMenu
+    btn.ZIndex = 20
+    btn.Active = true
+    btn.Selectable = true
+    btn.AutoButtonColor = false
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+    
+    btn.MouseEnter:Connect(function()
+        if currentMenu ~= btnData.name then
+            btn.BackgroundTransparency = 0.1
+        end
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        if currentMenu ~= btnData.name then
+            btn.BackgroundTransparency = 0.3
+        end
+    end)
+    
+    btn.MouseButton1Click:Connect(function()
+        closeAllDropdowns()
+        for _, b in pairs(leftMenu:GetChildren()) do
+            if b:IsA("TextButton") then
+                b.BackgroundTransparency = 0.3
+            end
+        end
+        btn.BackgroundTransparency = 0
+        currentMenu = btnData.name
+        btnData.func()
+    end)
+end
 
-local autoFishToggle = Instance.new("TextButton")
-autoFishToggle.Size = UDim2.new(0, 50, 0, 25)
-autoFishToggle.Position = UDim2.new(1, -55, 0.5, -12.5)
-autoFishToggle.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-autoFishToggle.Text = "OFF"
-autoFishToggle.TextColor3 = Color3.new(1, 1, 1)
-autoFishToggle.TextSize = 12
-autoFishToggle.Font = Enum.Font.GothamBold
-autoFishToggle.Parent = autoFishFrame
-autoFishToggle.ZIndex = 6
+-- Show Fishing menu by default
+task.wait(0.1)
+showFishing()
 
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 4)
-toggleCorner.Parent = autoFishToggle
+-- ===== DRAG FUNCTIONALITY =====
+local dragging = false
+local dragStart
+local startPos
 
-autoFishToggle.MouseButton1Click:Connect(function()
-    if autoFishing then
-        stopAutoFishing()
-    else
-        startAutoFishing()
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
     end
 end)
 
--- Teleport Dropdown
-local teleportDropdown = createDropdown(featuresContainer, TeleportLocations, "Select Location", function(selected)
-    local cframe = LOCATIONS[selected]
-    if cframe and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        player.Character.HumanoidRootPart.CFrame = cframe
-        notify("Teleport", "Teleported to " .. selected, 2)
+mainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
--- Update canvas size after adding elements
-updateCanvasSize()
+mainFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- Cleanup on gui destroy
+gui.Destroying:Connect(function()
+    stopAutoFishing()
+    -- Close any open dropdown
+    closeAllDropdowns()
+end)
+
+print("Moe V1.0 GUI Loaded with Fixed Dropdown and Teleport Menu")
+notify("Moe V1.0", "GUI Loaded Successfully!", 3)
