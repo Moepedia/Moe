@@ -400,13 +400,13 @@ scrollFrame.Active = true
 scrollFrame.Selectable = true
 scrollFrame.ClipsDescendants = true
 
--- IMPORTANT FIX: Container untuk features dengan ZIndex tinggi
+-- Container untuk features
 local featuresContainer = Instance.new("Frame")
 featuresContainer.Size = UDim2.new(1, 0, 0, 0)
 featuresContainer.BackgroundTransparency = 1
 featuresContainer.Parent = scrollFrame
 featuresContainer.AutomaticSize = Enum.AutomaticSize.Y
-featuresContainer.ZIndex = 10  -- ZIndex tinggi untuk container
+featuresContainer.ZIndex = 10
 featuresContainer.Active = true
 featuresContainer.Selectable = true
 
@@ -428,7 +428,7 @@ local function closeAllDropdowns()
     end
 end
 
--- Function to setup input tracking for dropdowns (FIXED)
+-- Function to setup input tracking for dropdowns
 local function setupInputTracking()
     -- Handle mouse button clicks with proper UI detection
     local userInputService = game:GetService("UserInputService")
@@ -483,7 +483,7 @@ local function createDropdown(parent, options, default, callback)
     frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
     frame.BackgroundTransparency = 0.2
     frame.Parent = parent
-    frame.ZIndex = 20  -- Increased ZIndex
+    frame.ZIndex = 20
     frame.Active = true
     frame.Selectable = true
     
@@ -499,7 +499,7 @@ local function createDropdown(parent, options, default, callback)
     btn.TextSize = 13
     btn.Font = Enum.Font.Gotham
     btn.Parent = frame
-    btn.ZIndex = 21  -- Increased ZIndex
+    btn.ZIndex = 21
     btn.Active = true
     btn.Selectable = true
     btn.AutoButtonColor = false
@@ -512,18 +512,16 @@ local function createDropdown(parent, options, default, callback)
     arrow.TextColor3 = Color3.new(0.8, 0.8, 0.8)
     arrow.TextSize = 12
     arrow.Parent = frame
-    arrow.ZIndex = 21  -- Increased ZIndex
+    arrow.ZIndex = 21
     
-    -- FIX: Dropdown frame dengan posisi absolute dan parent ke GUI
+    -- FIXED: Dropdown frame dengan parent ke gui, tapi ukuran mengikuti frame
     local dropdownFrame = Instance.new("Frame")
-    dropdownFrame.Size = UDim2.new(1, 0, 0, 0)b
     dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     dropdownFrame.BackgroundTransparency = 0
     dropdownFrame.Visible = false
-    dropdownFrame.Parent = gui  -- Langsung parent ke GUI, bukan ke frame
-    dropdownFrame.ZIndex = 1000  -- ZIndex sangat tinggi
-    dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
-    dropdownFrame.ClipsDescendants = false  -- Jangan clip descendants
+    dropdownFrame.Parent = gui
+    dropdownFrame.ZIndex = 1000
+    dropdownFrame.ClipsDescendants = true
     dropdownFrame.BorderSizePixel = 1
     dropdownFrame.BorderColor3 = Color3.new(0.3, 0.3, 0.3)
     dropdownFrame.Active = true
@@ -533,31 +531,53 @@ local function createDropdown(parent, options, default, callback)
     dropdownCorner.CornerRadius = UDim.new(0, 6)
     dropdownCorner.Parent = dropdownFrame
     
-    local dropdownList = Instance.new("UIListLayout")
-    dropdownList.FillDirection = Enum.FillDirection.Vertical
-    dropdownList.Padding = UDim.new(0, 2)
-    dropdownList.Parent = dropdownFrame
+    -- Scrolling frame untuk options
+    local optionsScrolling = Instance.new("ScrollingFrame")
+    optionsScrolling.Size = UDim2.new(1, 0, 1, 0)
+    optionsScrolling.BackgroundTransparency = 1
+    optionsScrolling.BorderSizePixel = 0
+    optionsScrolling.ScrollBarThickness = 4
+    optionsScrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
+    optionsScrolling.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    optionsScrolling.Parent = dropdownFrame
+    optionsScrolling.ZIndex = 1001
+    optionsScrolling.Active = true
+    optionsScrolling.Selectable = true
     
-    -- Function to update dropdown position
+    local optionsContainer = Instance.new("Frame")
+    optionsContainer.Size = UDim2.new(1, 0, 0, 0)
+    optionsContainer.BackgroundTransparency = 1
+    optionsContainer.Parent = optionsScrolling
+    optionsContainer.AutomaticSize = Enum.AutomaticSize.Y
+    optionsContainer.ZIndex = 1002
+    
+    local optionsLayout = Instance.new("UIListLayout")
+    optionsLayout.FillDirection = Enum.FillDirection.Vertical
+    optionsLayout.Padding = UDim.new(0, 2)
+    optionsLayout.Parent = optionsContainer
+    
+    -- Function to update dropdown position and size
     local function updateDropdownPosition()
-    local absPos = frame.AbsolutePosition
-    local absSize = frame.AbsoluteSize
-    
-    dropdownFrame.Position = UDim2.new(
-        0, absPos.X,
-        0, absPos.Y + absSize.Y
-    )
-    
-    dropdownFrame.Size = UDim2.new(
-        0, absSize.X,
-        0, dropdownFrame.AbsoluteSize.Y
-    )
-end
+        local absPos = frame.AbsolutePosition
+        local absSize = frame.AbsoluteSize
+        
+        -- Set position (tepat di bawah frame)
+        dropdownFrame.Position = UDim2.new(
+            0, absPos.X,
+            0, absPos.Y + absSize.Y
+        )
+        
+        -- Set width mengikuti lebar frame
+        dropdownFrame.Size = UDim2.new(
+            0, absSize.X,
+            0, math.min(#options * 32, 200)  -- Max height 200, 32px per option
+        )
+    end
     
     -- Function to populate dropdown
     local function updateDropdown(newOptions)
         -- Clear existing options
-        for _, child in pairs(dropdownFrame:GetChildren()) do
+        for _, child in pairs(optionsContainer:GetChildren()) do
             if child:IsA("TextButton") then
                 child:Destroy()
             end
@@ -573,8 +593,8 @@ end
             optBtn.TextColor3 = Color3.new(1, 1, 1)
             optBtn.TextSize = 13
             optBtn.Font = Enum.Font.Gotham
-            optBtn.Parent = dropdownFrame
-            optBtn.ZIndex = 1001  -- ZIndex sangat tinggi
+            optBtn.Parent = optionsContainer
+            optBtn.ZIndex = 1002
             optBtn.BorderSizePixel = 0
             optBtn.Active = true
             optBtn.Selectable = true
@@ -599,6 +619,19 @@ end
                 callback(opt)
             end)
         end
+        
+        -- Update canvas size untuk scrolling
+        task.wait() -- Tunggu layout selesai
+        local contentHeight = #newOptions * 32 + (#newOptions - 1) * 2
+        optionsScrolling.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+        
+        -- Update dropdown height
+        if dropdownFrame.Visible then
+            dropdownFrame.Size = UDim2.new(
+                0, frame.AbsoluteSize.X,
+                0, math.min(contentHeight, 200)
+            )
+        end
     end
     
     -- Initial population
@@ -610,7 +643,7 @@ end
             activeDropdown.Visible = false
         end
         
-        -- Update position before showing
+        -- Update position and size before showing
         updateDropdownPosition()
         
         -- Toggle this dropdown
@@ -620,6 +653,12 @@ end
     
     -- Update position on frame move/resize
     frame:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
+        if dropdownFrame.Visible then
+            updateDropdownPosition()
+        end
+    end)
+    
+    frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
         if dropdownFrame.Visible then
             updateDropdownPosition()
         end
@@ -643,7 +682,7 @@ local function createButton(parent, text, callback)
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamBold
     btn.Parent = parent
-    btn.ZIndex = 20  -- Increased ZIndex
+    btn.ZIndex = 20
     btn.Active = true
     btn.Selectable = true
     btn.AutoButtonColor = false
@@ -670,7 +709,7 @@ local function createLabel(parent, text)
     label.Font = Enum.Font.GothamBold
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = parent
-    label.ZIndex = 20  -- Increased ZIndex
+    label.ZIndex = 20
 end
 
 local function createToggle(parent, text, default, callback)
@@ -679,7 +718,7 @@ local function createToggle(parent, text, default, callback)
     frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
     frame.BackgroundTransparency = 0.2
     frame.Parent = parent
-    frame.ZIndex = 20  -- Increased ZIndex
+    frame.ZIndex = 20
     frame.Active = true
     
     local corner = Instance.new("UICorner")
@@ -696,7 +735,7 @@ local function createToggle(parent, text, default, callback)
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
-    label.ZIndex = 21  -- Increased ZIndex
+    label.ZIndex = 21
     
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(0, 50, 0, 25)
@@ -707,7 +746,7 @@ local function createToggle(parent, text, default, callback)
     toggleBtn.TextSize = 11
     toggleBtn.Font = Enum.Font.GothamBold
     toggleBtn.Parent = frame
-    toggleBtn.ZIndex = 21  -- Increased ZIndex
+    toggleBtn.ZIndex = 21
     toggleBtn.Active = true
     toggleBtn.Selectable = true
     toggleBtn.AutoButtonColor = false
