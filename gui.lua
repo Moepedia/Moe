@@ -1,3 +1,160 @@
+local UIS = game:GetService("UserInputService")
+
+local function createDropdown(parent, options, default, callback)
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 35)
+    frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    frame.Parent = parent
+    frame.ZIndex = 10
+
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,6)
+
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1,0,1,0)
+    button.BackgroundTransparency = 1
+    button.Text = default or options[1]
+    button.TextColor3 = Color3.new(1,1,1)
+    button.Font = Enum.Font.Gotham
+    button.TextSize = 13
+    button.Parent = frame
+    button.ZIndex = 11
+
+    local arrow = Instance.new("TextLabel")
+    arrow.Size = UDim2.new(0,20,1,0)
+    arrow.Position = UDim2.new(1,-20,0,0)
+    arrow.BackgroundTransparency = 1
+    arrow.Text = "▼"
+    arrow.TextColor3 = Color3.fromRGB(200,200,200)
+    arrow.Parent = frame
+    arrow.ZIndex = 11
+
+    -- ===== FLOATING DROPDOWN =====
+    local dropdown = Instance.new("Frame")
+    dropdown.Visible = false
+    dropdown.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    dropdown.BorderSizePixel = 0
+    dropdown.ZIndex = 1000
+    dropdown.Parent = gui
+
+    Instance.new("UICorner", dropdown).CornerRadius = UDim.new(0,6)
+
+    -- Search Bar
+    local searchBox = Instance.new("TextBox")
+    searchBox.Size = UDim2.new(1,-10,0,30)
+    searchBox.Position = UDim2.new(0,5,0,5)
+    searchBox.PlaceholderText = "Search..."
+    searchBox.Text = ""
+    searchBox.TextColor3 = Color3.new(1,1,1)
+    searchBox.BackgroundColor3 = Color3.fromRGB(55,55,55)
+    searchBox.Font = Enum.Font.Gotham
+    searchBox.TextSize = 13
+    searchBox.ClearTextOnFocus = false
+    searchBox.ZIndex = 1001
+    searchBox.Parent = dropdown
+
+    Instance.new("UICorner", searchBox).CornerRadius = UDim.new(0,4)
+
+    -- Scrolling area
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Position = UDim2.new(0,5,0,40)
+    scroll.Size = UDim2.new(1,-10,0,150)
+    scroll.CanvasSize = UDim2.new(0,0,0,0)
+    scroll.ScrollBarThickness = 4
+    scroll.BackgroundTransparency = 1
+    scroll.BorderSizePixel = 0
+    scroll.ZIndex = 1001
+    scroll.Parent = dropdown
+    scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0,2)
+    layout.Parent = scroll
+
+    -- Generate Options
+    local function populate(filterText)
+
+        for _,child in pairs(scroll:GetChildren()) do
+            if child:IsA("TextButton") then
+                child:Destroy()
+            end
+        end
+
+        filterText = string.lower(filterText or "")
+
+        for _,opt in ipairs(options) do
+            if filterText == "" or string.find(string.lower(opt), filterText) then
+
+                local optBtn = Instance.new("TextButton")
+                optBtn.Size = UDim2.new(1,0,0,28)
+                optBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+                optBtn.Text = opt
+                optBtn.TextColor3 = Color3.new(1,1,1)
+                optBtn.Font = Enum.Font.Gotham
+                optBtn.TextSize = 13
+                optBtn.ZIndex = 1002
+                optBtn.Parent = scroll
+
+                Instance.new("UICorner", optBtn).CornerRadius = UDim.new(0,4)
+
+                optBtn.MouseButton1Click:Connect(function()
+                    button.Text = opt
+                    dropdown.Visible = false
+                    if callback then
+                        callback(opt)
+                    end
+                end)
+            end
+        end
+    end
+
+    populate()
+
+    searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        populate(searchBox.Text)
+    end)
+
+    button.MouseButton1Click:Connect(function()
+
+        if activeDropdown and activeDropdown ~= dropdown then
+            activeDropdown.Visible = false
+        end
+
+        dropdown.Visible = not dropdown.Visible
+        activeDropdown = dropdown
+
+        local absPos = frame.AbsolutePosition
+        dropdown.Position = UDim2.new(
+            0, absPos.X,
+            0, absPos.Y + frame.AbsoluteSize.Y
+        )
+
+        dropdown.Size = UDim2.new(0, frame.AbsoluteSize.X, 0, 200)
+    end)
+
+    -- klik luar close
+    UIS.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if dropdown.Visible then
+                local mousePos = UIS:GetMouseLocation()
+                local pos = dropdown.AbsolutePosition
+                local size = dropdown.AbsoluteSize
+
+                if not (
+                    mousePos.X >= pos.X and
+                    mousePos.X <= pos.X + size.X and
+                    mousePos.Y >= pos.Y and
+                    mousePos.Y <= pos.Y + size.Y
+                ) then
+                    dropdown.Visible = false
+                end
+            end
+        end
+    end)
+
+    return frame
+end
+
 -- Moe V1.0 GUI for FISH IT
 
 local player = game.Players.LocalPlayer
@@ -463,501 +620,88 @@ end
 setupInputTracking()
 
 -- ===== UI ELEMENTS FUNCTIONS =====
-local function createDropdown(parent, options, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 35)
-    frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-    frame.BackgroundTransparency = 0.2
-    frame.Parent = parent
-    frame.ZIndex = 10
-    frame.Active = true
-    frame.Selectable = true
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = frame
-    
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = default or options[1]
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.TextSize = 13
-    btn.Font = Enum.Font.Gotham
-    btn.Parent = frame
-    btn.ZIndex = 11
-    btn.Active = true
-    btn.Selectable = true
-    btn.AutoButtonColor = false
-    
-    local arrow = Instance.new("TextLabel")
-    arrow.Size = UDim2.new(0, 20, 1, 0)
-    arrow.Position = UDim2.new(1, -20, 0, 0)
-    arrow.BackgroundTransparency = 1
-    arrow.Text = "▼"
-    arrow.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    arrow.TextSize = 12
-    arrow.Parent = frame
-    arrow.ZIndex = 11
-    
-    local dropdownFrame = Instance.new("Frame")
-    dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
-    dropdownFrame.Position = UDim2.new(0, 0, 0, 35)
-    dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    dropdownFrame.BackgroundTransparency = 0
-    dropdownFrame.Visible = false
-    dropdownFrame.Parent = frame
-    dropdownFrame.ZIndex = 100
-    dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
-    dropdownFrame.ClipsDescendants = true
-    dropdownFrame.BorderSizePixel = 1
-    dropdownFrame.BorderColor3 = Color3.new(0.3, 0.3, 0.3)
-    dropdownFrame.Active = true
-    dropdownFrame.Selectable = true
-    
-    local dropdownCorner = Instance.new("UICorner")
-    dropdownCorner.CornerRadius = UDim.new(0, 6)
-    dropdownCorner.Parent = dropdownFrame
-    
-    local dropdownList = Instance.new("UIListLayout")
-    dropdownList.FillDirection = Enum.FillDirection.Vertical
-    dropdownList.Padding = UDim.new(0, 2)
-    dropdownList.Parent = dropdownFrame
-    
-    -- Function to populate dropdown
-    local function updateDropdown(newOptions)
-        -- Clear existing options
-        for _, child in pairs(dropdownFrame:GetChildren()) do
-            if child:IsA("TextButton") then
-                child:Destroy()
-            end
-        end
-        
-        -- Add new options
-        for i, opt in ipairs(newOptions) do
-            local optBtn = Instance.new("TextButton")
-            optBtn.Size = UDim2.new(1, 0, 0, 30)
-            optBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
-            optBtn.BackgroundTransparency = 0
-            optBtn.Text = opt
-            optBtn.TextColor3 = Color3.new(1, 1, 1)
-            optBtn.TextSize = 13
-            optBtn.Font = Enum.Font.Gotham
-            optBtn.Parent = dropdownFrame
-            optBtn.ZIndex = 101
-            optBtn.BorderSizePixel = 0
-            optBtn.Active = true
-            optBtn.Selectable = true
-            optBtn.AutoButtonColor = false
-            
-            local optCorner = Instance.new("UICorner")
-            optCorner.CornerRadius = UDim.new(0, 4)
-            optCorner.Parent = optBtn
-            
-            optBtn.MouseEnter:Connect(function()
-                optBtn.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-            end)
-            
-            optBtn.MouseLeave:Connect(function()
-                optBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
-            end)
-            
-            optBtn.MouseButton1Click:Connect(function()
-                btn.Text = opt
-                dropdownFrame.Visible = false
-                activeDropdown = nil
-                callback(opt)
-            end)
-        end
-    end
-    
-    -- Initial population
-    updateDropdown(options)
-    
-    btn.MouseButton1Click:Connect(function()
-        -- Close any other open dropdown
-        if activeDropdown and activeDropdown ~= dropdownFrame then
-            activeDropdown.Visible = false
-        end
-        
-        -- Toggle this dropdown
-        dropdownFrame.Visible = not dropdownFrame.Visible
-        activeDropdown = dropdownFrame.Visible and dropdownFrame or nil
-    end)
-    
-    return frame, updateDropdown
-end
+-- (createDropdown function is now replaced with the new one at the top)
 
-local function createButton(parent, text, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 35)
-    btn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
-    btn.BackgroundTransparency = 0.2
-    btn.Text = text
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.TextSize = 13
-    btn.Font = Enum.Font.GothamBold
-    btn.Parent = parent
-    btn.ZIndex = 10
-    btn.Active = true
-    btn.Selectable = true
-    btn.AutoButtonColor = false
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = btn
-    
-    btn.MouseButton1Click:Connect(function()
-        closeAllDropdowns()
-        callback()
-    end)
-    
-    return btn
-end
+-- ===== CREATE TELEPORT DROPDOWN =====
+local teleportFrame = Instance.new("Frame")
+teleportFrame.Size = UDim2.new(1, 0, 0, 70)
+teleportFrame.BackgroundTransparency = 1
+teleportFrame.Parent = featuresContainer
 
-local function createLabel(parent, text)
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 0, 25)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextSize = 14
-    label.Font = Enum.Font.GothamBold
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = parent
-    label.ZIndex = 10
-end
+local teleportLabel = Instance.new("TextLabel")
+teleportLabel.Size = UDim2.new(1, 0, 0, 25)
+teleportLabel.BackgroundTransparency = 1
+teleportLabel.Text = "Teleport Location:"
+teleportLabel.TextColor3 = Color3.new(1, 1, 1)
+teleportLabel.TextSize = 12
+teleportLabel.Font = Enum.Font.Gotham
+teleportLabel.TextXAlignment = Enum.TextXAlignment.Left
+teleportLabel.Parent = teleportFrame
 
-local function createToggle(parent, text, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 35)
-    frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-    frame.BackgroundTransparency = 0.2
-    frame.Parent = parent
-    frame.ZIndex = 10
-    frame.Active = true
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = frame
-    
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0, 150, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextSize = 13
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-    label.ZIndex = 11
-    
-    local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(0, 50, 0, 25)
-    toggleBtn.Position = UDim2.new(1, -60, 0.5, -12.5)
-    toggleBtn.BackgroundColor3 = default and Color3.new(0, 0.6, 0) or Color3.new(0.3, 0.3, 0.3)
-    toggleBtn.Text = default and "ON" or "OFF"
-    toggleBtn.TextColor3 = Color3.new(1, 1, 1)
-    toggleBtn.TextSize = 11
-    toggleBtn.Font = Enum.Font.GothamBold
-    toggleBtn.Parent = frame
-    toggleBtn.ZIndex = 11
-    toggleBtn.Active = true
-    toggleBtn.Selectable = true
-    toggleBtn.AutoButtonColor = false
-    
-    local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(0, 4)
-    toggleCorner.Parent = toggleBtn
-    
-    local state = default
-    
-    toggleBtn.MouseButton1Click:Connect(function()
-        closeAllDropdowns()
-        state = not state
-        toggleBtn.Text = state and "ON" or "OFF"
-        toggleBtn.BackgroundColor3 = state and Color3.new(0, 0.6, 0) or Color3.new(0.3, 0.3, 0.3)
-        callback(state)
-    end)
-    
-    return toggleBtn
-end
-
-local function clearFeatures()
-    for _, child in pairs(featuresContainer:GetChildren()) do
-        if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("TextButton") then
-            child:Destroy()
+-- Create teleport dropdown
+local teleportDropdown = createDropdown(teleportFrame, TeleportLocations, TeleportLocations[1], function(selected)
+    if LOCATIONS[selected] then
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = LOCATIONS[selected]
+            notify("Teleport", "Teleported to " .. selected, 1)
         end
-    end
-end
-
--- ===== AUTO FISHING TOGGLE REFERENCE =====
-local autoFishToggle = nil
-
--- ===== FISHING MENU =====
-local function showFishing()
-    clearFeatures()
-    contentTitle.Text = "Fishing Features"
-    
-    createLabel(featuresContainer, "Auto Fishing")
-    
-    -- Auto Fishing Toggle
-    autoFishToggle = createToggle(featuresContainer, "Auto Fishing", false, function(state)
-        if state then
-            startAutoFishing()
-        else
-            stopAutoFishing()
-        end
-    end)
-    
-    createLabel(featuresContainer, "Manual Fishing")
-    
-    createButton(featuresContainer, "Cast Line", function()
-        castLine()
-    end)
-    
-    createButton(featuresContainer, "Reel In", function()
-        reelIn()
-    end)
-    
-    -- Stats display
-    local statsFrame = Instance.new("Frame")
-    statsFrame.Size = UDim2.new(1, 0, 0, 60)
-    statsFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
-    statsFrame.BackgroundTransparency = 0.2
-    statsFrame.Parent = featuresContainer
-    statsFrame.ZIndex = 10
-    statsFrame.Active = true
-    
-    local statsCorner = Instance.new("UICorner")
-    statsCorner.CornerRadius = UDim.new(0, 6)
-    statsCorner.Parent = statsFrame
-    
-    local statusLabel = Instance.new("TextLabel")
-    statusLabel.Size = UDim2.new(1, -10, 0, 20)
-    statusLabel.Position = UDim2.new(0, 5, 0, 5)
-    statusLabel.BackgroundTransparency = 1
-    statusLabel.Text = "Status: Idle"
-    statusLabel.TextColor3 = Color3.new(1, 1, 0)
-    statusLabel.TextSize = 12
-    statusLabel.Font = Enum.Font.GothamBold
-    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-    statusLabel.Parent = statsFrame
-    statusLabel.ZIndex = 11
-    
-    local bobberLabel = Instance.new("TextLabel")
-    bobberLabel.Size = UDim2.new(1, -10, 0, 20)
-    bobberLabel.Position = UDim2.new(0, 5, 0, 25)
-    bobberLabel.BackgroundTransparency = 1
-    bobberLabel.Text = "Bobber: Not found"
-    bobberLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    bobberLabel.TextSize = 11
-    bobberLabel.Font = Enum.Font.Gotham
-    bobberLabel.TextXAlignment = Enum.TextXAlignment.Left
-    bobberLabel.Parent = statsFrame
-    bobberLabel.ZIndex = 11
-    
-    -- Update stats
-    coroutine.wrap(function()
-        while featuresContainer and featuresContainer.Parent do
-            if autoFishing then
-                statusLabel.Text = "Status: Auto Fishing Active"
-                statusLabel.TextColor3 = Color3.new(0, 1, 0)
-            else
-                statusLabel.Text = "Status: Manual Mode"
-                statusLabel.TextColor3 = Color3.new(1, 1, 0)
-            end
-            
-            bobber = findBobber()
-            if bobber then
-                bobberLabel.Text = "Bobber: Found"
-                bobberLabel.TextColor3 = Color3.new(0, 1, 0)
-            else
-                bobberLabel.Text = "Bobber: Not found"
-                bobberLabel.TextColor3 = Color3.new(1, 0, 0)
-            end
-            task.wait(0.5)
-        end
-    end)()
-end
-
--- ===== TELEPORT MENU =====
-local function showTeleport()
-    clearFeatures()
-    contentTitle.Text = "Teleport"
-    
-    createLabel(featuresContainer, "Teleport to Location")
-    
-    local selectedLoc = TeleportLocations[1]
-    
-    local locDropdown, locUpdate = createDropdown(featuresContainer, TeleportLocations, TeleportLocations[1], function(selected)
-        selectedLoc = selected
-    end)
-    
-    createButton(featuresContainer, "TELEPORT", function()
-        local cframe = LOCATIONS[selectedLoc]
-        if cframe then
-            local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                char.HumanoidRootPart.CFrame = cframe
-                notify("Teleport", "Teleported to " .. selectedLoc)
-            end
-        end
-    end)
-    
-    createLabel(featuresContainer, "Teleport to Player")
-    
-    -- Function to get player list
-    local function getPlayerList()
-        local players = {}
-        for _, p in ipairs(game.Players:GetPlayers()) do
-            if p ~= player then
-                table.insert(players, p.Name)
-            end
-        end
-        return players
-    end
-    
-    local playerList = getPlayerList()
-    local selectedPlayer = playerList[1] or "No players"
-    
-    -- Create dropdown for players
-    local playerDropdown, playerUpdate = createDropdown(featuresContainer, playerList, playerList[1] or "No players", function(selected)
-        selectedPlayer = selected
-    end)
-    
-    -- Refresh button
-    local refreshFrame = Instance.new("Frame")
-    refreshFrame.Size = UDim2.new(1, 0, 0, 35)
-    refreshFrame.BackgroundTransparency = 1
-    refreshFrame.Parent = featuresContainer
-    refreshFrame.ZIndex = 10
-    
-    local refreshButton = createButton(refreshFrame, "REFRESH PLAYER LIST", function()
-        local newPlayerList = getPlayerList()
-        if #newPlayerList > 0 then
-            playerUpdate(newPlayerList)
-            selectedPlayer = newPlayerList[1]
-            notify("Player List", "Refreshed! " .. #newPlayerList .. " players online")
-        else
-            playerUpdate({"No players"})
-            selectedPlayer = "No players"
-            notify("Player List", "No other players online")
-        end
-    end)
-    refreshButton.Size = UDim2.new(1, 0, 0, 35)
-    
-    -- Teleport to player button
-    createButton(featuresContainer, "TELEPORT TO PLAYER", function()
-        if selectedPlayer and selectedPlayer ~= "No players" then
-            local target = game.Players:FindFirstChild(selectedPlayer)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
-                    notify("Teleport", "Teleported to " .. selectedPlayer)
-                end
-            else
-                notify("Error", "Player not found or has no character")
-            end
-        else
-            notify("Error", "No player selected")
-        end
-    end)
-end
-
--- ===== CREATE LEFT MENU BUTTONS =====
-local menuButtons = {
-    {name = "Fishing", func = showFishing},
-    {name = "Teleport", func = showTeleport}
-}
-
-local currentMenu = ""
-
-for _, btnData in ipairs(menuButtons) do
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 100, 0, 35)
-    btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    btn.BackgroundTransparency = 0.3
-    btn.Text = btnData.name
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.TextSize = 13
-    btn.Font = Enum.Font.GothamBold
-    btn.Parent = leftMenu
-    btn.ZIndex = 10
-    btn.Active = true
-    btn.Selectable = true
-    btn.AutoButtonColor = false
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = btn
-    
-    btn.MouseEnter:Connect(function()
-        if currentMenu ~= btnData.name then
-            btn.BackgroundTransparency = 0.1
-        end
-    end)
-    
-    btn.MouseLeave:Connect(function()
-        if currentMenu ~= btnData.name then
-            btn.BackgroundTransparency = 0.3
-        end
-    end)
-    
-    btn.MouseButton1Click:Connect(function()
-        closeAllDropdowns()
-        for _, b in pairs(leftMenu:GetChildren()) do
-            if b:IsA("TextButton") then
-                b.BackgroundTransparency = 0.3
-            end
-        end
-        btn.BackgroundTransparency = 0
-        currentMenu = btnData.name
-        btnData.func()
-    end)
-end
-
--- Show Fishing menu by default
-task.wait(0.1)
-showFishing()
-
--- ===== DRAG FUNCTIONALITY =====
-local dragging = false
-local dragStart
-local startPos
-
-mainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
     end
 end)
 
-mainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+-- ===== AUTO FISHING TOGGLE =====
+local autoFishFrame = Instance.new("Frame")
+autoFishFrame.Size = UDim2.new(1, 0, 0, 50)
+autoFishFrame.BackgroundTransparency = 1
+autoFishFrame.Parent = featuresContainer
+
+local autoFishLabel = Instance.new("TextLabel")
+autoFishLabel.Size = UDim2.new(0, 150, 0, 25)
+autoFishLabel.BackgroundTransparency = 1
+autoFishLabel.Text = "Auto Fishing:"
+autoFishLabel.TextColor3 = Color3.new(1, 1, 1)
+autoFishLabel.TextSize = 12
+autoFishLabel.Font = Enum.Font.Gotham
+autoFishLabel.TextXAlignment = Enum.TextXAlignment.Left
+autoFishLabel.Parent = autoFishFrame
+
+local autoFishToggle = Instance.new("TextButton")
+autoFishToggle.Size = UDim2.new(0, 50, 0, 25)
+autoFishToggle.Position = UDim2.new(0, 100, 0, 0)
+autoFishToggle.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+autoFishToggle.Text = "OFF"
+autoFishToggle.TextColor3 = Color3.new(1, 1, 1)
+autoFishToggle.TextSize = 12
+autoFishToggle.Font = Enum.Font.Gotham
+autoFishToggle.Parent = autoFishFrame
+autoFishToggle.ZIndex = 5
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 4)
+toggleCorner.Parent = autoFishToggle
+
+autoFishToggle.MouseButton1Click:Connect(function()
+    if autoFishing then
+        stopAutoFishing()
+    else
+        startAutoFishing()
     end
 end)
 
-mainFrame.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
-    end
-end)
+-- ===== CREDITS =====
+local creditsFrame = Instance.new("Frame")
+creditsFrame.Size = UDim2.new(1, 0, 0, 30)
+creditsFrame.BackgroundTransparency = 1
+creditsFrame.Parent = featuresContainer
 
--- Cleanup on gui destroy
-gui.Destroying:Connect(function()
-    stopAutoFishing()
-end)
+local creditsLabel = Instance.new("TextLabel")
+creditsLabel.Size = UDim2.new(1, 0, 1, 0)
+creditsLabel.BackgroundTransparency = 1
+creditsLabel.Text = "Made by Moe - V1.0"
+creditsLabel.TextColor3 = Color3.new(0.7, 0.7, 0.7)
+creditsLabel.TextSize = 11
+creditsLabel.Font = Enum.Font.Gotham
+creditsLabel.TextXAlignment = Enum.TextXAlignment.Left
+creditsLabel.Parent = creditsFrame
 
-print("Moe V1.0 GUI Loaded with Fixed Dropdown and Teleport Menu")
-notify("Moe V1.0", "GUI Loaded Successfully!", 3)
+print("Moe V1.0 GUI Loaded Successfully!")
