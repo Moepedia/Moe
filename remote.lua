@@ -1,118 +1,450 @@
 -- ====================================================================
---     ROD EQUIPMENT FIXER - DELTA HP EDITION
--- ====================================================================
--- Fokus: Memaksa rod untuk bisa dipegang
+--     AUTO FISH V5.0 - BERDASARKAN HASIL SCAN
 -- ====================================================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
 
--- GUI sederhana
+-- ====================================================================
+--                     PATH LENGKAP DARI SCAN
+-- ====================================================================
+local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
+
+local Remote = {
+    -- FISHING REMOTES
+    ChargeFishingRod = Net:FindFirstChild("RF/ChargeFishingRod"),
+    RequestMinigame = Net:FindFirstChild("RF/RequestFishingMinigameStarted"),
+    CatchFishCompleted = Net:FindFirstChild("RF/CatchFishCompleted"),
+    CancelFishing = Net:FindFirstChild("RF/CancelFishingInputs"),
+    FishCaught = Net:FindFirstChild("RE/FishCaught"),
+    FishingStopped = Net:FindFirstChild("RE/FishingStopped"),
+    
+    -- ANTI-CHEAT BYPASS
+    UpdateAutoFishing = Net:FindFirstChild("RF/UpdateAutoFishingState"),
+    MarkAutoFishing = Net:FindFirstChild("RF/MarkAutoFishingUsed"),
+    
+    -- SELL REMOTES
+    SellAll = Net:FindFirstChild("RF/SellAllItems"),
+    SellItem = Net:FindFirstChild("RF/SellItem"),
+    UpdateSellThreshold = Net:FindFirstChild("RF/UpdateAutoSellThreshold"),
+    
+    -- FAVORITE REMOTES
+    Favorite = Net:FindFirstChild("RE/FavoriteItem"),
+    FavoritePrompt = Net:FindFirstChild("RF/PromptFavoriteGame"),
+    FavoriteState = Net:FindFirstChild("RE/FavoriteStateChanged")
+}
+
+-- ====================================================================
+--                     CEK KETERSEDIAAN REMOTE
+-- ====================================================================
+print("\n🔍 REMOTE STATUS:")
+for name, remote in pairs(Remote) do
+    if remote then
+        print("✅ " .. name .. " - " .. remote.ClassName)
+    else
+        print("❌ " .. name .. " - TIDAK DITEMUKAN")
+    end
+end
+print("")
+
+-- ====================================================================
+--                     ANTI-CHEAT BYPASS
+-- ====================================================================
+local function disableAntiCheat()
+    -- Matikan state auto fishing
+    if Remote.UpdateAutoFishing then
+        pcall(function()
+            Remote.UpdateAutoFishing:InvokeServer(false)
+        end)
+    end
+    
+    -- Reset mark auto fishing
+    if Remote.MarkAutoFishing then
+        pcall(function()
+            Remote.MarkAutoFishing:InvokeServer(0)
+        end)
+    end
+end
+
+-- ====================================================================
+--                     FISHING FUNCTIONS
+-- ====================================================================
+local isFishing = false
+local bobber = nil
+
+-- Cari bobber
+local function findBobber()
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v.Name == "Bobber" and v:IsA("Part") and v:FindFirstChild("Owner") then
+            local owner = v:FindFirstChild("Owner")
+            if owner and owner.Value == LocalPlayer then
+                return v
+            end
+        end
+    end
+    return nil
+end
+
+-- Cast rod
+local function castRod()
+    if not Remote.ChargeFishingRod or not Remote.RequestMinigame then
+        return false
+    end
+    
+    -- Coba dengan parameter (dari script lama)
+    local success = pcall(function()
+        Remote.ChargeFishingRod:InvokeServer(1755848498.4834)
+        task.wait(0.1)
+        Remote.RequestMinigame:InvokeServer(1.2854545116425, 1)
+    end)
+    
+    -- Kalau gagal, coba tanpa parameter
+    if not success then
+        pcall(function()
+            Remote.ChargeFishingRod:InvokeServer()
+            task.wait(0.1)
+            Remote.RequestMinigame:InvokeServer()
+        end)
+    end
+    
+    return true
+end
+
+-- Reel in
+local function reelIn()
+    -- Method 1: CatchFishCompleted (remote function)
+    if Remote.CatchFishCompleted then
+        pcall(function()
+            Remote.CatchFishCompleted:InvokeServer()
+        end)
+    end
+    
+    -- Method 2: FishCaught (remote event)
+    if Remote.FishCaught then
+        pcall(function()
+            Remote.FishCaught:FireServer()
+        end)
+    end
+    
+    -- Method 3: FishingStopped
+    if Remote.FishingStopped then
+        pcall(function()
+            Remote.FishingStopped:FireServer()
+        end)
+    end
+end
+
+-- Cancel fishing
+local function cancelFishing()
+    if Remote.CancelFishing then
+        pcall(function()
+            Remote.CancelFishing:InvokeServer()
+        end)
+    end
+end
+
+-- ====================================================================
+--                     AUTO FISHING LOOP
+-- ====================================================================
+local function startFishing()
+    if isFishing then return end
+    isFishing = true
+    
+    -- Anti-AFK
+    LocalPlayer.Idled:Connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
+    
+    -- Main loop
+    task.spawn(function()
+        while isFishing do
+            -- Bypass anti-cheat
+            disableAntiCheat()
+            
+            -- Cancel previous fishing
+            cancelFishing()
+            task.wait(0.2)
+            
+            -- Cast
+            castRod()
+            
+            -- Tunggu bobber muncul
+            local timeout = 0
+            bobber = nil
+            while not bobber and timeout < 5 do
+                bobber = findBobber()
+                task.wait(0.1)
+                timeout = timeout + 0.1
+            end
+            
+            -- Tunggu ikan
+            if bobber then
+                local biteStart = tick()
+                while isFishing do
+                    local biteProgress = bobber:FindFirstChild("BiteProgress")
+                    if biteProgress and biteProgress.Value >= 0.95 then
+                        reelIn()
+                        break
+                    end
+                    
+                    -- Timeout setelah 15 detik
+                    if tick() - biteStart > 15 then
+                        cancelFishing()
+                        break
+                    end
+                    
+                    task.wait(0.1)
+                end
+            end
+            
+            task.wait(1) -- Cooldown
+        end
+    end)
+end
+
+local function stopFishing()
+    isFishing = false
+    cancelFishing()
+end
+
+-- ====================================================================
+--                     AUTO SELL
+-- ====================================================================
+local function sellAllItems()
+    if Remote.SellAll then
+        local success = pcall(function()
+            Remote.SellAll:InvokeServer()
+        end)
+        return success
+    end
+    return false
+end
+
+local function updateSellThreshold(value)
+    if Remote.UpdateSellThreshold then
+        pcall(function()
+            Remote.UpdateSellThreshold:InvokeServer(value)
+        end)
+    end
+end
+
+-- ====================================================================
+--                     AUTO FAVORITE
+-- ====================================================================
+local function favoriteItem(itemId)
+    if Remote.Favorite then
+        pcall(function()
+            Remote.Favorite:FireServer(itemId)
+        end)
+    end
+end
+
+local function promptFavoriteGame()
+    if Remote.FavoritePrompt then
+        pcall(function()
+            Remote.FavoritePrompt:InvokeServer()
+        end)
+    end
+end
+
+-- ====================================================================
+--                     SIMPLE GUI
+-- ====================================================================
 local CoreGui = game:GetService("CoreGui")
 
-pcall(function() CoreGui:FindFirstChild("RodFixer"):Destroy() end)
+-- Hapus GUI lama
+pcall(function() CoreGui:FindFirstChild("AutoFishV5"):Destroy() end)
 
+-- Buat GUI baru
 local gui = Instance.new("ScreenGui")
-gui.Name = "RodFixer"
+gui.Name = "AutoFishV5"
 gui.Parent = CoreGui
 
+-- Main frame
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 200)
-frame.Position = UDim2.new(0.5, -150, 0.5, -100)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+frame.Size = UDim2.new(0, 300, 0, 250)
+frame.Position = UDim2.new(0.5, -150, 0.5, -125)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
 
+-- Rounded corners
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = frame
+
 -- Title
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-title.Text = "🎣 ROD EQUIPMENT FIXER"
+title.Size = UDim2.new(1, 0, 0, 35)
+title.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+title.Text = "🎣 AUTO FISH V5.0"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
 title.Parent = frame
 
--- Close
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = title
+
+-- Close button
 local close = Instance.new("TextButton")
 close.Size = UDim2.new(0, 30, 0, 30)
 close.Position = UDim2.new(1, -30, 0, 0)
-close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-close.Text = "X"
+close.BackgroundTransparency = 1
+close.Text = "✕"
 close.TextColor3 = Color3.new(1, 1, 1)
 close.Font = Enum.Font.GothamBold
-close.MouseButton1Click:Connect(function() gui:Destroy() end)
 close.Parent = title
 
--- ====================================================================
---                     SCAN ALL TOOLS
--- ====================================================================
-local function scanAllTools()
-    local tools = {}
-    
-    -- Scan Backpack
-    for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
-        if tool:IsA("Tool") then
-            table.insert(tools, {
-                name = tool.Name,
-                instance = tool,
-                location = "Backpack"
-            })
-        end
-    end
-    
-    -- Scan Character
-    if LocalPlayer.Character then
-        for _, tool in ipairs(LocalPlayer.Character:GetChildren()) do
-            if tool:IsA("Tool") then
-                table.insert(tools, {
-                    name = tool.Name,
-                    instance = tool,
-                    location = "Character"
-                })
-            end
-        end
-    end
-    
-    return tools
-end
+close.MouseButton1Click:Connect(function()
+    stopFishing()
+    gui:Destroy()
+end)
+
+-- Status
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -20, 0, 25)
+status.Position = UDim2.new(0, 10, 0, 45)
+status.BackgroundTransparency = 1
+status.Text = "⏹️ Stopped"
+status.TextColor3 = Color3.fromRGB(255, 100, 100)
+status.Font = Enum.Font.GothamBold
+status.TextXAlignment = Enum.TextXAlignment.Left
+status.Parent = frame
+
+-- Remote status
+local remoteStatus = Instance.new("TextLabel")
+remoteStatus.Size = UDim2.new(1, -20, 0, 40)
+remoteStatus.Position = UDim2.new(0, 10, 0, 70)
+remoteStatus.BackgroundTransparency = 1
+remoteStatus.Text = "Charge: ✅\nMinigame: ✅\nCatch: ✅"
+remoteStatus.TextColor3 = Color3.fromRGB(150, 150, 150)
+remoteStatus.Font = Enum.Font.Gotham
+remoteStatus.TextSize = 11
+remoteStatus.TextXAlignment = Enum.TextXAlignment.Left
+remoteStatus.TextWrapped = true
+remoteStatus.Parent = frame
+
+-- Start/Stop button
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0.9, 0, 0, 40)
+toggleBtn.Position = UDim2.new(0.05, 0, 0, 120)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+toggleBtn.Text = "🚀 START FISHING"
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.Parent = frame
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 6)
+toggleCorner.Parent = toggleBtn
+
+-- Sell button
+local sellBtn = Instance.new("TextButton")
+sellBtn.Size = UDim2.new(0.9, 0, 0, 35)
+sellBtn.Position = UDim2.new(0.05, 0, 0, 170)
+sellBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+sellBtn.Text = "💰 SELL ALL ITEMS"
+sellBtn.TextColor3 = Color3.new(1, 1, 1)
+sellBtn.Font = Enum.Font.GothamBold
+sellBtn.Parent = frame
+
+local sellCorner = Instance.new("UICorner")
+sellCorner.CornerRadius = UDim.new(0, 6)
+sellCorner.Parent = sellBtn
+
+-- Delay input
+local delayFrame = Instance.new("Frame")
+delayFrame.Size = UDim2.new(0.9, 0, 0, 30)
+delayFrame.Position = UDim2.new(0.05, 0, 0, 215)
+delayFrame.BackgroundTransparency = 1
+delayFrame.Parent = frame
+
+local delayLabel = Instance.new("TextLabel")
+delayLabel.Size = UDim2.new(0.3, 0, 1, 0)
+delayLabel.BackgroundTransparency = 1
+delayLabel.Text = "Delay:"
+delayLabel.TextColor3 = Color3.new(1, 1, 1)
+delayLabel.Font = Enum.Font.Gotham
+delayLabel.TextXAlignment = Enum.TextXAlignment.Left
+delayLabel.Parent = delayFrame
+
+local delayInput = Instance.new("TextBox")
+delayInput.Size = UDim2.new(0.6, 0, 1, 0)
+delayInput.Position = UDim2.new(0.4, 0, 0, 0)
+delayInput.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+delayInput.Text = "2"
+delayInput.TextColor3 = Color3.new(1, 1, 1)
+delayInput.Font = Enum.Font.Gotham
+delayInput.Parent = delayFrame
+
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 4)
+inputCorner.Parent = delayInput
 
 -- ====================================================================
---                     FIND FISHING ROD
+--                     BUTTON FUNCTIONS
 -- ====================================================================
-local function findFishingRod()
-    local allTools = scanAllTools()
-    local rods = {}
-    
-    for _, tool in ipairs(allTools) do
-        -- Cari yang namanya mengandung kata rod/fishing
-        if tool.name:lower():match("rod") or 
-           tool.name:lower():match("fishing") or 
-           tool.name:lower():match("pancing") or
-           tool.name:lower():match("pole") then
-            table.insert(rods, tool)
-        end
+toggleBtn.MouseButton1Click:Connect(function()
+    if isFishing then
+        stopFishing()
+        toggleBtn.Text = "🚀 START FISHING"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+        status.Text = "⏹️ Stopped"
+        status.TextColor3 = Color3.fromRGB(255, 100, 100)
+    else
+        startFishing()
+        toggleBtn.Text = "⏹️ STOP FISHING"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        status.Text = "🎣 Fishing..."
+        status.TextColor3 = Color3.fromRGB(0, 255, 0)
     end
-    
-    return rods
-end
+end)
+
+sellBtn.MouseButton1Click:Connect(function()
+    local success = sellAllItems()
+    if success then
+        status.Text = "💰 Sold!"
+        task.wait(1)
+        status.Text = isFishing and "🎣 Fishing..." or "⏹️ Stopped"
+    end
+end)
 
 -- ====================================================================
---                     FORCE EQUIP ROD
+--                     STARTUP
 -- ====================================================================
-local function forceEquipRod(rod)
-    if not rod then return false end
-    
-    print("🔧 Mencoba equip: " .. rod.name)
-    
-    -- Method 1: Pindahkan ke Character
-    local success = pcall(function()
-        if rod.location == "Backpack" then
-            rod.instance.Parent = LocalPlayer.Character
-            print("✅ Method 1: Dipindah ke Character")
-            return true
-        end
+print([[
+╔════════════════════════════════════════╗
+║     AUTO FISH V5.0 - READY             ║
+║     Berdasarkan hasil scan!            ║
+╚════════════════════════════════════════╝
+
+✅ Remote fishing:
+   - ChargeFishingRod
+   - RequestFishingMinigameStarted
+   - CatchFishCompleted
+   - FishCaught
+
+✅ Anti-cheat bypass:
+   - UpdateAutoFishingState = false
+   - MarkAutoFishingUsed = 0
+
+✅ Sell: SellAllItems
+✅ Favorite: FavoriteItem
+]])
+
+-- Update remote status
+local chargeStatus = Remote.ChargeFishingRod and "✅" or "❌"
+local minigameStatus = Remote.RequestMinigame and "✅" or "❌"
+local catchStatus = Remote.CatchFishCompleted and "✅" or "❌"
+remoteStatus.Text = string.format("Charge: %s\nMinigame: %s\nCatch: %s", 
+    chargeStatus, minigameStatus, catchStatus)        end
     end)
     
     if success and rod.instance.Parent == LocalPlayer.Character then
