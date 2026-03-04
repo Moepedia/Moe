@@ -1,345 +1,346 @@
--- MOE REMOTE SPY v1.0 - Capture semua remote pas fishing
-local player = game.Players.LocalPlayer
+-- ====================================================================
+--     ROD EQUIPMENT FIXER - DELTA HP EDITION
+-- ====================================================================
+-- Fokus: Memaksa rod untuk bisa dipegang
+-- ====================================================================
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+
+-- GUI sederhana
+local CoreGui = game:GetService("CoreGui")
+
+pcall(function() CoreGui:FindFirstChild("RodFixer"):Destroy() end)
+
 local gui = Instance.new("ScreenGui")
-gui.Name = "MoeSpyGUI"
-gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+gui.Name = "RodFixer"
+gui.Parent = CoreGui
 
--- ===== MAIN FRAME =====
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 700, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -350, 0.5, -250)
-mainFrame.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
-mainFrame.BackgroundTransparency = 0.1
-mainFrame.BorderSizePixel = 0
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = gui
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 200)
+frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
 
-local corners = Instance.new("UICorner")
-corners.CornerRadius = UDim.new(0, 12)
-corners.Parent = mainFrame
-
--- Header
-local header = Instance.new("Frame")
-header.Size = UDim2.new(1, 0, 0, 40)
-header.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-header.Parent = mainFrame
-
-local headerCorner = Instance.new("UICorner")
-headerCorner.CornerRadius = UDim.new(0, 12)
-headerCorner.Parent = header
-
+-- Title
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -40, 1, 0)
-title.Position = UDim2.new(0, 10, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "🔍 MOE REMOTE SPY - Fishing Mode"
-title.TextColor3 = Color3.new(0, 1, 0)
-title.TextSize = 18
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+title.Text = "🎣 ROD EQUIPMENT FIXER"
+title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = header
+title.Parent = frame
 
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 30, 0, 30)
-closeBtn.Position = UDim2.new(1, -35, 0.5, -15)
-closeBtn.BackgroundColor3 = Color3.new(1, 0, 0)
-closeBtn.Text = "X"
-closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.TextSize = 16
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Parent = header
+-- Close
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 30, 0, 30)
+close.Position = UDim2.new(1, -30, 0, 0)
+close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+close.Text = "X"
+close.TextColor3 = Color3.new(1, 1, 1)
+close.Font = Enum.Font.GothamBold
+close.MouseButton1Click:Connect(function() gui:Destroy() end)
+close.Parent = title
 
-closeBtn.MouseButton1Click:Connect(function()
-    gui:Destroy()
-end)
-
--- Status bar
-local statusBar = Instance.new("Frame")
-statusBar.Size = UDim2.new(1, -20, 0, 30)
-statusBar.Position = UDim2.new(0, 10, 0, 45)
-statusBar.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-statusBar.Parent = mainFrame
-
-local statusCorner = Instance.new("UICorner")
-statusCorner.CornerRadius = UDim.new(0, 6)
-statusCorner.Parent = statusBar
-
-local statusText = Instance.new("TextLabel")
-statusText.Size = UDim2.new(1, -10, 1, 0)
-statusText.Position = UDim2.new(0, 5, 0, 0)
-statusText.BackgroundTransparency = 1
-statusText.Text = "⏳ Status: Menunggu aktivitas fishing..."
-statusText.TextColor3 = Color3.new(1, 1, 0)
-statusText.TextSize = 14
-statusText.Font = Enum.Font.Gotham
-statusText.TextXAlignment = Enum.TextXAlignment.Left
-statusText.Parent = statusBar
-
--- Counter
-local counterText = Instance.new("TextLabel")
-counterText.Size = UDim2.new(0, 100, 1, 0)
-counterText.Position = UDim2.new(1, -110, 0, 0)
-counterText.BackgroundTransparency = 1
-counterText.Text = "0 remotes"
-counterText.TextColor3 = Color3.new(0, 1, 0)
-counterText.TextSize = 14
-counterText.Font = Enum.Font.GothamBold
-counterText.TextXAlignment = Enum.TextXAlignment.Right
-counterText.Parent = statusBar
-
--- Text box hasil spy (bisa copy)
-local textBox = Instance.new("TextBox")
-textBox.Size = UDim2.new(1, -20, 1, -120)
-textBox.Position = UDim2.new(0, 10, 0, 80)
-textBox.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
-textBox.TextColor3 = Color3.new(0, 1, 0)
-textBox.Font = Enum.Font.Code
-textBox.TextSize = 12
-textBox.TextXAlignment = Enum.TextXAlignment.Left
-textBox.TextYAlignment = Enum.TextYAlignment.Top
-textBox.TextWrapped = true
-textBox.ClearTextOnFocus = false
-textBox.MultiLine = true
-textBox.Text = "🔍 MOE REMOTE SPY - AKTIF\n"
-textBox.Text = textBox.Text .. "================================\n"
-textBox.Text = textBox.Text .. "Silakan lakukan FISHING NORMAL sekarang...\n"
-textBox.Text = textBox.Text .. "Semua remote akan tercatat di sini\n\n"
-textBox.Parent = mainFrame
-
-local textBoxCorner = Instance.new("UICorner")
-textBoxCorner.CornerRadius = UDim.new(0, 6)
-textBoxCorner.Parent = textBox
-
--- Button frame
-local btnFrame = Instance.new("Frame")
-btnFrame.Size = UDim2.new(1, -20, 0, 40)
-btnFrame.Position = UDim2.new(0, 10, 1, -45)
-btnFrame.BackgroundTransparency = 1
-btnFrame.Parent = mainFrame
-
--- Copy button
-local copyBtn = Instance.new("TextButton")
-copyBtn.Size = UDim2.new(0, 120, 0, 35)
-copyBtn.Position = UDim2.new(0, 0, 0.5, -17.5)
-copyBtn.BackgroundColor3 = Color3.new(0, 0.5, 1)
-copyBtn.Text = "📋 COPY ALL"
-copyBtn.TextColor3 = Color3.new(1, 1, 1)
-copyBtn.TextSize = 14
-copyBtn.Font = Enum.Font.GothamBold
-copyBtn.Parent = btnFrame
-
-local copyCorner = Instance.new("UICorner")
-copyCorner.CornerRadius = UDim.new(0, 6)
-copyCorner.Parent = copyBtn
-
--- Clear button
-local clearBtn = Instance.new("TextButton")
-clearBtn.Size = UDim2.new(0, 100, 0, 35)
-clearBtn.Position = UDim2.new(0, 130, 0.5, -17.5)
-clearBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
-clearBtn.Text = "🗑️ CLEAR"
-clearBtn.TextColor3 = Color3.new(1, 1, 1)
-clearBtn.TextSize = 14
-clearBtn.Font = Enum.Font.GothamBold
-clearBtn.Parent = btnFrame
-
-local clearCorner = Instance.new("UICorner")
-clearCorner.CornerRadius = UDim.new(0, 6)
-clearCorner.Parent = clearBtn
-
--- Start/Stop spy button
-local spyBtn = Instance.new("TextButton")
-spyBtn.Size = UDim2.new(0, 100, 0, 35)
-spyBtn.Position = UDim2.new(0, 240, 0.5, -17.5)
-spyBtn.BackgroundColor3 = Color3.new(0, 1, 0)
-spyBtn.Text = "🔴 STOP SPY"
-spyBtn.TextColor3 = Color3.new(1, 1, 1)
-spyBtn.TextSize = 14
-spyBtn.Font = Enum.Font.GothamBold
-spyBtn.Parent = btnFrame
-
-local spyCorner = Instance.new("UICorner")
-spyCorner.CornerRadius = UDim.new(0, 6)
-spyCorner.Parent = spyBtn
-
--- Save button
-local saveBtn = Instance.new("TextButton")
-saveBtn.Size = UDim2.new(0, 100, 0, 35)
-saveBtn.Position = UDim2.new(1, -105, 0.5, -17.5)
-saveBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
-saveBtn.Text = "💾 SAVE"
-saveBtn.TextColor3 = Color3.new(1, 1, 1)
-saveBtn.TextSize = 14
-saveBtn.Font = Enum.Font.GothamBold
-saveBtn.Parent = btnFrame
-
-local saveCorner = Instance.new("UICorner")
-saveCorner.CornerRadius = UDim.new(0, 6)
-saveCorner.Parent = saveBtn
-
--- ===== VARIABLES =====
-local spyActive = true
-local remoteLog = {}
-local remoteCount = 0
-
--- ===== REMOTE SPY FUNCTION =====
-local function setupSpy()
-    local mt = getrawmetatable(game)
-    local old = mt.__namecall
-    setreadonly(mt, false)
+-- ====================================================================
+--                     SCAN ALL TOOLS
+-- ====================================================================
+local function scanAllTools()
+    local tools = {}
     
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        local args = {...}
-        
-        if spyActive and (method == "FireServer" or method == "InvokeServer") then
-            remoteCount = remoteCount + 1
-            
-            -- Format pesan
-            local timestamp = os.date("%H:%M:%S")
-            local remotePath = self:GetFullName()
-            local argStr = ""
-            
-            for i, arg in ipairs(args) do
-                if type(arg) == "string" then
-                    argStr = argStr .. string.format("   Arg %d: %q\n", i, arg)
-                elseif type(arg) == "number" then
-                    argStr = argStr .. string.format("   Arg %d: %s\n", i, tostring(arg))
-                elseif type(arg) == "boolean" then
-                    argStr = argStr .. string.format("   Arg %d: %s\n", i, tostring(arg))
-                elseif type(arg) == "table" then
-                    argStr = argStr .. string.format("   Arg %d: [TABLE]\n", i)
-                elseif type(arg) == "userdata" then
-                    argStr = argStr .. string.format("   Arg %d: [USERDATA]\n", i)
-                else
-                    argStr = argStr .. string.format("   Arg %d: %s\n", i, tostring(arg))
-                end
-            end
-            
-            local logEntry = string.format("[%s] 🔴 %s\n   METHOD: %s\n%s\n", 
-                timestamp, remotePath, method, argStr)
-            
-            table.insert(remoteLog, logEntry)
-            
-            -- Update text box
-            local displayText = "🔍 MOE REMOTE SPY - AKTIF\n"
-            displayText = displayText .. "================================\n"
-            displayText = displayText .. string.format("Total remotes tercatat: %d\n\n", remoteCount)
-            displayText = displayText .. table.concat(remoteLog, "\n")
-            textBox.Text = displayText
-            counterText.Text = remoteCount .. " remotes"
-            statusText.Text = "🔴 Merekam... (" .. remoteCount .. " remotes)"
-            
-            -- Auto scroll ke bawah
-            textBox.CursorPosition = #textBox.Text
+    -- Scan Backpack
+    for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            table.insert(tools, {
+                name = tool.Name,
+                instance = tool,
+                location = "Backpack"
+            })
         end
-        
-        return old(self, ...)
-    end)
+    end
     
-    print("✅ Remote Spy Aktif!")
+    -- Scan Character
+    if LocalPlayer.Character then
+        for _, tool in ipairs(LocalPlayer.Character:GetChildren()) do
+            if tool:IsA("Tool") then
+                table.insert(tools, {
+                    name = tool.Name,
+                    instance = tool,
+                    location = "Character"
+                })
+            end
+        end
+    end
+    
+    return tools
 end
 
--- ===== START SPY =====
-setupSpy()
+-- ====================================================================
+--                     FIND FISHING ROD
+-- ====================================================================
+local function findFishingRod()
+    local allTools = scanAllTools()
+    local rods = {}
+    
+    for _, tool in ipairs(allTools) do
+        -- Cari yang namanya mengandung kata rod/fishing
+        if tool.name:lower():match("rod") or 
+           tool.name:lower():match("fishing") or 
+           tool.name:lower():match("pancing") or
+           tool.name:lower():match("pole") then
+            table.insert(rods, tool)
+        end
+    end
+    
+    return rods
+end
 
--- ===== BUTTON FUNCTIONS =====
-copyBtn.MouseButton1Click:Connect(function()
-    local success, err = pcall(function()
-        setclipboard(textBox.Text)
+-- ====================================================================
+--                     FORCE EQUIP ROD
+-- ====================================================================
+local function forceEquipRod(rod)
+    if not rod then return false end
+    
+    print("🔧 Mencoba equip: " .. rod.name)
+    
+    -- Method 1: Pindahkan ke Character
+    local success = pcall(function()
+        if rod.location == "Backpack" then
+            rod.instance.Parent = LocalPlayer.Character
+            print("✅ Method 1: Dipindah ke Character")
+            return true
+        end
     end)
     
-    if success then
-        statusText.Text = "✅ Copied to clipboard!"
-        statusText.TextColor3 = Color3.new(0, 1, 0)
-    else
-        statusText.Text = "⚠️ Manual copy: Ctrl+A then Ctrl+C"
-        statusText.TextColor3 = Color3.new(1, 1, 0)
-        textBox:CaptureFocus()
+    if success and rod.instance.Parent == LocalPlayer.Character then
+        return true
     end
-end)
-
-clearBtn.MouseButton1Click:Connect(function()
-    remoteLog = {}
-    remoteCount = 0
-    textBox.Text = "🔍 MOE REMOTE SPY - AKTIF\n"
-    textBox.Text = textBox.Text .. "================================\n"
-    textBox.Text = textBox.Text .. "Silakan lakukan FISHING NORMAL sekarang...\n\n"
-    counterText.Text = "0 remotes"
-    statusText.Text = "🔄 Cleared - Menunggu aktivitas..."
-end)
-
-spyBtn.MouseButton1Click:Connect(function()
-    spyActive = not spyActive
-    if spyActive then
-        spyBtn.Text = "🔴 STOP SPY"
-        spyBtn.BackgroundColor3 = Color3.new(1, 0, 0)
-        statusText.Text = "🔴 Merekam... (" .. remoteCount .. " remotes)"
-        statusText.TextColor3 = Color3.new(1, 0, 0)
-    else
-        spyBtn.Text = "🟢 START SPY"
-        spyBtn.BackgroundColor3 = Color3.new(0, 1, 0)
-        statusText.Text = "⏸️ Paused"
-        statusText.TextColor3 = Color3.new(1, 1, 0)
-    end
-end)
-
-saveBtn.MouseButton1Click:Connect(function()
-    local success, err = pcall(function()
-        writefile("MoeSpyLog_" .. os.date("%Y%m%d_%H%M%S") .. ".txt", textBox.Text)
+    
+    -- Method 2: Paksa pakai Humanoid
+    success = pcall(function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid:EquipTool(rod.instance)
+            print("✅ Method 2: Equip via Humanoid")
+            return true
+        end
     end)
     
+    if success then return true end
+    
+    -- Method 3: Panggil remote equip (kalau ada)
+    success = pcall(function()
+        -- Cari remote equip
+        for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
+            if obj:IsA("RemoteEvent") and (obj.Name:match("Equip") or obj.Name:match("Tool")) then
+                obj:FireServer(rod.instance)
+                print("✅ Method 3: Via remote " .. obj.Name)
+                return true
+            end
+        end
+    end)
+    
+    return false
+end
+
+-- ====================================================================
+--                     UI ELEMENTS
+-- ====================================================================
+local yPos = 40
+
+-- Status label
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -20, 0, 25)
+statusLabel.Position = UDim2.new(0, 10, 0, yPos)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Status: Mencari rod..."
+statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = frame
+yPos = yPos + 30
+
+-- List rod
+local rodList = Instance.new("ScrollingFrame")
+rodList.Size = UDim2.new(1, -20, 0, 80)
+rodList.Position = UDim2.new(0, 10, 0, yPos)
+rodList.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+rodList.BorderSizePixel = 0
+rodList.CanvasSize = UDim2.new(0, 0, 0, 0)
+rodList.Parent = frame
+yPos = yPos + 85
+
+-- Tombol scan ulang
+local scanBtn = Instance.new("TextButton")
+scanBtn.Size = UDim2.new(0.45, 0, 0, 30)
+scanBtn.Position = UDim2.new(0.05, 0, 0, yPos)
+scanBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+scanBtn.Text = "🔄 SCAN ULANG"
+scanBtn.TextColor3 = Color3.new(1, 1, 1)
+scanBtn.Font = Enum.Font.GothamBold
+scanBtn.Parent = frame
+
+-- Tombol equip paksa
+local forceBtn = Instance.new("TextButton")
+forceBtn.Size = UDim2.new(0.45, 0, 0, 30)
+forceBtn.Position = UDim2.new(0.5, 5, 0, yPos)
+forceBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+forceBtn.Text = "⚡ EQUIP PAKSA"
+forceBtn.TextColor3 = Color3.new(1, 1, 1)
+forceBtn.Font = Enum.Font.GothamBold
+forceBtn.Parent = frame
+yPos = yPos + 35
+
+-- Info tambahan
+local infoLabel = Instance.new("TextLabel")
+infoLabel.Size = UDim2.new(1, -20, 0, 40)
+infoLabel.Position = UDim2.new(0, 10, 0, yPos)
+infoLabel.BackgroundTransparency = 1
+infoLabel.Text = "Pilih rod di atas, lalu klik EQUIP PAKSA"
+infoLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+infoLabel.Font = Enum.Font.Gotham
+infoLabel.TextSize = 11
+infoLabel.TextWrapped = true
+infoLabel.Parent = frame
+
+-- ====================================================================
+--                     FUNGSI UPDATE LIST
+-- ====================================================================
+local selectedRod = nil
+local rodButtons = {}
+
+local function updateRodList()
+    -- Clear list
+    for _, btn in ipairs(rodButtons) do
+        btn:Destroy()
+    end
+    rodButtons = {}
+    
+    local rods = findFishingRod()
+    
+    if #rods == 0 then
+        statusLabel.Text = "Status: ❌ TIDAK ADA ROD DITEMUKAN!"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        
+        -- Tampilkan semua tools yang ada
+        local allTools = scanAllTools()
+        local toolNames = {}
+        for _, tool in ipairs(allTools) do
+            table.insert(toolNames, tool.name)
+        end
+        
+        if #toolNames > 0 then
+            infoLabel.Text = "Tools ditemukan: " .. table.concat(toolNames, ", ")
+        else
+            infoLabel.Text = "Tidak ada tools sama sekali di inventory!"
+        end
+        return
+    end
+    
+    statusLabel.Text = string.format("Status: ✅ %d rod ditemukan", #rods)
+    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    
+    -- Buat tombol untuk setiap rod
+    for i, rod in ipairs(rods) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, -10, 0, 25)
+        btn.Position = UDim2.new(0, 5, 0, (i-1) * 27)
+        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+        btn.Text = string.format("%s (%s)", rod.name, rod.location)
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.Font = Enum.Font.Gotham
+        btn.TextSize = 11
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.Parent = rodList
+        
+        btn.MouseButton1Click:Connect(function()
+            -- Reset semua button
+            for _, b in ipairs(rodButtons) do
+                b.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+            end
+            -- Highlight yang dipilih
+            btn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+            selectedRod = rod
+            infoLabel.Text = "Dipilih: " .. rod.name .. " - Klik EQUIP PAKSA"
+        end)
+        
+        table.insert(rodButtons, btn)
+    end
+    
+    rodList.CanvasSize = UDim2.new(0, 0, 0, #rods * 27)
+end
+
+-- ====================================================================
+--                     TOMBOL FUNCTIONS
+-- ====================================================================
+scanBtn.MouseButton1Click:Connect(function()
+    statusLabel.Text = "Status: Scanning..."
+    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+    updateRodList()
+end)
+
+forceBtn.MouseButton1Click:Connect(function()
+    if not selectedRod then
+        infoLabel.Text = "❌ Pilih rod dulu dari list di atas!"
+        return
+    end
+    
+    statusLabel.Text = "Status: ⚡ Memaksa equip " .. selectedRod.name
+    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+    
+    local success = forceEquipRod(selectedRod)
+    
     if success then
-        statusText.Text = "✅ Saved to file!"
-        statusText.TextColor3 = Color3.new(0, 1, 0)
+        statusLabel.Text = "Status: ✅ ROD TER-EQUIP!"
+        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        infoLabel.Text = "✅ Sukses! Rod sekarang di tangan"
+        
+        -- Cek apakah benar-benar kepegang
+        task.wait(1)
+        if LocalPlayer.Character then
+            for _, tool in ipairs(LocalPlayer.Character:GetChildren()) do
+                if tool:IsA("Tool") and tool.Name == selectedRod.name then
+                    infoLabel.Text = "✅ TERKONFIRMASI: " .. tool.Name .. " ada di tangan"
+                    break
+                end
+            end
+        end
     else
-        statusText.Text = "❌ Save failed"
-        statusText.TextColor3 = Color3.new(1, 0, 0)
+        statusLabel.Text = "Status: ❌ GAGAL equip"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        infoLabel.Text = "❌ Semua metode equip gagal. " ..
+                        "Coba klik SCAN ULANG dan pilih rod lain"
     end
 end)
 
--- Instructions
-local instr = Instance.new("TextLabel")
-instr.Size = UDim2.new(1, -20, 0, 20)
-instr.Position = UDim2.new(0, 10, 1, -22)
-instr.BackgroundTransparency = 1
-instr.Text = "💡 Lakukan FISHING NORMAL sekarang! Semua remote akan tercatat"
-instr.TextColor3 = Color3.new(0.5, 0.5, 0.5)
-instr.TextSize = 11
-instr.Font = Enum.Font.Gotham
-instr.Parent = mainFrame
-
--- Drag functionality
-local dragging = false
-local dragStart
-local startPos
-
-mainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
+-- ====================================================================
+--                     AUTO EQUIP PERTAMA KALI
+-- ====================================================================
+-- Coba equip otomatis rod pertama yang ditemukan
+task.spawn(function()
+    task.wait(1)
+    updateRodList()
+    
+    task.wait(0.5)
+    local rods = findFishingRod()
+    if #rods > 0 then
+        selectedRod = rods[1]
+        infoLabel.Text = "Mencoba equip otomatis: " .. rods[1].name
+        forceEquipRod(rods[1])
     end
 end)
 
-mainFrame.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-    end
-end)
+print([[
+╔════════════════════════════════════════╗
+║         ROD EQUIPMENT FIXER            ║
+║           Untuk Delta HP               ║
+╚════════════════════════════════════════╝
 
-mainFrame.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
-    end
-end)
-
-print("✅ Moe Remote Spy Loaded - Lakukan fishing normal sekarang!")
+LANGKAH:
+1. Lihat daftar rod di window
+2. Klik nama rod yang ingin dipegang
+3. Klik EQUIP PAKSA
+4. Kalau berhasil, rod pindah ke tangan
+]])
