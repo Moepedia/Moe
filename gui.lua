@@ -356,6 +356,7 @@ contentArea.Position = UDim2.new(0, 140, 0, 0)
 contentArea.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
 contentArea.BackgroundTransparency = 0.3
 contentArea.Parent = contentContainer
+contentArea.ZIndex = 1
 
 local contentCorner = Instance.new("UICorner")
 contentCorner.CornerRadius = UDim.new(0, 8)
@@ -372,6 +373,7 @@ contentTitle.TextSize = 14
 contentTitle.Font = Enum.Font.GothamBold
 contentTitle.TextXAlignment = Enum.TextXAlignment.Left
 contentTitle.Parent = contentArea
+contentTitle.ZIndex = 1
 
 -- Scrolling frame for features
 local scrollFrame = Instance.new("ScrollingFrame")
@@ -383,12 +385,14 @@ scrollFrame.ScrollBarThickness = 4
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scrollFrame.Parent = contentArea
+scrollFrame.ZIndex = 1
 
 local featuresContainer = Instance.new("Frame")
 featuresContainer.Size = UDim2.new(1, 0, 0, 0)
 featuresContainer.BackgroundTransparency = 1
 featuresContainer.Parent = scrollFrame
 featuresContainer.AutomaticSize = Enum.AutomaticSize.Y
+featuresContainer.ZIndex = 1
 
 local featuresLayout = Instance.new("UIListLayout")
 featuresLayout.FillDirection = Enum.FillDirection.Vertical
@@ -398,19 +402,25 @@ featuresLayout.Parent = featuresContainer
 
 -- ===== GLOBAL VARIABLES FOR DROPDOWNS =====
 local activeDropdown = nil
+local dropdownContainer = Instance.new("Frame")
+dropdownContainer.Name = "DropdownContainer"
+dropdownContainer.Size = UDim2.new(1, 0, 1, 0)
+dropdownContainer.BackgroundTransparency = 1
+dropdownContainer.Parent = contentArea
+dropdownContainer.ZIndex = 10
+dropdownContainer.Visible = true
+dropdownContainer.Active = false
 
 -- Function to close all dropdowns
 local function closeAllDropdowns()
-    if activeDropdown and activeDropdown.Visible then
+    if activeDropdown then
         activeDropdown.Visible = false
         activeDropdown = nil
     end
 end
 
--- Click detection to close dropdowns (only if click is outside)
-mouse.Button1Down:Connect(function()
-    -- Small delay to allow button events to fire first
-    task.wait(0.1)
+-- Click detection on the main frame to close dropdowns
+mainFrame.MouseButton1Down:Connect(function()
     closeAllDropdowns()
 end)
 
@@ -422,6 +432,7 @@ local function createDropdown(parent, options, default, callback)
     frame.BackgroundTransparency = 0.2
     frame.Parent = parent
     frame.Active = true
+    frame.ZIndex = 2
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
@@ -435,7 +446,8 @@ local function createDropdown(parent, options, default, callback)
     btn.TextSize = 13
     btn.Font = Enum.Font.Gotham
     btn.Parent = frame
-    btn.ZIndex = 5
+    btn.ZIndex = 2
+    btn.Active = true
     
     local arrow = Instance.new("TextLabel")
     arrow.Size = UDim2.new(0, 20, 1, 0)
@@ -445,7 +457,7 @@ local function createDropdown(parent, options, default, callback)
     arrow.TextColor3 = Color3.new(0.8, 0.8, 0.8)
     arrow.TextSize = 12
     arrow.Parent = frame
-    arrow.ZIndex = 5
+    arrow.ZIndex = 2
     
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
@@ -453,8 +465,8 @@ local function createDropdown(parent, options, default, callback)
     dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     dropdownFrame.BackgroundTransparency = 0.1
     dropdownFrame.Visible = false
-    dropdownFrame.Parent = frame
-    dropdownFrame.ZIndex = 10
+    dropdownFrame.Parent = dropdownContainer  -- Parent ke container khusus
+    dropdownFrame.ZIndex = 20
     dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
     dropdownFrame.ClipsDescendants = true
     dropdownFrame.Active = true
@@ -487,7 +499,7 @@ local function createDropdown(parent, options, default, callback)
             optBtn.TextSize = 13
             optBtn.Font = Enum.Font.Gotham
             optBtn.Parent = dropdownFrame
-            optBtn.ZIndex = 11
+            optBtn.ZIndex = 21
             optBtn.Active = true
             
             optBtn.MouseEnter:Connect(function()
@@ -517,6 +529,10 @@ local function createDropdown(parent, options, default, callback)
             activeDropdown = nil
         else
             closeAllDropdowns()
+            -- Position dropdown relative to the button
+            local absPos = frame.AbsolutePosition
+            dropdownFrame.Position = UDim2.fromOffset(absPos.X - contentArea.AbsolutePosition.X, 
+                                                     absPos.Y - contentArea.AbsolutePosition.Y + 35)
             dropdownFrame.Visible = true
             activeDropdown = dropdownFrame
         end
@@ -537,6 +553,7 @@ local function createButton(parent, text, callback)
     btn.Font = Enum.Font.GothamBold
     btn.Parent = parent
     btn.Active = true
+    btn.ZIndex = 2
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
@@ -560,6 +577,7 @@ local function createLabel(parent, text)
     label.Font = Enum.Font.GothamBold
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = parent
+    label.ZIndex = 2
 end
 
 local function createToggle(parent, text, default, callback)
@@ -569,6 +587,7 @@ local function createToggle(parent, text, default, callback)
     frame.BackgroundTransparency = 0.2
     frame.Parent = parent
     frame.Active = true
+    frame.ZIndex = 2
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
@@ -584,6 +603,7 @@ local function createToggle(parent, text, default, callback)
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
+    label.ZIndex = 2
     
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(0, 50, 0, 25)
@@ -595,6 +615,7 @@ local function createToggle(parent, text, default, callback)
     toggleBtn.Font = Enum.Font.GothamBold
     toggleBtn.Parent = frame
     toggleBtn.Active = true
+    toggleBtn.ZIndex = 2
     
     local toggleCorner = Instance.new("UICorner")
     toggleCorner.CornerRadius = UDim.new(0, 4)
@@ -614,6 +635,7 @@ local function createToggle(parent, text, default, callback)
 end
 
 local function clearFeatures()
+    closeAllDropdowns()
     for _, child in pairs(featuresContainer:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("TextButton") then
             child:Destroy()
@@ -657,6 +679,7 @@ local function showFishing()
     statsFrame.BackgroundTransparency = 0.2
     statsFrame.Parent = featuresContainer
     statsFrame.Active = true
+    statsFrame.ZIndex = 2
     
     local statsCorner = Instance.new("UICorner")
     statsCorner.CornerRadius = UDim.new(0, 6)
@@ -672,6 +695,7 @@ local function showFishing()
     statusLabel.Font = Enum.Font.GothamBold
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = statsFrame
+    statusLabel.ZIndex = 2
     
     local bobberLabel = Instance.new("TextLabel")
     bobberLabel.Size = UDim2.new(1, -10, 0, 20)
@@ -683,6 +707,7 @@ local function showFishing()
     bobberLabel.Font = Enum.Font.Gotham
     bobberLabel.TextXAlignment = Enum.TextXAlignment.Left
     bobberLabel.Parent = statsFrame
+    bobberLabel.ZIndex = 2
     
     -- Update stats
     spawn(function()
@@ -720,12 +745,10 @@ local function showTeleport()
     
     local locDropdown, locUpdate = createDropdown(featuresContainer, TeleportLocations, TeleportLocations[1], function(selected)
         selectedLoc = selected
-        print("Selected location:", selected) -- Debug
     end)
     
     -- Teleport button
     createButton(featuresContainer, "TELEPORT", function()
-        print("Teleport button clicked to:", selectedLoc) -- Debug
         local cframe = LOCATIONS[selectedLoc]
         if cframe then
             local char = player.Character
@@ -763,7 +786,6 @@ local function showTeleport()
         selectedPlayer, 
         function(selected)
             selectedPlayer = selected
-            print("Selected player:", selected) -- Debug
         end)
     
     -- Refresh button
@@ -782,7 +804,6 @@ local function showTeleport()
     
     -- Teleport to player button
     createButton(featuresContainer, "TELEPORT TO PLAYER", function()
-        print("Teleport to player clicked:", selectedPlayer) -- Debug
         if selectedPlayer and selectedPlayer ~= "No players" then
             local target = game.Players:FindFirstChild(selectedPlayer)
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
@@ -819,6 +840,7 @@ for _, btnData in ipairs(menuButtons) do
     btn.Font = Enum.Font.GothamBold
     btn.Parent = leftMenu
     btn.Active = true
+    btn.ZIndex = 2
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
