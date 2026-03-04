@@ -62,7 +62,7 @@ local FishingRemotes = {
     UpdateAutoFishingState = Net and Net["RF/UpdateAutoFishingState"],
     FishCaught = Net and Net["RE/FishCaught"],
     FishingStopped = Net and Net["RE/FishingStopped"],
-    CaughtFishVisual = Net and Net["RE/Caught FishVisual"],
+    CaughtFishVisual = Net and Net["RE/CaughtFishVisual"],
     FishingMinigameChanged = Net and Net["RE/FishingMinigameChanged"]
 }
 
