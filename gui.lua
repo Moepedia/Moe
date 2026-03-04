@@ -413,18 +413,42 @@ featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 featuresLayout.Padding = UDim.new(0, 8)
 featuresLayout.Parent = featuresContainer
 
+-- ===== GLOBAL MODAL BACKGROUND UNTUK DROPDOWN =====
+local modalBackground = Instance.new("TextButton")
+modalBackground.Size = UDim2.new(1, 0, 1, 0)
+modalBackground.Position = UDim2.new(0, 0, 0, 0)
+modalBackground.BackgroundTransparency = 1
+modalBackground.Text = ""
+modalBackground.Parent = gui
+modalBackground.ZIndex = 100
+modalBackground.Visible = false
+modalBackground.AutoButtonColor = false
+modalBackground.Selectable = false
+
+modalBackground.MouseButton1Click:Connect(function()
+    if activeDropdown then
+        activeDropdown.Visible = false
+        activeDropdown = nil
+        modalBackground.Visible = false
+    end
+end)
+
+modalBackground.MouseButton2Click:Connect(function()
+    if activeDropdown then
+        activeDropdown.Visible = false
+        activeDropdown = nil
+        modalBackground.Visible = false
+    end
+end)
+
 -- ===== UI ELEMENTS FUNCTIONS =====
 local activeDropdown = nil
-local activeOverlay = nil
 
 local function closeAllDropdowns()
     if activeDropdown then
         activeDropdown.Visible = false
         activeDropdown = nil
-    end
-    if activeOverlay then
-        activeOverlay.Visible = false
-        activeOverlay = nil
+        modalBackground.Visible = false
     end
 end
 
@@ -470,7 +494,7 @@ local function createDropdown(parent, options, default, callback)
     dropdownFrame.BackgroundTransparency = 0.1
     dropdownFrame.Visible = false
     dropdownFrame.Parent = frame
-    dropdownFrame.ZIndex = 10
+    dropdownFrame.ZIndex = 101
     dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
     dropdownFrame.ClipsDescendants = true
     
@@ -483,50 +507,23 @@ local function createDropdown(parent, options, default, callback)
     dropdownList.Padding = UDim.new(0, 2)
     dropdownList.Parent = dropdownFrame
     
-    -- OVERLAY GLOBAL untuk menangkap klik di luar dropdown
-    local overlay = Instance.new("TextButton")
-    overlay.Name = "DropdownOverlay"
-    overlay.Size = UDim2.new(1, 0, 1, 0)
-    overlay.Position = UDim2.new(0, 0, 0, 0)
-    overlay.BackgroundTransparency = 1
-    overlay.Text = ""
-    overlay.Visible = false
-    overlay.ZIndex = 999
-    overlay.Parent = gui
-    overlay.AutoButtonColor = false
-    overlay.Selectable = false
-    
     local function showDropdown()
-        -- Tutup dropdown lain yang mungkin terbuka
         closeAllDropdowns()
-        
         dropdownFrame.Visible = true
         activeDropdown = dropdownFrame
-        frame.ZIndex = 10
-        
-        overlay.Visible = true
-        activeOverlay = overlay
+        modalBackground.Visible = true
+        frame.ZIndex = 100
     end
     
     local function hideDropdown()
         dropdownFrame.Visible = false
         frame.ZIndex = 5
-        overlay.Visible = false
-        
         if activeDropdown == dropdownFrame then
             activeDropdown = nil
-        end
-        if activeOverlay == overlay then
-            activeOverlay = nil
+            modalBackground.Visible = false
         end
     end
     
-    -- Klik pada overlay akan menutup dropdown
-    overlay.MouseButton1Click:Connect(function()
-        hideDropdown()
-    end)
-    
-    -- Buat opsi-opsi dropdown
     for i, opt in ipairs(options) do
         local optBtn = Instance.new("TextButton")
         optBtn.Size = UDim2.new(1, 0, 0, 30)
@@ -536,7 +533,7 @@ local function createDropdown(parent, options, default, callback)
         optBtn.TextSize = 13
         optBtn.Font = Enum.Font.Gotham
         optBtn.Parent = dropdownFrame
-        optBtn.ZIndex = 11
+        optBtn.ZIndex = 102
         optBtn.AutoButtonColor = false
         optBtn.Selectable = false
         
@@ -561,13 +558,6 @@ local function createDropdown(parent, options, default, callback)
             hideDropdown()
         else
             showDropdown()
-        end
-    end)
-    
-    -- Cleanup overlay saat frame di-destroy
-    frame.Destroying:Connect(function()
-        if overlay then
-            overlay:Destroy()
         end
     end)
     
@@ -861,9 +851,6 @@ local function showTeleport()
         
         -- Fungsi Refresh
         refreshBtn.MouseButton1Click:Connect(function()
-            -- Tutup dropdown yang mungkin terbuka
-            closeAllDropdowns()
-            
             -- Update dropdown dengan player list baru
             local newPlayers = getPlayerList()
             
@@ -1016,8 +1003,7 @@ end)
 -- Cleanup on gui destroy
 gui.Destroying:Connect(function()
     stopAutoFishing()
-    closeAllDropdowns()
 end)
 
-print("Moe V1.0 GUI Loaded with Fixed Dropdown")
+print("Moe V1.0 GUI Loaded with Enhanced Dropdown System")
 notify("Moe V1.0", "GUI Loaded Successfully!", 3)
