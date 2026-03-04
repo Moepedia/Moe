@@ -48,7 +48,7 @@ local SellRemotes = {
     SellItem = Net and Net["RF/SellItem"],
     UpdateAutoSellThreshold = Net and Net["RF/UpdateAutoSellThreshold"],
     PromptFavoriteGame = Net and Net["RF/PromptFavoriteGame"],
-    FavoriteItem = Net and Net["RE/Favoritem"],
+    FavoriteItem = Net and Net["RE/FavoriteItem"],
     FavoriteStateChanged = Net and Net["RE/FavoriteStateChanged"]
 }
 
