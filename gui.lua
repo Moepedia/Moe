@@ -64,10 +64,6 @@ local function getRemoteFromPackages(folder, name)
 end
 
 local Remote = {        
-    -- Teleport
-    SubmarineTP = getRemoteFromPackages("RE", "SubmarineTP"),
-    SubmarineTP2 = getRemoteFromPackages("RF", "SubmarineTP2"),
-    
     -- Fishing
     Cast = getRemoteFromPackages("RF", "Cast"),
     Reel = getRemoteFromPackages("RF", "Reel"),
@@ -81,19 +77,6 @@ local function notify(title, text, duration)
         Text = text,
         Duration = duration or 2
     })
-end
-
--- ===== KOORDINAT LOKASI =====
-local function updateLocationDisplay()
-    if locationText then
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local pos = char.HumanoidRootPart.Position
-            locationText.Text = string.format("X: %.1f, Y: %.1f, Z: %.1f", pos.X, pos.Y, pos.Z)
-        else
-            locationText.Text = "X: 0, Y: 0, Z: 0"
-        end
-    end
 end
 
 -- ===== AUTO FISHING FUNCTIONS =====
@@ -156,8 +139,10 @@ local function startAutoFishing()
     if autoFishing then return end
     
     autoFishing = true
-    autoFishBtn.Text = "Stop Auto Fishing"
-    autoFishBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+    if autoFishToggle then
+        autoFishToggle.Text = "ON"
+        autoFishToggle.BackgroundColor3 = Color3.new(0, 0.6, 0) -- Hijau gelap sesuai tema
+    end
     notify("Auto Fishing", "Auto fishing started!", 2)
     
     -- Loop auto fishing
@@ -187,9 +172,9 @@ local function stopAutoFishing()
         fishingConnection:Disconnect()
         fishingConnection = nil
     end
-    if autoFishBtn then
-        autoFishBtn.Text = "Start Auto Fishing"
-        autoFishBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+    if autoFishToggle then
+        autoFishToggle.Text = "OFF"
+        autoFishToggle.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3) -- Abu-abu sesuai tema
     end
     notify("Auto Fishing", "Auto fishing stopped!", 2)
 end
@@ -222,7 +207,7 @@ headerFrame.Size = UDim2.new(1, 0, 0, 35)
 headerFrame.BackgroundTransparency = 1
 headerFrame.Parent = mainFrame
 
--- Logo (menggunakan asset ID yang benar)
+-- Logo
 local logo = Instance.new("ImageLabel")
 logo.Size = UDim2.new(0, 25, 0, 25)
 logo.Position = UDim2.new(0, 8, 0.5, -12.5)
@@ -242,29 +227,6 @@ title.TextSize = 16
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = headerFrame
-
--- Location Display
-local locationFrame = Instance.new("Frame")
-locationFrame.Size = UDim2.new(0, 200, 0, 25)
-locationFrame.Position = UDim2.new(0.5, -100, 0.5, -12.5)
-locationFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-locationFrame.BackgroundTransparency = 0.3
-locationFrame.Parent = headerFrame
-
-local locationCorner = Instance.new("UICorner")
-locationCorner.CornerRadius = UDim.new(0, 6)
-locationCorner.Parent = locationFrame
-
-local locationText = Instance.new("TextLabel")
-locationText.Size = UDim2.new(1, -10, 1, 0)
-locationText.Position = UDim2.new(0, 5, 0, 0)
-locationText.BackgroundTransparency = 1
-locationText.Text = "X: 0, Y: 0, Z: 0"
-locationText.TextColor3 = Color3.new(0, 1, 0)
-locationText.TextSize = 12
-locationText.Font = Enum.Font.GothamBold
-locationText.TextXAlignment = Enum.TextXAlignment.Left
-locationText.Parent = locationFrame
 
 -- Minimize button
 local minButton = Instance.new("TextButton")
@@ -339,9 +301,6 @@ closeBtn.MouseButton1Click:Connect(function()
     stopAutoFishing()
     gui:Destroy()
 end)
-
--- Update location periodically
-game:GetService("RunService").RenderStepped:Connect(updateLocationDisplay)
 
 -- Horizontal line
 local hLine = Instance.new("Frame")
@@ -564,7 +523,7 @@ local function createToggle(parent, text, default, callback)
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(0, 50, 0, 25)
     toggleBtn.Position = UDim2.new(1, -60, 0.5, -12.5)
-    toggleBtn.BackgroundColor3 = default and Color3.new(0, 1, 0) or Color3.new(0.5, 0.5, 0.5)
+    toggleBtn.BackgroundColor3 = default and Color3.new(0, 0.6, 0) or Color3.new(0.3, 0.3, 0.3)
     toggleBtn.Text = default and "ON" or "OFF"
     toggleBtn.TextColor3 = Color3.new(1, 1, 1)
     toggleBtn.TextSize = 11
@@ -580,9 +539,11 @@ local function createToggle(parent, text, default, callback)
     toggleBtn.MouseButton1Click:Connect(function()
         state = not state
         toggleBtn.Text = state and "ON" or "OFF"
-        toggleBtn.BackgroundColor3 = state and Color3.new(0, 1, 0) or Color3.new(0.5, 0.5, 0.5)
+        toggleBtn.BackgroundColor3 = state and Color3.new(0, 0.6, 0) or Color3.new(0.3, 0.3, 0.3)
         callback(state)
     end)
+    
+    return toggleBtn
 end
 
 local function clearFeatures()
@@ -593,21 +554,22 @@ local function clearFeatures()
     end
 end
 
--- ===== AUTO FISHING BUTTON REFERENCE =====
-local autoFishBtn = nil
+-- ===== AUTO FISHING TOGGLE REFERENCE =====
+local autoFishToggle = nil
 
 -- ===== FISHING MENU =====
 local function showFishing()
     clearFeatures()
     contentTitle.Text = "Fishing Features"
     
-    createLabel(featuresContainer, "Auto Fishing Control")
+    createLabel(featuresContainer, "Auto Fishing")
     
-    autoFishBtn = createButton(featuresContainer, "Start Auto Fishing", function()
-        if autoFishing then
-            stopAutoFishing()
-        else
+    -- Auto Fishing Toggle
+    autoFishToggle = createToggle(featuresContainer, "Auto Fishing", false, function(state)
+        if state then
             startAutoFishing()
+        else
+            stopAutoFishing()
         end
     end)
     
@@ -620,8 +582,6 @@ local function showFishing()
     createButton(featuresContainer, "Reel In", function()
         reelIn()
     end)
-    
-    createLabel(featuresContainer, "Fishing Stats")
     
     -- Stats display
     local statsFrame = Instance.new("Frame")
@@ -692,7 +652,7 @@ local function showTeleport()
         selectedLoc = selected
     end)
     
-    createButton(featuresContainer, "TELEPORT NOW", function()
+    createButton(featuresContainer, "TELEPORT", function()
         local cframe = LOCATIONS[selectedLoc]
         if cframe then
             local char = player.Character
@@ -702,62 +662,6 @@ local function showTeleport()
             end
         end
     end)
-    
-    createButton(featuresContainer, "TELEPORT (SUBMARINE)", function()
-        if Remote.SubmarineTP then
-            Remote.SubmarineTP:FireServer(selectedLoc)
-            notify("Teleport", "Teleported to " .. selectedLoc .. " via submarine")
-        elseif Remote.SubmarineTP2 then
-            Remote.SubmarineTP2:InvokeServer(selectedLoc)
-            notify("Teleport", "Teleported to " .. selectedLoc .. " via submarine")
-        else
-            -- Fallback to normal teleport
-            local cframe = LOCATIONS[selectedLoc]
-            if cframe then
-                local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    char.HumanoidRootPart.CFrame = cframe
-                    notify("Teleport", "Teleported to " .. selectedLoc)
-                end
-            end
-        end
-    end)
-    
-    createLabel(featuresContainer, "Location Coordinates")
-    
-    for loc, cframe in pairs(LOCATIONS) do
-        local locFrame = Instance.new("Frame")
-        locFrame.Size = UDim2.new(1, 0, 0, 45)
-        locFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
-        locFrame.BackgroundTransparency = 0.2
-        locFrame.Parent = featuresContainer
-        
-        local locCorner = Instance.new("UICorner")
-        locCorner.CornerRadius = UDim.new(0, 6)
-        locCorner.Parent = locFrame
-        
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, -10, 0, 20)
-        nameLabel.Position = UDim2.new(0, 5, 0, 3)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = loc
-        nameLabel.TextColor3 = Color3.new(1, 1, 0)
-        nameLabel.TextSize = 12
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-        nameLabel.Parent = locFrame
-        
-        local coordLabel = Instance.new("TextLabel")
-        coordLabel.Size = UDim2.new(1, -10, 0, 18)
-        coordLabel.Position = UDim2.new(0, 5, 0, 23)
-        coordLabel.BackgroundTransparency = 1
-        coordLabel.Text = string.format("X: %.1f, Y: %.1f, Z: %.1f", cframe.Position.X, cframe.Position.Y, cframe.Position.Z)
-        coordLabel.TextColor3 = Color3.new(0, 1, 0)
-        coordLabel.TextSize = 10
-        coordLabel.Font = Enum.Font.Gotham
-        coordLabel.TextXAlignment = Enum.TextXAlignment.Left
-        coordLabel.Parent = locFrame
-    end
     
     createLabel(featuresContainer, "Teleport to Player")
     
@@ -877,5 +781,5 @@ gui.Destroying:Connect(function()
     stopAutoFishing()
 end)
 
-print("Moe V1.0 GUI Loaded with Auto Fishing and Location Coordinates")
+print("Moe V1.0 GUI Loaded with Auto Fishing Toggle")
 notify("Moe V1.0", "GUI Loaded Successfully!", 3)
