@@ -260,7 +260,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
--- ===== FLOATING LOGO (FIXED) =====
+-- ===== FLOATING LOGO =====
 local floatingLogo = Instance.new("Frame")
 floatingLogo.Size = UDim2.new(0, 50, 0, 50)
 floatingLogo.Position = UDim2.new(0.9, -25, 0.9, -25)
@@ -401,14 +401,16 @@ local activeDropdown = nil
 
 -- Function to close all dropdowns
 local function closeAllDropdowns()
-    if activeDropdown then
+    if activeDropdown and activeDropdown.Visible then
         activeDropdown.Visible = false
         activeDropdown = nil
     end
 end
 
--- Click detection to close dropdowns
+-- Click detection to close dropdowns (only if click is outside)
 mouse.Button1Down:Connect(function()
+    -- Small delay to allow button events to fire first
+    task.wait(0.1)
     closeAllDropdowns()
 end)
 
@@ -419,6 +421,7 @@ local function createDropdown(parent, options, default, callback)
     frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
     frame.BackgroundTransparency = 0.2
     frame.Parent = parent
+    frame.Active = true
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
@@ -432,6 +435,7 @@ local function createDropdown(parent, options, default, callback)
     btn.TextSize = 13
     btn.Font = Enum.Font.Gotham
     btn.Parent = frame
+    btn.ZIndex = 5
     
     local arrow = Instance.new("TextLabel")
     arrow.Size = UDim2.new(0, 20, 1, 0)
@@ -441,6 +445,7 @@ local function createDropdown(parent, options, default, callback)
     arrow.TextColor3 = Color3.new(0.8, 0.8, 0.8)
     arrow.TextSize = 12
     arrow.Parent = frame
+    arrow.ZIndex = 5
     
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
@@ -452,6 +457,7 @@ local function createDropdown(parent, options, default, callback)
     dropdownFrame.ZIndex = 10
     dropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
     dropdownFrame.ClipsDescendants = true
+    dropdownFrame.Active = true
     
     local dropdownCorner = Instance.new("UICorner")
     dropdownCorner.CornerRadius = UDim.new(0, 6)
@@ -482,6 +488,7 @@ local function createDropdown(parent, options, default, callback)
             optBtn.Font = Enum.Font.Gotham
             optBtn.Parent = dropdownFrame
             optBtn.ZIndex = 11
+            optBtn.Active = true
             
             optBtn.MouseEnter:Connect(function()
                 optBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
@@ -504,11 +511,13 @@ local function createDropdown(parent, options, default, callback)
     -- Initial population
     updateDropdown(options)
     
-    btn.MouseButton1Click:Connect(function(event)
-        event:StopPropagation()
-        closeAllDropdowns()
-        dropdownFrame.Visible = not dropdownFrame.Visible
+    btn.MouseButton1Click:Connect(function()
         if dropdownFrame.Visible then
+            dropdownFrame.Visible = false
+            activeDropdown = nil
+        else
+            closeAllDropdowns()
+            dropdownFrame.Visible = true
             activeDropdown = dropdownFrame
         end
     end)
@@ -527,13 +536,13 @@ local function createButton(parent, text, callback)
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamBold
     btn.Parent = parent
+    btn.Active = true
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = btn
     
-    btn.MouseButton1Click:Connect(function(event)
-        event:StopPropagation()
+    btn.MouseButton1Click:Connect(function()
         closeAllDropdowns()
         callback()
     end)
@@ -559,6 +568,7 @@ local function createToggle(parent, text, default, callback)
     frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
     frame.BackgroundTransparency = 0.2
     frame.Parent = parent
+    frame.Active = true
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
@@ -584,6 +594,7 @@ local function createToggle(parent, text, default, callback)
     toggleBtn.TextSize = 11
     toggleBtn.Font = Enum.Font.GothamBold
     toggleBtn.Parent = frame
+    toggleBtn.Active = true
     
     local toggleCorner = Instance.new("UICorner")
     toggleCorner.CornerRadius = UDim.new(0, 4)
@@ -591,8 +602,7 @@ local function createToggle(parent, text, default, callback)
     
     local state = default
     
-    toggleBtn.MouseButton1Click:Connect(function(event)
-        event:StopPropagation()
+    toggleBtn.MouseButton1Click:Connect(function()
         closeAllDropdowns()
         state = not state
         toggleBtn.Text = state and "ON" or "OFF"
@@ -646,6 +656,7 @@ local function showFishing()
     statsFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
     statsFrame.BackgroundTransparency = 0.2
     statsFrame.Parent = featuresContainer
+    statsFrame.Active = true
     
     local statsCorner = Instance.new("UICorner")
     statsCorner.CornerRadius = UDim.new(0, 6)
@@ -674,24 +685,25 @@ local function showFishing()
     bobberLabel.Parent = statsFrame
     
     -- Update stats
-    game:GetService("RunService").Heartbeat:Connect(function()
-        if not featuresContainer.Parent then return end
-        
-        if autoFishing then
-            statusLabel.Text = "Status: Auto Fishing Active"
-            statusLabel.TextColor3 = Color3.new(0, 1, 0)
-        else
-            statusLabel.Text = "Status: Manual Mode"
-            statusLabel.TextColor3 = Color3.new(1, 1, 0)
-        end
-        
-        bobber = findBobber()
-        if bobber then
-            bobberLabel.Text = "Bobber: Found"
-            bobberLabel.TextColor3 = Color3.new(0, 1, 0)
-        else
-            bobberLabel.Text = "Bobber: Not found"
-            bobberLabel.TextColor3 = Color3.new(1, 0, 0)
+    spawn(function()
+        while featuresContainer and featuresContainer.Parent do
+            if autoFishing then
+                statusLabel.Text = "Status: Auto Fishing Active"
+                statusLabel.TextColor3 = Color3.new(0, 1, 0)
+            else
+                statusLabel.Text = "Status: Manual Mode"
+                statusLabel.TextColor3 = Color3.new(1, 1, 0)
+            end
+            
+            bobber = findBobber()
+            if bobber then
+                bobberLabel.Text = "Bobber: Found"
+                bobberLabel.TextColor3 = Color3.new(0, 1, 0)
+            else
+                bobberLabel.Text = "Bobber: Not found"
+                bobberLabel.TextColor3 = Color3.new(1, 0, 0)
+            end
+            task.wait(0.5)
         end
     end)
 end
@@ -701,25 +713,34 @@ local function showTeleport()
     clearFeatures()
     contentTitle.Text = "Teleport"
     
+    -- Teleport to Location
     createLabel(featuresContainer, "Teleport to Location")
     
     local selectedLoc = TeleportLocations[1]
     
     local locDropdown, locUpdate = createDropdown(featuresContainer, TeleportLocations, TeleportLocations[1], function(selected)
         selectedLoc = selected
+        print("Selected location:", selected) -- Debug
     end)
     
+    -- Teleport button
     createButton(featuresContainer, "TELEPORT", function()
+        print("Teleport button clicked to:", selectedLoc) -- Debug
         local cframe = LOCATIONS[selectedLoc]
         if cframe then
             local char = player.Character
             if char and char:FindFirstChild("HumanoidRootPart") then
                 char.HumanoidRootPart.CFrame = cframe
                 notify("Teleport", "Teleported to " .. selectedLoc)
+            else
+                notify("Error", "Character not found")
             end
+        else
+            notify("Error", "Location not found")
         end
     end)
     
+    -- Teleport to Player section
     createLabel(featuresContainer, "Teleport to Player")
     
     -- Function to get player list
@@ -734,20 +755,19 @@ local function showTeleport()
     end
     
     local playerList = getPlayerList()
-    local selectedPlayer = playerList[1] or "No players"
+    local selectedPlayer = (#playerList > 0) and playerList[1] or "No players"
     
     -- Create dropdown for players
-    local playerDropdown, playerUpdate = createDropdown(featuresContainer, playerList, playerList[1] or "No players", function(selected)
-        selectedPlayer = selected
-    end)
+    local playerDropdown, playerUpdate = createDropdown(featuresContainer, 
+        (#playerList > 0) and playerList or {"No players"}, 
+        selectedPlayer, 
+        function(selected)
+            selectedPlayer = selected
+            print("Selected player:", selected) -- Debug
+        end)
     
     -- Refresh button
-    local refreshFrame = Instance.new("Frame")
-    refreshFrame.Size = UDim2.new(1, 0, 0, 35)
-    refreshFrame.BackgroundTransparency = 1
-    refreshFrame.Parent = featuresContainer
-    
-    local refreshButton = createButton(refreshFrame, "REFRESH PLAYER LIST", function()
+    createButton(featuresContainer, "REFRESH PLAYER LIST", function()
         local newPlayerList = getPlayerList()
         if #newPlayerList > 0 then
             playerUpdate(newPlayerList)
@@ -759,10 +779,10 @@ local function showTeleport()
             notify("Player List", "No other players online")
         end
     end)
-    refreshButton.Size = UDim2.new(1, 0, 0, 35)
     
     -- Teleport to player button
     createButton(featuresContainer, "TELEPORT TO PLAYER", function()
+        print("Teleport to player clicked:", selectedPlayer) -- Debug
         if selectedPlayer and selectedPlayer ~= "No players" then
             local target = game.Players:FindFirstChild(selectedPlayer)
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
@@ -798,6 +818,7 @@ for _, btnData in ipairs(menuButtons) do
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamBold
     btn.Parent = leftMenu
+    btn.Active = true
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
@@ -815,8 +836,7 @@ for _, btnData in ipairs(menuButtons) do
         end
     end)
     
-    btn.MouseButton1Click:Connect(function(event)
-        event:StopPropagation()
+    btn.MouseButton1Click:Connect(function()
         closeAllDropdowns()
         for _, b in pairs(leftMenu:GetChildren()) do
             if b:IsA("TextButton") then
@@ -869,5 +889,5 @@ gui.Destroying:Connect(function()
     stopAutoFishing()
 end)
 
-print("Moe V1.0 GUI Loaded with Fixed Logo and Dropdown")
+print("Moe V1.0 GUI Loaded Successfully!")
 notify("Moe V1.0", "GUI Loaded Successfully!", 3)
