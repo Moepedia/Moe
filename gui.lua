@@ -414,6 +414,7 @@ featuresLayout.Parent = featuresContainer
 
 -- ===== GLOBAL VARIABLES FOR DROPDOWNS =====
 local activeDropdown = nil
+local dropdownConnections = {}
 
 -- Function to close all dropdowns
 local function closeAllDropdowns()
@@ -423,29 +424,43 @@ local function closeAllDropdowns()
     end
 end
 
--- Click detection to close dropdowns (hanya jika klik di luar GUI)
-mouse.Button1Down:Connect(function()
-    -- Cek apakah klik di dalam GUI
-    local object = mouse.Target
-    local inGui = false
-    
-    if object then
-        -- Cek apakah object atau parentnya adalah bagian dari GUI kita
-        local check = object
-        while check do
-            if check == mainFrame or check == floatingLogo then
-                inGui = true
-                break
+-- Function to setup input tracking for dropdowns
+local function setupInputTracking()
+    -- Handle mouse button clicks
+    game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            -- Small delay to let the click event propagate
+            task.wait(0.05)
+            
+            -- Check if we clicked inside any dropdown
+            local mousePos = Vector2.new(input.Position.X, input.Position.Y)
+            local object = mouse.Target
+            
+            local clickedOnDropdown = false
+            
+            -- Check if clicked on any dropdown or its children
+            if activeDropdown then
+                local absolutePos, absoluteSize = activeDropdown.AbsolutePosition, activeDropdown.AbsoluteSize
+                local dropdownRect = Rect.new(absolutePos, absolutePos + absoluteSize)
+                
+                -- Check if mouse position is within dropdown bounds
+                if dropdownRect:Contains(mousePos) then
+                    clickedOnDropdown = true
+                end
             end
-            check = check.Parent
+            
+            -- If not clicked on dropdown, close it
+            if not clickedOnDropdown then
+                closeAllDropdowns()
+            end
         end
-    end
-    
-    -- Jika klik di luar GUI, tutup dropdown
-    if not inGui then
-        closeAllDropdowns()
-    end
-end)
+    end)
+end
+
+-- Setup input tracking
+setupInputTracking()
 
 -- ===== UI ELEMENTS FUNCTIONS =====
 local function createDropdown(parent, options, default, callback)
@@ -560,11 +575,14 @@ local function createDropdown(parent, options, default, callback)
     updateDropdown(options)
     
     btn.MouseButton1Click:Connect(function()
-        closeAllDropdowns()
-        dropdownFrame.Visible = not dropdownFrame.Visible
-        if dropdownFrame.Visible then
-            activeDropdown = dropdownFrame
+        -- Close any other open dropdown
+        if activeDropdown and activeDropdown ~= dropdownFrame then
+            activeDropdown.Visible = false
         end
+        
+        -- Toggle this dropdown
+        dropdownFrame.Visible = not dropdownFrame.Visible
+        activeDropdown = dropdownFrame.Visible and dropdownFrame or nil
     end)
     
     return frame, updateDropdown
