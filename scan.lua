@@ -1,402 +1,460 @@
 -- ====================================================================
---     AUTO FISH v5.0 - DELTA HP EDITION (LANGSUNG PAKAI)
--- ====================================================================
--- Berdasarkan hash remote yang ditemukan di packet capture
+--     FISHING SYSTEM SCANNER v2.0 - GUI EDITION
+--     Dengan fitur Copy All Results untuk dikirim
 -- ====================================================================
 
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
-
--- ====================================================================
---                     REMOTE HASH DARI CAPTURE
--- ====================================================================
--- Ini adalah hash remote yang dipanggil saat fishing manual
-local REMOTE_HASHES = {
-    -- Hash yang paling sering muncul di packet capture
-    main = "c83da140199b695e0338dcfc521b0441f3a801823d9f178fb00791f708e9b837",
-    secondary = "7b12f430cc70bc4e939d6032b967fa19647c80c2ae7396cf500f1e3113e07685",
-    third = "2560f6f476bebf12c2e1410090e3e7ee9c45755de63c8b6acf8bd43af4a3612a"
-}
-
--- Remote yang dikenal (dari hasil scan)
-local KNOWN_REMOTES = {
-    charge = "RF/ChargeFishingRod",
-    minigame = "RF/RequestFishingMinigameStarted",
-    cancel = "RF/CancelFishingInputs",
-    fishCaught = "RE/FishCaught",
-    autoFishing = "RF/UpdateAutoFishingState"
-}
-
--- ====================================================================
---                     FIND REMOTE FUNCTION
--- ====================================================================
-local function findRemote(pathOrHash)
-    -- Coba cari berdasarkan path (contoh: "RF/ChargeFishingRod")
-    if type(pathOrHash) == "string" and pathOrHash:find("/") then
-        local parts = pathOrHash:split("/")
-        local container = ReplicatedStorage
-        
-        for _, part in ipairs(parts) do
-            container = container:FindFirstChild(part)
-            if not container then break end
-        end
-        
-        if container then
-            return container
-        end
-    end
-    
-    -- Coba cari berdasarkan hash (nama remote)
-    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteFunction") or obj:IsA("RemoteEvent") then
-            if obj.Name == pathOrHash then
-                return obj
-            end
-        end
-    end
-    
-    return nil
-end
-
--- ====================================================================
---                     GET ALL REMOTES
--- ====================================================================
-local function getAllRemotes()
-    local remotes = {
-        -- Remote yang dikenal
-        charge = findRemote(KNOWN_REMOTES.charge),
-        minigame = findRemote(KNOWN_REMOTES.minigame),
-        cancel = findRemote(KNOWN_REMOTES.cancel),
-        fishCaught = findRemote(KNOWN_REMOTES.fishCaught),
-        autoFishing = findRemote(KNOWN_REMOTES.autoFishing),
-        
-        -- Remote hash
-        hashMain = findRemote(REMOTE_HASHES.main),
-        hashSecondary = findRemote(REMOTE_HASHES.secondary),
-        hashThird = findRemote(REMOTE_HASHES.third)
-    }
-    
-    return remotes
-end
-
--- ====================================================================
---                     ANTI-AFK
--- ====================================================================
-LocalPlayer.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new())
-end)
-
--- ====================================================================
---                     FISHING FUNCTIONS
--- ====================================================================
-local remotes = getAllRemotes()
-
--- Tampilkan remote yang ditemukan
-print("\n🎣 AUTO FISH V5.0 - DELTA HP")
-print("==================================")
-for name, remote in pairs(remotes) do
-    if remote then
-        print("✅ " .. name .. ": " .. remote.Name)
-    else
-        print("❌ " .. name .. ": TIDAK DITEMUKAN")
-    end
-end
-print("==================================\n")
-
--- Fungsi casting dengan berbagai method
-local function castRod()
-    local success = false
-    
-    -- METHOD 1: Pakai remote hash (paling sering muncul di capture)
-    if remotes.hashMain and remotes.hashMain:IsA("RemoteFunction") then
-        pcall(function()
-            remotes.hashMain:InvokeServer()
-            success = true
-            print("🎣 Cast dengan hash main")
-        end)
-    end
-    
-    -- METHOD 2: Pakai ChargeFishingRod
-    if not success and remotes.charge then
-        pcall(function()
-            if remotes.charge:IsA("RemoteFunction") then
-                remotes.charge:InvokeServer(1755848498.4834)
-            else
-                remotes.charge:FireServer()
-            end
-            success = true
-            print("🎣 Cast dengan ChargeFishingRod")
-        end)
-    end
-    
-    -- METHOD 3: Pakai minigame langsung
-    if not success and remotes.minigame then
-        pcall(function()
-            if remotes.minigame:IsA("RemoteFunction") then
-                remotes.minigame:InvokeServer(1.2854545116425, 1)
-            else
-                remotes.minigame:FireServer()
-            end
-            success = true
-            print("🎣 Cast dengan RequestFishingMinigame")
-        end)
-    end
-    
-    return success
-end
-
--- Fungsi reeling
-local function reelIn()
-    local success = false
-    
-    -- METHOD 1: Pakai hash secondary
-    if remotes.hashSecondary then
-        pcall(function()
-            if remotes.hashSecondary:IsA("RemoteFunction") then
-                remotes.hashSecondary:InvokeServer()
-            else
-                remotes.hashSecondary:FireServer()
-            end
-            success = true
-            print("✅ Reel dengan hash secondary")
-        end)
-    end
-    
-    -- METHOD 2: Pakai FishCaught
-    if not success and remotes.fishCaught then
-        pcall(function()
-            remotes.fishCaught:FireServer()
-            success = true
-            print("✅ Reel dengan FishCaught")
-        end)
-    end
-    
-    -- METHOD 3: Pakai hash main (kadang dipakai juga untuk reel)
-    if not success and remotes.hashMain then
-        pcall(function()
-            if remotes.hashMain:IsA("RemoteFunction") then
-                remotes.hashMain:InvokeServer()
-            else
-                remotes.hashMain:FireServer()
-            end
-            success = true
-            print("✅ Reel dengan hash main")
-        end)
-    end
-    
-    return success
-end
-
--- Fungsi untuk reset state
-local function resetFishingState()
-    if remotes.cancel then
-        pcall(function()
-            if remotes.cancel:IsA("RemoteFunction") then
-                remotes.cancel:InvokeServer()
-            else
-                remotes.cancel:FireServer()
-            end
-        end)
-    end
-    
-    -- Matikan auto fishing state kalau ada
-    if remotes.autoFishing then
-        pcall(function()
-            if remotes.autoFishing:IsA("RemoteFunction") then
-                remotes.autoFishing:InvokeServer(false)
-            else
-                remotes.autoFishing:FireServer(false)
-            end
-        end)
-    end
-end
-
--- ====================================================================
---                     UI SEDERHANA UNTUK DELTA HP
--- ====================================================================
-local CoreGui = game:GetService("CoreGui")
-
--- Hapus GUI lama kalau ada
-pcall(function()
-    CoreGui:FindFirstChild("AutoFishing"):Destroy()
-end)
-
--- Buat GUI baru
+local player = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
-gui.Name = "AutoFishing"
+gui.Name = "FishingScanner"
 gui.ResetOnSpawn = false
-gui.Parent = CoreGui
+gui.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama
+-- Variables untuk menyimpan hasil
+local ScanResults = {
+    Remotes = {},
+    Modules = {},
+    AntiCheat = {},
+    Timestamp = os.time(),
+    Date = os.date("%Y-%m-%d %H:%M:%S")
+}
+
+-- ===== MAIN FRAME =====
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 180)
-frame.Position = UDim2.new(0, 10, 0.5, -90)
+frame.Size = UDim2.new(0, 600, 0, 450)
+frame.Position = UDim2.new(0.5, -300, 0.5, -225)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
 
--- Shadow
-local shadow = Instance.new("ImageLabel")
-shadow.Size = UDim2.new(1, 20, 1, 20)
-shadow.Position = UDim2.new(0, -10, 0, -10)
-shadow.BackgroundTransparency = 1
-shadow.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
-shadow.ImageColor3 = Color3.new(0, 0, 0)
-shadow.ImageTransparency = 0.5
-shadow.ScaleType = Enum.ScaleType.Slice
-shadow.SliceCenter = Rect.new(10, 10, 10, 10)
-shadow.Parent = frame
+-- Rounded corners
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = frame
 
--- Title
+-- Border
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 1
+stroke.Color = Color3.fromRGB(80, 80, 90)
+stroke.Parent = frame
+
+-- ===== HEADER =====
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 35)
+header.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+header.BorderSizePixel = 0
+header.Parent = frame
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 8)
+headerCorner.Parent = header
+
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-title.Text = "🎣 AUTO FISH V5.0 (DELTA)"
-title.TextColor3 = Color3.new(1, 1, 1)
+title.Size = UDim2.new(1, -40, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "🔍 FISHING SYSTEM SCANNER v2.0"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 14
-title.Parent = frame
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
 
--- Close button
-local close = Instance.new("TextButton")
-close.Size = UDim2.new(0, 30, 0, 30)
-close.Position = UDim2.new(1, -30, 0, 0)
-close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-close.Text = "X"
-close.TextColor3 = Color3.new(1, 1, 1)
-close.Font = Enum.Font.GothamBold
-close.Parent = title
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -30, 0, 0)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 16
+closeBtn.Parent = header
 
-close.MouseButton1Click:Connect(function()
-    fishing = false
+closeBtn.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
 
--- Status
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, -20, 0, 25)
-statusLabel.Position = UDim2.new(0, 10, 0, 35)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Status: STOPPED"
-statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-statusLabel.Font = Enum.Font.GothamBold
-statusLabel.TextSize = 12
-statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.Parent = frame
+-- ===== STATUS BAR =====
+local statusBar = Instance.new("Frame")
+statusBar.Size = UDim2.new(1, -20, 0, 30)
+statusBar.Position = UDim2.new(0, 10, 0, 45)
+statusBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+statusBar.BorderSizePixel = 0
+statusBar.Parent = frame
 
--- Remote info
-local remoteLabel = Instance.new("TextLabel")
-remoteLabel.Size = UDim2.new(1, -20, 0, 40)
-remoteLabel.Position = UDim2.new(0, 10, 0, 60)
-remoteLabel.BackgroundTransparency = 1
-remoteLabel.Text = "Remote: Menyiapkan..."
-remoteLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-remoteLabel.Font = Enum.Font.Gotham
-remoteLabel.TextSize = 10
-remoteLabel.TextWrapped = true
-remoteLabel.TextXAlignment = Enum.TextXAlignment.Left
-remoteLabel.Parent = frame
+local statusCorner = Instance.new("UICorner")
+statusCorner.CornerRadius = UDim.new(0, 6)
+statusCorner.Parent = statusBar
 
--- Hitung remote yang ditemukan
-local foundCount = 0
-for _, v in pairs(remotes) do
-    if v then foundCount = foundCount + 1 end
+local statusText = Instance.new("TextLabel")
+statusText.Size = UDim2.new(1, -10, 1, 0)
+statusText.Position = UDim2.new(0, 10, 0, 0)
+statusText.BackgroundTransparency = 1
+statusText.Text = "⏳ Ready to scan..."
+statusText.TextColor3 = Color3.fromRGB(255, 255, 0)
+statusText.Font = Enum.Font.Gotham
+statusText.TextSize = 12
+statusText.TextXAlignment = Enum.TextXAlignment.Left
+statusText.Parent = statusBar
+
+-- ===== RESULTS FRAME =====
+local resultsFrame = Instance.new("Frame")
+resultsFrame.Size = UDim2.new(1, -20, 1, -120)
+resultsFrame.Position = UDim2.new(0, 10, 0, 80)
+resultsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+resultsFrame.BorderSizePixel = 0
+resultsFrame.Parent = frame
+resultsFrame.ClipsDescendants = true
+
+local resultsCorner = Instance.new("UICorner")
+resultsCorner.CornerRadius = UDim.new(0, 6)
+resultsCorner.Parent = resultsFrame
+
+-- Scrolling frame untuk hasil
+local scrollingFrame = Instance.new("ScrollingFrame")
+scrollingFrame.Size = UDim2.new(1, -20, 1, -20)
+scrollingFrame.Position = UDim2.new(0, 10, 0, 10)
+scrollingFrame.BackgroundTransparency = 1
+scrollingFrame.BorderSizePixel = 0
+scrollingFrame.ScrollBarThickness = 6
+scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollingFrame.Parent = resultsFrame
+
+local resultsLayout = Instance.new("UIListLayout")
+resultsLayout.Padding = UDim.new(0, 4)
+resultsLayout.Parent = scrollingFrame
+
+-- ===== BUTTONS FRAME =====
+local buttonsFrame = Instance.new("Frame")
+buttonsFrame.Size = UDim2.new(1, -20, 0, 40)
+buttonsFrame.Position = UDim2.new(0, 10, 1, -50)
+buttonsFrame.BackgroundTransparency = 1
+buttonsFrame.Parent = frame
+
+-- Fungsi buat button
+local function createButton(parent, text, posX, color, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 130, 0, 35)
+    btn.Position = UDim2.new(0, posX, 0, 0)
+    btn.BackgroundColor3 = color or Color3.fromRGB(60, 60, 70)
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 12
+    btn.Parent = parent
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = btn
+    
+    btn.MouseButton1Click:Connect(callback)
+    
+    return btn
 end
-remoteLabel.Text = string.format("Remote ditemukan: %d/8\nHash: %s", foundCount, remotes.hashMain and "✅" or "❌")
 
--- Tombol Start/Stop
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0.9, 0, 0, 35)
-toggleBtn.Position = UDim2.new(0.05, 0, 0, 110)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-toggleBtn.Text = "START FISHING"
-toggleBtn.TextColor3 = Color3.new(1, 1, 1)
-toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 12
-toggleBtn.Parent = frame
+-- Buttons
+local scanBtn = createButton(buttonsFrame, "🔍 SCAN SYSTEM", 0, Color3.fromRGB(0, 120, 200))
+local copyBtn = createButton(buttonsFrame, "📋 COPY RESULTS", 140, Color3.fromRGB(200, 120, 0))
+local clearBtn = createButton(buttonsFrame, "🗑️ CLEAR", 280, Color3.fromRGB(150, 60, 60))
+local closeBtn2 = createButton(buttonsFrame, "✕ CLOSE", 420, Color3.fromRGB(100, 100, 100), function()
+    gui:Destroy()
+end)
 
--- Counter
-local counterLabel = Instance.new("TextLabel")
-counterLabel.Size = UDim2.new(1, -20, 0, 20)
-counterLabel.Position = UDim2.new(0, 10, 0, 150)
-counterLabel.BackgroundTransparency = 1
-counterLabel.Text = "Cycle: 0 | Catch: 0"
-counterLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-counterLabel.Font = Enum.Font.Gotham
-counterLabel.TextSize = 10
-counterLabel.TextXAlignment = Enum.TextXAlignment.Left
-counterLabel.Parent = frame
-
--- ====================================================================
---                     FISHING LOOP
--- ====================================================================
-local fishing = false
-local cycleCount = 0
-local catchCount = 0
-
-local function fishingLoop()
-    while fishing do
-        cycleCount = cycleCount + 1
-        counterLabel.Text = string.format("Cycle: %d | Catch: %d", cycleCount, catchCount)
-        
-        -- Reset state dulu
-        resetFishingState()
-        task.wait(0.1)
-        
-        -- Cast
-        statusLabel.Text = "Status: CASTING..."
-        statusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-        local castSuccess = castRod()
-        
-        if castSuccess then
-            task.wait(2) -- Tunggu ikan (sesuaikan)
-            
-            -- Reel
-            statusLabel.Text = "Status: REELING..."
-            statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-            local reelSuccess = reelIn()
-            
-            if reelSuccess then
-                catchCount = catchCount + 1
-            end
-            
-            task.wait(1) -- Cooldown
-        else
-            statusLabel.Text = "Status: CAST FAILED"
-            statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-            task.wait(2)
+-- ===== FUNGSI UPDATE HASIL =====
+local function updateResults(lines)
+    -- Clear
+    for _, child in pairs(scrollingFrame:GetChildren()) do
+        if child:IsA("TextLabel") then
+            child:Destroy()
         end
+    end
+    
+    -- Add lines
+    for _, line in ipairs(lines) do
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, -10, 0, 18)
+        label.BackgroundTransparency = 1
+        label.Text = line
+        label.TextColor3 = Color3.fromRGB(220, 220, 220)
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 11
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = scrollingFrame
     end
 end
 
--- Tombol toggle
-toggleBtn.MouseButton1Click:Connect(function()
-    fishing = not fishing
+-- ===== FUNGSI SCANNER =====
+local function scanFishingSystem()
+    statusText.Text = "⏳ Scanning remotes..."
+    statusText.TextColor3 = Color3.fromRGB(255, 255, 0)
     
-    if fishing then
-        toggleBtn.Text = "STOP FISHING"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-        statusLabel.Text = "Status: FISHING..."
-        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-        
-        -- Reset counters
-        cycleCount = 0
-        catchCount = 0
-        
-        -- Start loop
-        task.spawn(fishingLoop)
+    local lines = {}
+    table.insert(lines, "╔════════════════════════════════════════╗")
+    table.insert(lines, "     🔍 FISHING SYSTEM SCAN RESULTS")
+    table.insert(lines, "╚════════════════════════════════════════╝")
+    table.insert(lines, "Generated: " .. ScanResults.Date)
+    table.insert(lines, "")
+    
+    -- Reset results
+    ScanResults.Remotes = {}
+    ScanResults.Modules = {}
+    ScanResults.AntiCheat = {}
+    
+    -- 1. SCAN REMOTES
+    table.insert(lines, "📡 REMOTES FOUND:")
+    statusText.Text = "⏳ Scanning remotes..."
+    task.wait(0.5)
+    
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local foundRemotes = {}
+    
+    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            local name = obj.Name:lower()
+            if name:match("fish") or name:match("rod") or name:match("cast") or
+               name:match("reel") or name:match("catch") or name:match("charge") or
+               name:match("minigame") or name:match("sell") or name:match("favorite") then
+                
+                table.insert(foundRemotes, {
+                    Name = obj.Name,
+                    Class = obj.ClassName,
+                    Path = obj:GetFullName()
+                })
+                
+                -- Kategorisasi
+                if obj.Name:match("AutoFishing") or obj.Name:match("Mark") then
+                    table.insert(ScanResults.AntiCheat, obj.Name)
+                end
+            end
+        end
+    end
+    
+    -- Urutkan berdasarkan nama
+    table.sort(foundRemotes, function(a, b) return a.Name < b.Name end)
+    ScanResults.Remotes = foundRemotes
+    
+    -- Tampilkan
+    for i, r in ipairs(foundRemotes) do
+        table.insert(lines, string.format("%d. [%s] %s", i, r.Class, r.Name))
+        table.insert(lines, "   📍 " .. r.Path)
+    end
+    table.insert(lines, "")
+    
+    -- 2. SCAN MODULES
+    table.insert(lines, "📚 FISHING MODULES:")
+    statusText.Text = "⏳ Scanning modules..."
+    task.wait(0.5)
+    
+    local searchFolders = {
+        ReplicatedStorage:FindFirstChild("Shared"),
+        ReplicatedStorage:FindFirstChild("Controllers"),
+        ReplicatedStorage:FindFirstChild("Modules")
+    }
+    
+    local foundModules = {}
+    
+    for _, folder in ipairs(searchFolders) do
+        if folder then
+            for _, obj in ipairs(folder:GetDescendants()) do
+                if obj:IsA("ModuleScript") and 
+                   (obj.Name:lower():match("fish") or obj.Name:lower():match("rod") or
+                    obj.Name:lower():match("cast") or obj.Name:lower():match("inventory")) then
+                    
+                    table.insert(foundModules, {
+                        Name = obj.Name,
+                        Path = obj:GetFullName()
+                    })
+                end
+            end
+        end
+    end
+    
+    ScanResults.Modules = foundModules
+    
+    for i, m in ipairs(foundModules) do
+        table.insert(lines, string.format("%d. %s", i, m.Name))
+        table.insert(lines, "   📍 " .. m.Path)
+    end
+    table.insert(lines, "")
+    
+    -- 3. ANTI-CHEAT ANALYSIS
+    table.insert(lines, "🛡️ ANTI-CHEAT DETECTION:")
+    statusText.Text = "⏳ Analyzing anti-cheat..."
+    task.wait(0.5)
+    
+    if #ScanResults.AntiCheat > 0 then
+        table.insert(lines, "⚠️ ANTI-CHEAT REMOTES FOUND:")
+        for _, name in ipairs(ScanResults.AntiCheat) do
+            table.insert(lines, "   • " .. name)
+        end
     else
-        toggleBtn.Text = "START FISHING"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
-        statusLabel.Text = "Status: STOPPED"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        table.insert(lines, "✅ No anti-cheat remotes detected")
+    end
+    table.insert(lines, "")
+    
+    -- 4. FISHING REMOTES (kategorisasi)
+    table.insert(lines, "🎣 FISHING REMOTES CATEGORIZATION:")
+    
+    local fishing = {}
+    local sell = {}
+    local favorite = {}
+    
+    for _, r in ipairs(foundRemotes) do
+        if r.Name:match("Fish") or r.Name:match("Rod") or r.Name:match("Cast") or
+           r.Name:match("Reel") or r.Name:match("Catch") or r.Name:match("Charge") or
+           r.Name:match("Minigame") then
+            table.insert(fishing, r.Name)
+        elseif r.Name:match("Sell") then
+            table.insert(sell, r.Name)
+        elseif r.Name:match("Favorite") or r.Name:match("Favorit") then
+            table.insert(favorite, r.Name)
+        end
+    end
+    
+    table.insert(lines, "\n🎣 FISHING (" .. #fishing .. "):")
+    for _, name in ipairs(fishing) do
+        table.insert(lines, "   • " .. name)
+    end
+    
+    table.insert(lines, "\n💰 SELL (" .. #sell .. "):")
+    for _, name in ipairs(sell) do
+        table.insert(lines, "   • " .. name)
+    end
+    
+    table.insert(lines, "\n⭐ FAVORITE (" .. #favorite .. "):")
+    for _, name in ipairs(favorite) do
+        table.insert(lines, "   • " .. name)
+    end
+    
+    table.insert(lines, "")
+    table.insert(lines, "╚════════════════════════════════════════╝")
+    
+    -- Update display
+    updateResults(lines)
+    statusText.Text = "✅ Scan complete! Found " .. #foundRemotes .. " remotes, " .. #foundModules .. " modules"
+    statusText.TextColor3 = Color3.fromRGB(0, 255, 0)
+end
+
+-- ===== FUNGSI COPY RESULTS =====
+local function copyResults()
+    -- Kumpulkan semua text
+    local lines = {}
+    table.insert(lines, "🔍 FISHING SYSTEM SCAN RESULTS")
+    table.insert(lines, "Generated: " .. ScanResults.Date)
+    table.insert(lines, string.rep("=", 60))
+    table.insert(lines, "")
+    
+    table.insert(lines, "📡 REMOTES FOUND (" .. #ScanResults.Remotes .. "):")
+    for i, r in ipairs(ScanResults.Remotes) do
+        table.insert(lines, string.format("%d. [%s] %s", i, r.Class, r.Name))
+        table.insert(lines, "   Path: " .. r.Path)
+    end
+    table.insert(lines, "")
+    
+    table.insert(lines, "📚 MODULES FOUND (" .. #ScanResults.Modules .. "):")
+    for i, m in ipairs(ScanResults.Modules) do
+        table.insert(lines, string.format("%d. %s", i, m.Name))
+        table.insert(lines, "   Path: " .. m.Path)
+    end
+    table.insert(lines, "")
+    
+    table.insert(lines, "🛡️ ANTI-CHEAT REMOTES (" .. #ScanResults.AntiCheat .. "):")
+    for _, name in ipairs(ScanResults.AntiCheat) do
+        table.insert(lines, "   • " .. name)
+    end
+    
+    local fullText = table.concat(lines, "\n")
+    
+    -- Copy ke clipboard
+    local success = pcall(function()
+        setclipboard(fullText)
+    end)
+    
+    if success then
+        statusText.Text = "✅ Results copied to clipboard!"
+        statusText.TextColor3 = Color3.fromRGB(0, 255, 0)
+        
+        -- Flash effect
+        copyBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+        task.wait(0.2)
+        copyBtn.BackgroundColor3 = Color3.fromRGB(200, 120, 0)
+    else
+        statusText.Text = "❌ Copy failed - Select manually"
+        statusText.TextColor3 = Color3.fromRGB(255, 0, 0)
+    end
+    
+    return fullText
+end
+
+-- ===== FUNGSI CLEAR =====
+local function clearResults()
+    for _, child in pairs(scrollingFrame:GetChildren()) do
+        if child:IsA("TextLabel") then
+            child:Destroy()
+        end
+    end
+    
+    statusText.Text = "⏳ Ready to scan..."
+    statusText.TextColor3 = Color3.fromRGB(255, 255, 0)
+    
+    -- Reset results
+    ScanResults.Remotes = {}
+    ScanResults.Modules = {}
+    ScanResults.AntiCheat = {}
+    ScanResults.Date = os.date("%Y-%m-%d %H:%M:%S")
+end
+
+-- ===== BUTTON FUNCTIONS =====
+scanBtn.MouseButton1Click:Connect(scanFishingSystem)
+
+copyBtn.MouseButton1Click:Connect(function()
+    if #ScanResults.Remotes == 0 then
+        statusText.Text = "⚠️ Scan first before copying!"
+        statusText.TextColor3 = Color3.fromRGB(255, 255, 0)
+        return
+    end
+    copyResults()
+end)
+
+clearBtn.MouseButton1Click:Connect(clearResults)
+
+-- ===== AUTO SCAN ON LOAD =====
+task.spawn(function()
+    task.wait(1)
+    scanFishingSystem()
+end)
+
+-- ===== DRAG FUNCTIONALITY =====
+local dragging = false
+local dragStart
+local startPos
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
     end
 end)
 
-print("✅ AUTO FISH V5.0 READY - Tekan START FISHING untuk mulai")
+frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+frame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+print("🔍 Fishing System Scanner v2.0 loaded!")
