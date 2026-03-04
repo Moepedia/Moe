@@ -418,7 +418,6 @@ featuresLayout.Parent = featuresContainer
 
 -- ===== GLOBAL VARIABLES FOR DROPDOWNS =====
 local activeDropdown = nil
-local dropdownConnections = {}
 
 -- Function to close all dropdowns
 local function closeAllDropdowns()
@@ -430,30 +429,22 @@ end
 
 -- Function to setup input tracking for dropdowns
 local function setupInputTracking()
-    -- Handle mouse button clicks with proper UI detection
     local userInputService = game:GetService("UserInputService")
     
     userInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            -- Small delay to let the click event propagate
             task.wait(0.05)
             
-            -- Check if we have an active dropdown
             if not activeDropdown then return end
             
-            -- Get mouse position
             local mousePos = userInputService:GetMouseLocation()
-            
-            -- Get the GUI objects at mouse position
             local objects = gui:GetGuiObjectsAtPosition(mousePos.X, mousePos.Y)
             
             local clickedOnDropdown = false
             
-            -- Check if any of the objects is part of our dropdown
             for _, obj in ipairs(objects) do
-                -- Traverse up to find if this object belongs to dropdown
                 local current = obj
                 while current do
                     if current == activeDropdown or current == activeDropdown.Parent then
@@ -465,7 +456,6 @@ local function setupInputTracking()
                 if clickedOnDropdown then break end
             end
             
-            -- If not clicked on dropdown, close it
             if not clickedOnDropdown then
                 closeAllDropdowns()
             end
@@ -514,7 +504,7 @@ local function createDropdown(parent, options, default, callback)
     arrow.Parent = frame
     arrow.ZIndex = 21
     
-    -- FIXED: Dropdown frame dengan parent ke gui, tapi ukuran mengikuti frame
+    -- Dropdown frame dengan parent ke gui
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     dropdownFrame.BackgroundTransparency = 0
@@ -558,6 +548,18 @@ local function createDropdown(parent, options, default, callback)
     
     -- Function to update dropdown position and size
     local function updateDropdownPosition()
+        -- Cek apakah frame masih visible dan parent-nya visible
+        if not frame or not frame:IsDescendantOf(gui) or not frame.Visible then
+            dropdownFrame.Visible = false
+            return
+        end
+        
+        -- Cek apakah mainFrame sedang visible
+        if not mainFrame.Visible then
+            dropdownFrame.Visible = false
+            return
+        end
+        
         local absPos = frame.AbsolutePosition
         local absSize = frame.AbsoluteSize
         
@@ -570,7 +572,7 @@ local function createDropdown(parent, options, default, callback)
         -- Set width mengikuti lebar frame
         dropdownFrame.Size = UDim2.new(
             0, absSize.X,
-            0, math.min(#options * 32, 200)  -- Max height 200, 32px per option
+            0, math.min(#options * 32, 200)
         )
     end
     
@@ -621,7 +623,7 @@ local function createDropdown(parent, options, default, callback)
         end
         
         -- Update canvas size untuk scrolling
-        task.wait() -- Tunggu layout selesai
+        task.wait()
         local contentHeight = #newOptions * 32 + (#newOptions - 1) * 2
         optionsScrolling.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
         
@@ -643,6 +645,11 @@ local function createDropdown(parent, options, default, callback)
             activeDropdown.Visible = false
         end
         
+        -- Cek apakah mainFrame visible
+        if not mainFrame.Visible then
+            return
+        end
+        
         -- Update position and size before showing
         updateDropdownPosition()
         
@@ -661,6 +668,22 @@ local function createDropdown(parent, options, default, callback)
     frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
         if dropdownFrame.Visible then
             updateDropdownPosition()
+        end
+    end)
+    
+    -- Monitor mainFrame visibility
+    mainFrame:GetPropertyChangedSignal("Visible"):Connect(function()
+        if not mainFrame.Visible and dropdownFrame.Visible then
+            dropdownFrame.Visible = false
+            activeDropdown = nil
+        end
+    end)
+    
+    -- Monitor frame visibility
+    frame:GetPropertyChangedSignal("Visible"):Connect(function()
+        if not frame.Visible and dropdownFrame.Visible then
+            dropdownFrame.Visible = false
+            activeDropdown = nil
         end
     end)
     
@@ -1041,9 +1064,8 @@ end)
 -- Cleanup on gui destroy
 gui.Destroying:Connect(function()
     stopAutoFishing()
-    -- Close any open dropdown
     closeAllDropdowns()
 end)
 
-print("Moe V1.0 GUI Loaded with Fixed Dropdown and Teleport Menu")
+print("Moe V1.0 GUI Loaded with Fixed Dropdown and Auto-Hide on Minimize")
 notify("Moe V1.0", "GUI Loaded Successfully!", 3)
