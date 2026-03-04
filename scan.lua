@@ -1,525 +1,612 @@
--- CEK ISI NET MODULE
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local NetModule = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
+-- ====================================================================
+--     FISHING MECHANIC INVESTIGATOR v2.0 - WITH COPY FEATURE
+-- ====================================================================
+-- Bisa copy semua hasil investigasi dan kirim ke sini
+-- ====================================================================
 
-print("=== ISI NET MODULE ===")
-for _, child in pairs(NetModule:GetChildren()) do
-    print("📁 " .. child.Name .. " (" .. child.ClassName .. ")")
+local Investigator = {}
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
+
+-- Variabel untuk menyimpan hasil investigasi
+local InvestigationResults = {
+    Remotes = {},
+    CapturedPackets = {},
+    RodInfo = {},
+    Comparison = {},
+    TestResults = {},
+    Timestamp = os.time(),
+    Date = os.date("%Y-%m-%d %H:%M:%S")
+}
+
+-- ====================================================================
+--                     GUI INTERFACE
+-- ====================================================================
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "🎣 Fishing Mechanic Investigator v2.0",
+    LoadingTitle = "Forensic Tools",
+    LoadingSubtitle = "Dengan Fitur Copy Results",
+    ConfigurationSaving = { Enabled = false }
+})
+
+-- Main Tab
+local MainTab = Window:CreateTab("🔬 Investigate", nil)
+
+-- Results Tab untuk menampilkan hasil
+local ResultsTab = Window:CreateTab("📋 Results", nil)
+local ResultsLabel = nil
+
+-- Copy Tab
+local CopyTab = Window:CreateTab("📋 Copy Results", nil)
+
+-- ====================================================================
+--                     FUNGSI INVESTIGASI
+-- ====================================================================
+
+-- 1. SCAN REMOTES
+function Investigator.scanRemotes()
+    local results = {
+        title = "📡 SCAN REMOTE EVENTS",
+        data = {}
+    }
     
-    -- Kalau childnya folder, cek isinya
-    if child:IsA("Folder") then
-        for _, remote in pairs(child:GetChildren()) do
-            if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-                print("   🔹 " .. remote.Name)
+    table.insert(results.data, "╔════════════════════════════════════════╗")
+    table.insert(results.data, "     📡 FISHING REMOTES SCAN")
+    table.insert(results.data, "╚════════════════════════════════════════╝")
+    
+    local fishingRemotes = {}
+    local searchLocations = {
+        ReplicatedStorage,
+        game:GetService("ServerStorage"),
+        game:GetService("ServerScriptService")
+    }
+    
+    for _, location in ipairs(searchLocations) do
+        local descendants = location:GetDescendants()
+        for _, obj in ipairs(descendants) do
+            if (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) and 
+               (obj.Name:lower():match("fish") or 
+                obj.Name:lower():match("rod") or
+                obj.Name:lower():match("cast") or
+                obj.Name:lower():match("reel") or
+                obj.Name:lower():match("minigame") or
+                obj.Name:lower():match("sell") or
+                obj.Name:lower():match("charge") or
+                obj.Name:lower():match("catch")) then
+                
+                table.insert(fishingRemotes, {
+                    Name = obj.Name,
+                    Class = obj.ClassName,
+                    Path = obj:GetFullName()
+                })
             end
         end
     end
     
-    -- Kalau childnya langsung remote
-    if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
-        print("   🔹 " .. child.Name .. " (LANGSUNG)")
+    InvestigationResults.Remotes = fishingRemotes
+    
+    for i, remote in ipairs(fishingRemotes) do
+        table.insert(results.data, string.format("\n%d. [%s] %s", i, remote.Class, remote.Name))
+        table.insert(results.data, "   📍 Path: " .. remote.Path)
     end
+    
+    table.insert(results.data, "\n📊 Total remotes ditemukan: " .. #fishingRemotes)
+    
+    return results
 end
 
--- Cek juga apakah ada remote dengan hash yang kita cari
-local hashList = {
-    "ad1cf49efe7abcbc289e426297b1b174c7685cc4115f72d165a9dc889ed5cdfe",
-    "624df101b3abb91f1d30767fdec926afbb517bcd054891da36ab2914839adf37",
-    "7b12f430cc70bc4e939d6032b967fa19647c80c2ae7396cf500f1e3113e07685",
-    "2560f6f476bebf12c2e1410090e3e7ee9c45755de63c8b6acf8bd43af4a3612a",
-    "c83da140199b695e0338dcfc521b0441f3a801823d9f178fb00791f708e9b837",
-    "503147f7a18f101517830266720271719dac3d5ce7a3536911ec1829c2636eb1"
-}
-
-print("\n=== MENCARI HASH REMOTE ===")
-for _, hash in ipairs(hashList) do
-    local remote = NetModule:FindFirstChild(hash)
-    if remote then
-        print("✅ DITEMUKAN: " .. hash .. " (" .. remote.ClassName .. ")")
-    else
-        print("❌ TIDAK DITEMUKAN: " .. hash)
-    end
-end    
-    local input3 = Instance.new("TextBox")
-    input3.Size = UDim2.new(0.3, -5, 0, 30)
-    input3.Position = UDim2.new(0.7, 0, 0, 35)
-    input3.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    input3.Text = tostring(default3 or "")
-    input3.PlaceholderText = "Arg 3"
-    input3.TextColor3 = Color3.new(1, 1, 1)
-    input3.Font = Enum.Font.Code
-    input3.Parent = row
+-- 2. CAPTURE PACKETS
+function Investigator.capturePackets(duration)
+    local results = {
+        title = "📦 CAPTURE FISHING PACKETS",
+        data = {}
+    }
     
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -10, 0, 35)
-    btn.Position = UDim2.new(0, 5, 0, 70)
-    btn.BackgroundColor3 = Color3.new(0.2, 0.5, 0.8)
-    btn.Text = "TEST " .. name
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.GothamBold
-    btn.Parent = row
+    table.insert(results.data, "╔════════════════════════════════════════╗")
+    table.insert(results.data, "     📦 FISHING PACKET CAPTURE")
+    table.insert(results.data, "╚════════════════════════════════════════╝")
+    table.insert(results.data, "Duration: " .. duration .. " detik")
+    table.insert(results.data, "Silahkan fishing manual sekarang...\n")
     
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
-    btnCorner.Parent = btn
+    local captured = {}
+    local mt = getrawmetatable(game)
+    local oldNamecall = mt.__namecall
+    setreadonly(mt, false)
     
-    return row, {input1, input2, input3}, btn
-end
-
--- ===== CREATE INPUT ROWS =====
-local function createInputs()
-    -- Request Minigame
-    local row1, inputs1, btn1 = createInputRow("Request Minigame", "true")
-    btn1.MouseButton1Click:Connect(function()
-        local arg = inputs1[1].Text == "true" and true or false
-        local success, result = pcall(function()
-            return Remote.RequestMinigame:InvokeServer(arg)
-        end)
-        print("RequestMinigame:", success, result)
-    end)
-    
-    -- Cast Rod (dengan parameter dari log)
-    local row2, inputs2, btn2 = createInputRow("Cast Rod", "-1.233184814453125", "0.5", "1772552798.43857")
-    btn2.MouseButton1Click:Connect(function()
-        local arg1 = tonumber(inputs2[1].Text) or -1.233
-        local arg2 = tonumber(inputs2[2].Text) or 0.5
-        local arg3 = tonumber(inputs2[3].Text) or tick()
-        local success, result = pcall(function()
-            return Remote.CastRod:InvokeServer(arg1, arg2, arg3)
-        end)
-        print("CastRod:", success, result)
-    end)
-    
-    -- Catch Fish
-    local row3, inputs3, btn3 = createInputRow("Catch Fish")
-    btn3.MouseButton1Click:Connect(function()
-        local success, result = pcall(function()
-            return Remote.CatchFish:InvokeServer()
-        end)
-        print("CatchFish:", success, result)
-    end)
-    
-    -- Sequence
-    local seqRow = Instance.new("Frame")
-    seqRow.Size = UDim2.new(1, 0, 0, 70)
-    seqRow.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-    seqRow.Parent = container
-    
-    local seqCorner = Instance.new("UICorner")
-    seqCorner.CornerRadius = UDim.new(0, 6)
-    seqCorner.Parent = seqRow
-    
-    local seqTitle = Instance.new("TextLabel")
-    seqTitle.Size = UDim2.new(1, -10, 0, 25)
-    seqTitle.Position = UDim2.new(0, 5, 0, 5)
-    seqTitle.BackgroundTransparency = 1
-    seqTitle.Text = "FULL SEQUENCE"
-    seqTitle.TextColor3 = Color3.new(1, 1, 0)
-    seqTitle.Font = Enum.Font.GothamBold
-    seqTitle.TextXAlignment = Enum.TextXAlignment.Left
-    seqTitle.Parent = seqRow
-    
-    local seqBtn = Instance.new("TextButton")
-    seqBtn.Size = UDim2.new(1, -10, 0, 35)
-    seqBtn.Position = UDim2.new(0, 5, 0, 35)
-    seqBtn.BackgroundColor3 = Color3.new(0.9, 0.6, 0)
-    seqBtn.Text = "RUN SEQUENCE (Request → Cast → Catch)"
-    seqBtn.TextColor3 = Color3.new(1, 1, 1)
-    seqBtn.Font = Enum.Font.GothamBold
-    seqBtn.Parent = seqRow
-    
-    local seqBtnCorner = Instance.new("UICorner")
-    seqBtnCorner.CornerRadius = UDim.new(0, 6)
-    seqBtnCorner.Parent = seqBtn
-    
-    seqBtn.MouseButton1Click:Connect(function()
-        local results = {}
+    mt.__namecall = newcclosure(function(...)
+        local method = getnamecallmethod()
+        local args = {...}
+        local self = args[1]
         
-        -- Request
-        local success1, res1 = pcall(function()
-            return Remote.RequestMinigame:InvokeServer(true)
-        end)
-        table.insert(results, "Req: " .. tostring(success1))
-        
-        -- Cast (pake parameter dari input)
-        local arg1 = tonumber(inputs2[1].Text) or -1.233
-        local arg2 = tonumber(inputs2[2].Text) or 0.5
-        local arg3 = tonumber(inputs2[3].Text) or tick()
-        local success2, res2 = pcall(function()
-            return Remote.CastRod:InvokeServer(arg1, arg2, arg3)
-        end)
-        table.insert(results, "Cast: " .. tostring(success2))
-        
-        -- Catch
-        local success3, res3 = pcall(function()
-            return Remote.CatchFish:InvokeServer()
-        end)
-        table.insert(results, "Catch: " .. tostring(success3))
-        
-        print("SEQUENCE:", table.concat(results, " | "))
-    end)
-end
-
-createInputs()
-
--- Output box
-local outputBox = Instance.new("TextBox")
-outputBox.Size = UDim2.new(1, -20, 0, 100)
-outputBox.Position = UDim2.new(0, 10, 1, -105)
-outputBox.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
-outputBox.TextColor3 = Color3.new(0, 1, 0)
-outputBox.Font = Enum.Font.Code
-outputBox.TextSize = 12
-outputBox.TextWrapped = true
-outputBox.ClearTextOnFocus = false
-outputBox.MultiLine = true
-outputBox.Text = "Hasil akan muncul di console (F9)\n"
-outputBox.Parent = frame
-
-local outputCorner = Instance.new("UICorner")
-outputCorner.CornerRadius = UDim.new(0, 6)
-outputCorner.Parent = outputBox
-
--- Copy button di bawah
-local copyBtn = Instance.new("TextButton")
-copyBtn.Size = UDim2.new(0, 100, 0, 30)
-copyBtn.Position = UDim2.new(1, -110, 1, -35)
-copyBtn.BackgroundColor3 = Color3.new(0, 0.5, 1)
-copyBtn.Text = "📋 COPY"
-copyBtn.TextColor3 = Color3.new(1, 1, 1)
-copyBtn.Font = Enum.Font.GothamBold
-copyBtn.Parent = frame
-
-local copyCorner = Instance.new("UICorner")
-copyCorner.CornerRadius = UDim.new(0, 6)
-copyCorner.Parent = copyBtn
-
-copyBtn.MouseButton1Click:Connect(function()
-    local success = pcall(function()
-        setclipboard(outputBox.Text)
-    end)
-    if success then
-        copyBtn.Text = "✅ COPIED!"
-        task.wait(1)
-        copyBtn.Text = "📋 COPY"
-    end
-end)
-
-print("✅ Parameter Tester Loaded - Coba berbagai kombinasi parameter!")leftContainer.AutomaticSize = Enum.AutomaticSize.Y
-
-local leftLayout = Instance.new("UIListLayout")
-leftLayout.Padding = UDim.new(0, 5)
-leftLayout.Parent = leftContainer
-
--- ===== RIGHT PANEL (RESULTS) =====
-local rightPanel = Instance.new("Frame")
-rightPanel.Size = UDim2.new(1, -230, 1, -120)
-rightPanel.Position = UDim2.new(0, 220, 0, 80)
-rightPanel.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
-rightPanel.Parent = mainFrame
-
-local rightCorner = Instance.new("UICorner")
-rightCorner.CornerRadius = UDim.new(0, 8)
-rightCorner.Parent = rightPanel
-
-local rightTitle = Instance.new("TextLabel")
-rightTitle.Size = UDim2.new(1, -10, 0, 25)
-rightTitle.Position = UDim2.new(0, 5, 0, 5)
-rightTitle.BackgroundTransparency = 1
-rightTitle.Text = "📋 TEST RESULTS"
-rightTitle.TextColor3 = Color3.new(0, 1, 0)
-rightTitle.TextSize = 14
-rightTitle.Font = Enum.Font.GothamBold
-rightTitle.TextXAlignment = Enum.TextXAlignment.Left
-rightTitle.Parent = rightPanel
-
-local resultBox = Instance.new("TextBox")
-resultBox.Size = UDim2.new(1, -10, 1, -35)
-resultBox.Position = UDim2.new(0, 5, 0, 30)
-resultBox.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
-resultBox.TextColor3 = Color3.new(0, 1, 0)
-resultBox.Font = Enum.Font.Code
-resultBox.TextSize = 12
-resultBox.TextXAlignment = Enum.TextXAlignment.Left
-resultBox.TextYAlignment = Enum.TextYAlignment.Top
-resultBox.TextWrapped = true
-resultBox.ClearTextOnFocus = false
-resultBox.MultiLine = true
-resultBox.Text = "Klik tombol di kiri untuk testing...\n"
-resultBox.Parent = rightPanel
-
-local resultCorner = Instance.new("UICorner")
-resultCorner.CornerRadius = UDim.new(0, 6)
-resultCorner.Parent = resultBox
-
--- ===== BOTTOM BUTTONS =====
-local btnFrame = Instance.new("Frame")
-btnFrame.Size = UDim2.new(1, -20, 0, 40)
-btnFrame.Position = UDim2.new(0, 10, 1, -45)
-btnFrame.BackgroundTransparency = 1
-btnFrame.Parent = mainFrame
-
--- Copy button
-local copyBtn = Instance.new("TextButton")
-copyBtn.Size = UDim2.new(0, 120, 0, 35)
-copyBtn.Position = UDim2.new(0, 0, 0.5, -17.5)
-copyBtn.BackgroundColor3 = Color3.new(0, 0.5, 1)
-copyBtn.Text = "📋 COPY ALL"
-copyBtn.TextColor3 = Color3.new(1, 1, 1)
-copyBtn.TextSize = 14
-copyBtn.Font = Enum.Font.GothamBold
-copyBtn.Parent = btnFrame
-
-local copyCorner = Instance.new("UICorner")
-copyCorner.CornerRadius = UDim.new(0, 6)
-copyCorner.Parent = copyBtn
-
--- Clear button
-local clearBtn = Instance.new("TextButton")
-clearBtn.Size = UDim2.new(0, 100, 0, 35)
-clearBtn.Position = UDim2.new(0, 130, 0.5, -17.5)
-clearBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
-clearBtn.Text = "🗑️ CLEAR"
-clearBtn.TextColor3 = Color3.new(1, 1, 1)
-clearBtn.TextSize = 14
-clearBtn.Font = Enum.Font.GothamBold
-clearBtn.Parent = btnFrame
-
-local clearCorner = Instance.new("UICorner")
-clearCorner.CornerRadius = UDim.new(0, 6)
-clearCorner.Parent = clearBtn
-
--- Save button
-local saveBtn = Instance.new("TextButton")
-saveBtn.Size = UDim2.new(0, 100, 0, 35)
-saveBtn.Position = UDim2.new(1, -105, 0.5, -17.5)
-saveBtn.BackgroundColor3 = Color3.new(0.2, 0.8, 0.2)
-saveBtn.Text = "💾 SAVE"
-saveBtn.TextColor3 = Color3.new(1, 1, 1)
-saveBtn.TextSize = 14
-saveBtn.Font = Enum.Font.GothamBold
-saveBtn.Parent = btnFrame
-
-local saveCorner = Instance.new("UICorner")
-saveCorner.CornerRadius = UDim.new(0, 6)
-saveCorner.Parent = saveBtn
-
--- ===== FUNCTIONS =====
-local function log(message, ...)
-    local timestamp = os.date("%H:%M:%S")
-    local fullMsg = string.format("[%s] " .. message .. "\n", timestamp, ...)
-    resultBox.Text = resultBox.Text .. fullMsg
-    resultBox.CursorPosition = #resultBox.Text
-    print(fullMsg)
-end
-
-local function clearLog()
-    resultBox.Text = "Klik tombol di kiri untuk testing...\n"
-end
-
--- ===== REMOTE SETUP =====
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
-local RF = Net:FindFirstChild("RF")
-local RE = Net:FindFirstChild("RE")
-
--- Kumpulkan remote dari log
-local Remote = {
-    -- Dari log pertama (fishing)
-    UnknownLoop = RF and RF:FindFirstChild("58a6e01eaa04a83c7b798f9b65690793994aaa3be341c048d05324df65841dad"),
-    RequestMinigame = RF and RF:FindFirstChild("1239e94e6397b16cef3f55f2d4dbc4b8de29b5552820cb62e0477b58bad3b47f"),
-    CastRod = RF and RF:FindFirstChild("0f54ec0060b2b41e6d662c98f5f5e329065210ef504926fc89577dceb774915c"),
-    CatchFish = RF and RF:FindFirstChild("c8f3fe1d1a51c63b116e59e52aa538562a03a0e273fab6ef8a5768bf936df31d"),
-    
-    -- Dari log kedua (idle)
-    UnknownRE1 = RE and RE:FindFirstChild("477cc2d898da8af6395af6c6e0160bf0aaef76e1f4e68ceed269ad5a52ee3e99"),
-    UnknownRE2 = RE and RE:FindFirstChild("8581697fd6df319d2e17b7805b4d5cf580ec02a7cae318b40c364df6821648e5"),
-    UnknownRF2 = RF and RF:FindFirstChild("285a699b79b831b980bd5a50a1bb9b3d309699f17a8daffe36f38c6c24594b33"),
-    
-    -- Remote metrics
-    EventMetrics = ReplicatedStorage:FindFirstChild("Modules") and 
-                   ReplicatedStorage.Modules.Gamebeast.Infra.Shared.Modules.GetRemote.Remotes.EventExportClientMetrics,
-    GameAnalyticsError = ReplicatedStorage:FindFirstChild("GameAnalyticsError"),
-}
-
--- Tampilkan status
-log("=== REMOTE STATUS ===")
-for name, remote in pairs(Remote) do
-    if remote then
-        log("✅ %s: %s", name, remote:GetFullName())
-    else
-        log("❌ %s: NOT FOUND", name)
-    end
-end
-log("")
-
--- ===== CREATE BUTTONS =====
-local function createButton(text, callback, color)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 35)
-    btn.BackgroundColor3 = color or Color3.new(0.3, 0.3, 0.3)
-    btn.Text = text
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 12
-    btn.Parent = leftContainer
-    
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
-    btnCorner.Parent = btn
-    
-    btn.MouseButton1Click:Connect(function()
-        local success, result = pcall(callback)
-        if success then
-            log("✅ %s - Success", text)
-        else
-            log("❌ %s - Error: %s", text, tostring(result))
+        if method == "FireServer" or method == "InvokeServer" then
+            local remoteName = tostring(self)
+            if remoteName:match("Fish") or remoteName:match("Rod") or remoteName:match("Cast") or 
+               remoteName:match("Reel") or remoteName:match("Sell") or remoteName:match("Charge") then
+                local callInfo = {
+                    Remote = remoteName,
+                    Method = method,
+                    Args = {},
+                    Time = tick()
+                }
+                
+                -- Catat arguments
+                for i = 2, #args do
+                    table.insert(callInfo.Args, tostring(args[i]))
+                end
+                
+                table.insert(captured, callInfo)
+            end
         end
-    end)
-end
-
--- Test buttons
-if Remote.RequestMinigame then
-    createButton("1. REQUEST MINIGAME (true)", function()
-        return Remote.RequestMinigame:InvokeServer(true)
-    end, Color3.new(0.2, 0.5, 0.8))
-end
-
-if Remote.CastRod then
-    createButton("2. CAST ROD (random)", function()
-        local pos = (player.Character and player.Character:FindFirstChild("HumanoidRootPart")) and 
-                    player.Character.HumanoidRootPart.Position or Vector3.new(0,0,0)
-        return Remote.CastRod:InvokeServer(pos.X, 0.5, tick())
-    end, Color3.new(0.2, 0.8, 0.5))
-    
-    createButton("2a. CAST ROD (fixed)", function()
-        return Remote.CastRod:InvokeServer(-1.233184814453125, 0.5, 1772552798.43857)
-    end, Color3.new(0.2, 0.8, 0.5))
-end
-
-if Remote.CatchFish then
-    createButton("3. CATCH FISH", function()
-        return Remote.CatchFish:InvokeServer()
-    end, Color3.new(0.8, 0.5, 0.2))
-end
-
-if Remote.UnknownLoop then
-    createButton("4. UNKNOWN LOOP", function()
-        return Remote.UnknownLoop:InvokeServer()
-    end, Color3.new(0.5, 0.3, 0.7))
-end
-
-if Remote.UnknownRE1 then
-    createButton("5. UNKNOWN RE1 (arg 1)", function()
-        return Remote.UnknownRE1:FireServer(1)
-    end, Color3.new(0.7, 0.3, 0.5))
-end
-
-if Remote.UnknownRE2 then
-    createButton("6. UNKNOWN RE2 (arg 'Fish')", function()
-        return Remote.UnknownRE2:FireServer("Fish")
-    end, Color3.new(0.7, 0.5, 0.3))
-    
-    createButton("6a. UNKNOWN RE2 (arg 'Cast')", function()
-        return Remote.UnknownRE2:FireServer("Cast")
-    end)
-end
-
-if Remote.UnknownRF2 then
-    createButton("7. UNKNOWN RF2", function()
-        return Remote.UnknownRF2:InvokeServer()
-    end, Color3.new(0.5, 0.5, 0.5))
-end
-
--- Sequence buttons
-createButton("🔄 SEQUENCE 1-2-3", function()
-    local results = {}
-    if Remote.RequestMinigame then
-        table.insert(results, "ReqMinigame: " .. tostring(Remote.RequestMinigame:InvokeServer(true)))
-    end
-    if Remote.CastRod then
-        local pos = (player.Character and player.Character:FindFirstChild("HumanoidRootPart")) and 
-                    player.Character.HumanoidRootPart.Position or Vector3.new(0,0,0)
-        table.insert(results, "Cast: " .. tostring(Remote.CastRod:InvokeServer(pos.X, 0.5, tick())))
-    end
-    if Remote.CatchFish then
-        table.insert(results, "Catch: " .. tostring(Remote.CatchFish:InvokeServer()))
-    end
-    return table.concat(results, " | ")
-end, Color3.new(0.9, 0.6, 0))
-
-createButton("🔄 SEQUENCE 2-3", function()
-    local results = {}
-    if Remote.CastRod then
-        local pos = (player.Character and player.Character:FindFirstChild("HumanoidRootPart")) and 
-                    player.Character.HumanoidRootPart.Position or Vector3.new(0,0,0)
-        table.insert(results, "Cast: " .. tostring(Remote.CastRod:InvokeServer(pos.X, 0.5, tick())))
-    end
-    if Remote.CatchFish then
-        table.insert(results, "Catch: " .. tostring(Remote.CatchFish:InvokeServer()))
-    end
-    return table.concat(results, " | ")
-end, Color3.new(0.9, 0.6, 0))
-
--- Utility buttons
-createButton("🔄 RESET CHARACTER", function()
-    if player.Character then
-        player.Character:BreakJoints()
-        task.wait(1)
-        player.LoadCharacter:Wait()
-        return "Character reset"
-    end
-end, Color3.new(0.8, 0.2, 0.2))
-
-createButton("📊 GET POSITION", function()
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local pos = player.Character.HumanoidRootPart.Position
-        return string.format("Position: X=%.2f, Y=%.2f, Z=%.2f", pos.X, pos.Y, pos.Z)
-    end
-    return "No character"
-end, Color3.new(0.4, 0.4, 0.4))
-
--- ===== BUTTON FUNCTIONS =====
-copyBtn.MouseButton1Click:Connect(function()
-    local success = pcall(function()
-        setclipboard(resultBox.Text)
+        
+        return oldNamecall(...)
     end)
     
-    if success then
-        statusText.Text = "✅ Copied to clipboard!"
-        statusText.TextColor3 = Color3.new(0, 1, 0)
+    -- Capture selama duration detik
+    local startTime = tick()
+    while tick() - startTime < duration do
+        task.wait(0.1)
+        -- Update progress
+    end
+    
+    setreadonly(mt, true)
+    
+    InvestigationResults.CapturedPackets = captured
+    
+    table.insert(results.data, "📊 CAPTURE RESULTS:")
+    table.insert(results.data, "Total remote calls: " .. #captured)
+    
+    if #captured > 0 then
+        table.insert(results.data, "\n🔄 SEQUENCE:")
+        for i, call in ipairs(captured) do
+            local timeDiff = string.format("%.2f", call.Time - captured[1].Time)
+            local args = table.concat(call.Args, ", ")
+            table.insert(results.data, string.format("%d. [+%ss] %s - %s", i, timeDiff, call.Remote, call.Method))
+            if args ~= "" then
+                table.insert(results.data, "   Args: " .. args)
+            end
+        end
+    end
+    
+    return results
+end
+
+-- 3. CHECK ROD
+function Investigator.checkRod()
+    local results = {
+        title = "🎣 ROD VALIDATION CHECK",
+        data = {}
+    }
+    
+    table.insert(results.data, "╔════════════════════════════════════════╗")
+    table.insert(results.data, "     🎣 ROD VALIDATION CHECK")
+    table.insert(results.data, "╚════════════════════════════════════════╝")
+    
+    local rodInfo = {
+        found = false,
+        name = nil,
+        location = nil
+    }
+    
+    -- Cek di Backpack
+    local backpack = LocalPlayer.Backpack
+    for _, tool in ipairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") and (tool.Name:lower():match("rod") or tool.Name:lower():match("fishing")) then
+            rodInfo.found = true
+            rodInfo.name = tool.Name
+            rodInfo.location = "Backpack"
+            rodInfo.tool = tool
+            table.insert(results.data, "✅ Rod ditemukan di Backpack: " .. tool.Name)
+        end
+    end
+    
+    -- Cek di Character
+    if LocalPlayer.Character then
+        for _, tool in ipairs(LocalPlayer.Character:GetChildren()) do
+            if tool:IsA("Tool") and (tool.Name:lower():match("rod") or tool.Name:lower():match("fishing")) then
+                rodInfo.found = true
+                rodInfo.name = tool.Name
+                rodInfo.location = "Character (equipped)"
+                rodInfo.tool = tool
+                table.insert(results.data, "✅ Rod sedang dipegang: " .. tool.Name)
+            end
+        end
+    end
+    
+    if not rodInfo.found then
+        table.insert(results.data, "❌ TIDAK ADA ROD DITEMUKAN!")
+    end
+    
+    InvestigationResults.RodInfo = rodInfo
+    
+    return results
+end
+
+-- 4. COMPARE OLD VS NEW
+function Investigator.compareRemotes()
+    local results = {
+        title = "🔄 OLD VS NEW COMPARISON",
+        data = {}
+    }
+    
+    table.insert(results.data, "╔════════════════════════════════════════╗")
+    table.insert(results.data, "     🔄 OLD VS NEW COMPARISON")
+    table.insert(results.data, "╚════════════════════════════════════════╝")
+    
+    local oldRemoteNames = {
+        "FishingCompleted",
+        "SellAllItems", 
+        "ChargeFishingRod",
+        "RequestFishingMinigameStarted",
+        "CancelFishingInputs",
+        "EquipToolFromHotbar",
+        "UnequipToolFromHotbar",
+        "FavoriteItem"
+    }
+    
+    local comparison = {
+        masih_ada = {},
+        hilang = {},
+        mirip = {}
+    }
+    
+    table.insert(results.data, "\n📋 CHECKING OLD REMOTES:")
+    
+    for _, oldName in ipairs(oldRemoteNames) do
+        local found = false
+        for _, current in ipairs(InvestigationResults.Remotes) do
+            if current.Name == oldName then
+                found = true
+                table.insert(comparison.masih_ada, oldName)
+                table.insert(results.data, "✅ " .. oldName .. " - MASIH ADA")
+                table.insert(results.data, "   Path: " .. current.Path)
+                break
+            end
+        end
+        if not found then
+            table.insert(comparison.hilang, oldName)
+            table.insert(results.data, "❌ " .. oldName .. " - TIDAK ADA / BERUBAH")
+            
+            -- Cari kemiripan
+            for _, current in ipairs(InvestigationResults.Remotes) do
+                if current.Name:lower():match(oldName:lower():gsub("fishing",""):gsub("rod","")) then
+                    table.insert(comparison.mirip, {old = oldName, new = current.Name})
+                    table.insert(results.data, "   🔍 Mungkin diganti: " .. current.Name)
+                end
+            end
+        end
+    end
+    
+    InvestigationResults.Comparison = comparison
+    
+    return results
+end
+
+-- 5. TEST REMOTES
+function Investigator.testRemotes()
+    local results = {
+        title = "🧪 REMOTE TESTING RESULTS",
+        data = {}
+    }
+    
+    table.insert(results.data, "╔════════════════════════════════════════╗")
+    table.insert(results.data, "     🧪 REMOTE TESTING")
+    table.insert(results.data, "╚════════════════════════════════════════╝")
+    
+    local testResults = {}
+    
+    for _, remote in ipairs(InvestigationResults.Remotes) do
+        if remote.Class == "RemoteFunction" then
+            table.insert(results.data, "\n🔬 Testing: " .. remote.Name)
+            
+            local testParams = {
+                {1755848498.4834},
+                {0},
+                {1},
+                {true},
+                {""},
+                {LocalPlayer},
+                {Vector3.new()},
+                {CFrame.new()},
+                {1, 2, 3},
+            }
+            
+            local working = false
+            for i, params in ipairs(testParams) do
+                local success, result = pcall(function()
+                    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
+                        if obj.Name == remote.Name and obj:IsA("RemoteFunction") then
+                            return obj:InvokeServer(unpack(params))
+                        end
+                    end
+                end)
+                
+                if success then
+                    table.insert(results.data, "   ✅ Param set " .. i .. " bekerja!")
+                    table.insert(results.data, "      Args: " .. table.concat(params, ", "))
+                    table.insert(testResults, {
+                        remote = remote.Name,
+                        working_params = params,
+                        result = tostring(result)
+                    })
+                    working = true
+                    break
+                end
+            end
+            
+            if not working then
+                table.insert(results.data, "   ❌ Tidak ada parameter yang bekerja")
+            end
+            
+        elseif remote.Class == "RemoteEvent" then
+            table.insert(results.data, "\n🔬 Testing Event: " .. remote.Name)
+            
+            local success = pcall(function()
+                for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
+                    if obj.Name == remote.Name and obj:IsA("RemoteEvent") then
+                        obj:FireServer()
+                        return true
+                    end
+                end
+            end)
+            
+            table.insert(results.data, "   FireServer: " .. (success and "✅ OK" or "❌ Error"))
+            table.insert(testResults, {
+                remote = remote.Name,
+                type = "Event",
+                fireable = success
+            })
+        end
+    end
+    
+    InvestigationResults.TestResults = testResults
+    
+    return results
+end
+
+-- 6. FULL INVESTIGATION
+function Investigator.fullInvestigation()
+    local allResults = {}
+    
+    -- Jalankan semua investigasi berurutan
+    table.insert(allResults, Investigator.scanRemotes())
+    
+    -- Notify user untuk fishing manual
+    Rayfield:Notify({
+        Title = "🎣 Fishing Manual Required",
+        Content = "Silahkan fishing manual selama 10 detik...",
+        Duration = 3
+    })
+    
+    task.wait(1)
+    table.insert(allResults, Investigator.capturePackets(10))
+    
+    table.insert(allResults, Investigator.checkRod())
+    table.insert(allResults, Investigator.compareRemotes())
+    table.insert(allResults, Investigator.testRemotes())
+    
+    -- Gabungkan semua hasil
+    local finalResults = {
+        title = "📊 FULL INVESTIGATION RESULTS",
+        data = {}
+    }
+    
+    for _, res in ipairs(allResults) do
+        for _, line in ipairs(res.data) do
+            table.insert(finalResults.data, line)
+        end
+        table.insert(finalResults.data, "\n" .. string.rep("=", 50) .. "\n")
+    end
+    
+    -- Update results label
+    updateResultsDisplay(finalResults)
+    
+    return finalResults
+end
+
+-- ====================================================================
+--                     DISPLAY FUNCTIONS
+-- ====================================================================
+
+local currentResults = {}
+
+function updateResultsDisplay(results)
+    currentResults = results
+    
+    if ResultsLabel then
+        local text = table.concat(results.data, "\n")
+        ResultsLabel:Set(text)
+    end
+end
+
+function copyAllResults()
+    local allText = {}
+    
+    table.insert(allText, "🔍 FISHING MECHANIC INVESTIGATION RESULTS")
+    table.insert(allText, "Generated: " .. InvestigationResults.Date)
+    table.insert(allText, string.rep("=", 60))
+    table.insert(allText, "")
+    
+    -- Scan Remotes
+    table.insert(allText, "📡 REMOTES FOUND:")
+    for i, remote in ipairs(InvestigationResults.Remotes) do
+        table.insert(allText, string.format("%d. %s (%s)", i, remote.Name, remote.Class))
+        table.insert(allText, "   Path: " .. remote.Path)
+    end
+    
+    table.insert(allText, "")
+    table.insert(allText, string.rep("=", 60))
+    table.insert(allText, "")
+    
+    -- Captured Packets
+    table.insert(allText, "📦 CAPTURED PACKETS (" .. #InvestigationResults.CapturedPackets .. " calls):")
+    if #InvestigationResults.CapturedPackets > 0 then
+        local startTime = InvestigationResults.CapturedPackets[1].Time
+        for i, call in ipairs(InvestigationResults.CapturedPackets) do
+            local timeDiff = string.format("%.2f", call.Time - startTime)
+            local args = table.concat(call.Args, ", ")
+            table.insert(allText, string.format("%d. [+%ss] %s", i, timeDiff, call.Remote))
+            if args ~= "" then
+                table.insert(allText, "   Args: " .. args)
+            end
+        end
+    end
+    
+    table.insert(allText, "")
+    table.insert(allText, string.rep("=", 60))
+    table.insert(allText, "")
+    
+    -- Comparison
+    table.insert(allText, "🔄 OLD VS NEW COMPARISON:")
+    table.insert(allText, "✅ Masih ada: " .. table.concat(InvestigationResults.Comparison.masih_ada or {}, ", "))
+    table.insert(allText, "❌ Hilang: " .. table.concat(InvestigationResults.Comparison.hilang or {}, ", "))
+    if InvestigationResults.Comparison.mirip and #InvestigationResults.Comparison.mirip > 0 then
+        table.insert(allText, "🔍 Mirip:")
+        for _, m in ipairs(InvestigationResults.Comparison.mirip) do
+            table.insert(allText, "   " .. m.old .. " → " .. m.new)
+        end
+    end
+    
+    table.insert(allText, "")
+    table.insert(allText, string.rep("=", 60))
+    table.insert(allText, "")
+    
+    -- Rod Info
+    table.insert(allText, "🎣 ROD INFO:")
+    if InvestigationResults.RodInfo.found then
+        table.insert(allText, "✅ Rod: " .. InvestigationResults.RodInfo.name)
+        table.insert(allText, "📍 Location: " .. InvestigationResults.RodInfo.location)
     else
-        statusText.Text = "⚠️ Use Ctrl+A then Ctrl+C"
-        statusText.TextColor3 = Color3.new(1, 1, 0)
-        resultBox:CaptureFocus()
+        table.insert(allText, "❌ No rod found!")
     end
-end)
-
-clearBtn.MouseButton1Click:Connect(clearLog)
-
-saveBtn.MouseButton1Click:Connect(function()
-    local success = pcall(function()
-        writefile("MoeFishingTest_" .. os.date("%Y%m%d_%H%M%S") .. ".txt", resultBox.Text)
-    end)
     
-    if success then
-        statusText.Text = "✅ Saved to file!"
-        statusText.TextColor3 = Color3.new(0, 1, 0)
-    else
-        statusText.Text = "❌ Save failed"
-        statusText.TextColor3 = Color3.new(1, 0, 0)
+    -- Final full text
+    local fullText = table.concat(allText, "\n")
+    
+    -- Copy to clipboard
+    setclipboard and setclipboard(fullText)
+    
+    return fullText
+end
+
+-- ====================================================================
+--                     GUI BUTTONS
+-- ====================================================================
+
+-- MAIN TAB BUTTONS
+MainTab:CreateButton({
+    Name = "1️⃣ Scan All Fishing Remotes",
+    Callback = function()
+        local results = Investigator.scanRemotes()
+        updateResultsDisplay(results)
+        Rayfield:Notify({
+            Title = "✅ Scan Complete",
+            Content = "Ditemukan " .. #InvestigationResults.Remotes .. " remotes",
+            Duration = 3
+        })
     end
-end)
+})
 
--- Instructions
-local instr = Instance.new("TextLabel")
-instr.Size = UDim2.new(1, -20, 0, 20)
-instr.Position = UDim2.new(0, 10, 1, -22)
-instr.BackgroundTransparency = 1
-instr.Text = "💡 Klik tombol satu per satu atau gunakan sequence. Hasil akan tercatat di kanan."
-instr.TextColor3 = Color3.new(0.5, 0.5, 0.5)
-instr.TextSize = 11
-instr.Font = Enum.Font.Gotham
-instr.Parent = mainFrame
+MainTab:CreateButton({
+    Name = "2️⃣ Capture Packets (10 detik)",
+    Callback = function()
+        Rayfield:Notify({
+            Title = "🎣 Capture Started",
+            Content = "Fishing manual selama 10 detik...",
+            Duration = 2
+        })
+        local results = Investigator.capturePackets(10)
+        updateResultsDisplay(results)
+    end
+})
 
-print("✅ Moe Fishing Tester v2.0 Loaded!")
+MainTab:CreateButton({
+    Name = "3️⃣ Check Rod Validation",
+    Callback = function()
+        local results = Investigator.checkRod()
+        updateResultsDisplay(results)
+    end
+})
+
+MainTab:CreateButton({
+    Name = "4️⃣ Compare Old vs New",
+    Callback = function()
+        local results = Investigator.compareRemotes()
+        updateResultsDisplay(results)
+    end
+})
+
+MainTab:CreateButton({
+    Name = "5️⃣ Test All Remotes",
+    Callback = function()
+        local results = Investigator.testRemotes()
+        updateResultsDisplay(results)
+    end
+})
+
+MainTab:CreateButton({
+    Name = "🔄 FULL INVESTIGATION (Recommended)",
+    Callback = function()
+        local results = Investigator.fullInvestigation()
+        Rayfield:Notify({
+            Title = "✅ Investigation Complete",
+            Content = "Buka tab Results untuk melihat",
+            Duration = 3
+        })
+    end
+})
+
+-- RESULTS TAB
+ResultsLabel = ResultsTab:CreateParagraph({
+    Title = "📊 Investigation Results",
+    Content = "Belum ada hasil. Jalankan investigasi dulu!"
+})
+
+-- COPY TAB
+CopyTab:CreateParagraph({
+    Title = "📋 Copy Results",
+    Content = [[
+Klik tombol di bawah untuk copy semua hasil investigasi.
+Hasil akan otomatis ter-copy ke clipboard.
+    ]]
+})
+
+CopyTab:CreateButton({
+    Name = "📋 COPY ALL RESULTS",
+    Callback = function()
+        local text = copyAllResults()
+        Rayfield:Notify({
+            Title = "✅ Copied!",
+            Content = "Hasil sudah di copy. Paste dan kirim ke saya!",
+            Duration = 5
+        })
+    end
+})
+
+CopyTab:CreateButton({
+    Name = "📤 Kirim ke Forum/Developer",
+    Callback = function()
+        local text = copyAllResults()
+        Rayfield:Notify({
+            Title = "✅ Siap Dikirim!",
+            Content = "Hasil sudah di copy. Paste di sini!",
+            Duration = 5
+        })
+    end
+})
+
+CopyTab:CreateParagraph({
+    Title = "📝 Format untuk dikirim:",
+    Content = [[
+1. Jalankan FULL INVESTIGATION
+2. Klik COPY ALL RESULTS
+3. Paste hasilnya di sini
+4. Saya akan analisis perubahannya
+    ]]
+})
+
+-- Info Tab
+local InfoTab = Window:CreateTab("ℹ️ I
