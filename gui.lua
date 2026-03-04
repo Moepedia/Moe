@@ -516,7 +516,7 @@ local function createDropdown(parent, options, default, callback)
     
     -- FIX: Dropdown frame dengan posisi absolute dan parent ke GUI
     local dropdownFrame = Instance.new("Frame")
-    dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
+    dropdownFrame.Size = UDim2.new(1, 0, 0, 0)b
     dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     dropdownFrame.BackgroundTransparency = 0
     dropdownFrame.Visible = false
@@ -540,10 +540,19 @@ local function createDropdown(parent, options, default, callback)
     
     -- Function to update dropdown position
     local function updateDropdownPosition()
-        local absPos = frame.AbsolutePosition
-        local absSize = frame.AbsoluteSize
-        dropdownFrame.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
-    end
+    local absPos = frame.AbsolutePosition
+    local absSize = frame.AbsoluteSize
+    
+    dropdownFrame.Position = UDim2.new(
+        0, absPos.X,
+        0, absPos.Y + absSize.Y
+    )
+    
+    dropdownFrame.Size = UDim2.new(
+        0, absSize.X,
+        0, dropdownFrame.AbsoluteSize.Y
+    )
+end
     
     -- Function to populate dropdown
     local function updateDropdown(newOptions)
