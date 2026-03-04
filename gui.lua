@@ -478,25 +478,15 @@ local function createDropdown(parent, options, default, callback)
     dropdownList.Padding = UDim.new(0, 2)
     dropdownList.Parent = dropdownFrame
     
-    -- Buat background gelap untuk menutupi elemen di belakang dropdown
-    local modalBackground = Instance.new("Frame")
-    modalBackground.Size = UDim2.new(1, 0, 1, 0)
-    modalBackground.BackgroundTransparency = 1
-    modalBackground.Parent = frame
-    modalBackground.ZIndex = 9
-    modalBackground.Visible = false
-    
     local function showDropdown()
         closeAllDropdowns()
         dropdownFrame.Visible = true
         activeDropdown = dropdownFrame
-        modalBackground.Visible = true
         frame.ZIndex = 10
     end
     
     local function hideDropdown()
         dropdownFrame.Visible = false
-        modalBackground.Visible = false
         frame.ZIndex = 5
         if activeDropdown == dropdownFrame then
             activeDropdown = nil
@@ -539,10 +529,6 @@ local function createDropdown(parent, options, default, callback)
             showDropdown()
         end
     end)
-    
-    -- Klik di luar dropdown untuk menutup
-    modalBackground.MouseButton1Click:Connect(hideDropdown)
-    modalBackground.MouseButton2Click:Connect(hideDropdown)
     
     return frame
 end
@@ -761,31 +747,35 @@ local function showTeleport()
     if #players > 0 then
         selectedPlayer = players[1]
         
-        -- Frame untuk dropdown dan refresh button
-        local playerRowFrame = Instance.new("Frame")
-        playerRowFrame.Size = UDim2.new(1, 0, 0, 35)
-        playerRowFrame.BackgroundTransparency = 1
-        playerRowFrame.Parent = featuresContainer
+        -- Frame untuk dropdown
+        local playerDropdownFrame = Instance.new("Frame")
+        playerDropdownFrame.Size = UDim2.new(1, 0, 0, 35)
+        playerDropdownFrame.BackgroundTransparency = 1
+        playerDropdownFrame.Parent = featuresContainer
         
         -- Dropdown untuk player
-        local playerDropdown = createDropdown(playerRowFrame, players, players[1], function(selected)
+        createDropdown(playerDropdownFrame, players, players[1], function(selected)
             selectedPlayer = selected
-            print("Selected player:", selectedPlayer) -- Debug
+            print("Selected player:", selectedPlayer)
         end)
-        playerDropdown.Size = UDim2.new(0.8, -5, 1, 0)
-        playerDropdown.Parent = playerRowFrame
         
-        -- Refresh button
+        -- Frame untuk refresh button dan teleport button dalam satu baris
+        local buttonRowFrame = Instance.new("Frame")
+        buttonRowFrame.Size = UDim2.new(1, 0, 0, 35)
+        buttonRowFrame.BackgroundTransparency = 1
+        buttonRowFrame.Parent = featuresContainer
+        
+        -- Refresh Button (kiri)
         local refreshBtn = Instance.new("TextButton")
         refreshBtn.Size = UDim2.new(0.2, -5, 1, 0)
-        refreshBtn.Position = UDim2.new(0.8, 5, 0, 0)
+        refreshBtn.Position = UDim2.new(0, 0, 0, 0)
         refreshBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
         refreshBtn.BackgroundTransparency = 0.2
-        refreshBtn.Text = "↻"
+        refreshBtn.Text = "↻ Refresh"
         refreshBtn.TextColor3 = Color3.new(1, 1, 1)
-        refreshBtn.TextSize = 18
+        refreshBtn.TextSize = 12
         refreshBtn.Font = Enum.Font.GothamBold
-        refreshBtn.Parent = playerRowFrame
+        refreshBtn.Parent = buttonRowFrame
         refreshBtn.AutoButtonColor = false
         refreshBtn.Selectable = false
         
@@ -793,8 +783,26 @@ local function showTeleport()
         refreshCorner.CornerRadius = UDim.new(0, 6)
         refreshCorner.Parent = refreshBtn
         
-        -- Tombol Teleport ke Player
-        local tpToPlayerBtn = createButton(featuresContainer, "TELEPORT TO PLAYER", function()
+        -- Teleport to Player Button (kanan)
+        local tpToPlayerBtn = Instance.new("TextButton")
+        tpToPlayerBtn.Size = UDim2.new(0.8, -5, 1, 0)
+        tpToPlayerBtn.Position = UDim2.new(0.2, 5, 0, 0)
+        tpToPlayerBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+        tpToPlayerBtn.BackgroundTransparency = 0.2
+        tpToPlayerBtn.Text = "TELEPORT TO PLAYER"
+        tpToPlayerBtn.TextColor3 = Color3.new(1, 1, 1)
+        tpToPlayerBtn.TextSize = 12
+        tpToPlayerBtn.Font = Enum.Font.GothamBold
+        tpToPlayerBtn.Parent = buttonRowFrame
+        tpToPlayerBtn.AutoButtonColor = false
+        tpToPlayerBtn.Selectable = false
+        
+        local tpCorner = Instance.new("UICorner")
+        tpCorner.CornerRadius = UDim.new(0, 6)
+        tpCorner.Parent = tpToPlayerBtn
+        
+        -- Fungsi Teleport
+        tpToPlayerBtn.MouseButton1Click:Connect(function()
             if selectedPlayer and selectedPlayer ~= "" then
                 local target = game.Players:FindFirstChild(selectedPlayer)
                 if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
@@ -811,37 +819,49 @@ local function showTeleport()
             end
         end)
         
-        -- Fungsi refresh
+        -- Fungsi Refresh
         refreshBtn.MouseButton1Click:Connect(function()
-            -- Hapus dropdown lama
-            playerDropdown:Destroy()
+            -- Hapus isi featuresContainer bagian teleport player saja
+            for _, child in pairs(featuresContainer:GetChildren()) do
+                if child:IsA("Frame") and child ~= playerDropdownFrame and child ~= buttonRowFrame then
+                    if child:FindFirstChild("TextButton") then
+                        -- Hanya hapus frame yang berisi dropdown player dan button
+                    end
+                end
+            end
             
-            -- Dapatkan daftar player baru
+            -- Update dropdown dengan player list baru
             local newPlayers = getPlayerList()
             
             if #newPlayers > 0 then
-                selectedPlayer = newPlayers[1]
+                -- Hapus dropdown lama
+                for _, child in pairs(playerDropdownFrame:GetChildren()) do
+                    child:Destroy()
+                end
                 
                 -- Buat dropdown baru
-                local newDropdown = createDropdown(playerRowFrame, newPlayers, newPlayers[1], function(selected)
+                createDropdown(playerDropdownFrame, newPlayers, newPlayers[1], function(selected)
                     selectedPlayer = selected
-                    print("Selected player:", selectedPlayer) -- Debug
+                    print("Selected player:", selectedPlayer)
                 end)
-                newDropdown.Size = UDim2.new(0.8, -5, 1, 0)
-                newDropdown.Position = UDim2.new(0, 0, 0, 0)
                 
+                selectedPlayer = newPlayers[1]
                 notify("Player List", "Refreshed! " .. #newPlayers .. " players online", 1)
             else
                 -- Tidak ada player lain
+                for _, child in pairs(playerDropdownFrame:GetChildren()) do
+                    child:Destroy()
+                end
+                
                 local noPlayersLabel = Instance.new("TextLabel")
-                noPlayersLabel.Size = UDim2.new(0.8, -5, 1, 0)
+                noPlayersLabel.Size = UDim2.new(1, 0, 1, 0)
                 noPlayersLabel.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
                 noPlayersLabel.BackgroundTransparency = 0.2
                 noPlayersLabel.Text = "No other players"
                 noPlayersLabel.TextColor3 = Color3.new(1, 1, 0)
                 noPlayersLabel.TextSize = 13
                 noPlayersLabel.Font = Enum.Font.Gotham
-                noPlayersLabel.Parent = playerRowFrame
+                noPlayersLabel.Parent = playerDropdownFrame
                 
                 local noPlayersCorner = Instance.new("UICorner")
                 noPlayersCorner.CornerRadius = UDim.new(0, 6)
@@ -854,19 +874,24 @@ local function showTeleport()
         
     else
         -- Tidak ada player lain
+        local noPlayersFrame = Instance.new("Frame")
+        noPlayersFrame.Size = UDim2.new(1, 0, 0, 35)
+        noPlayersFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+        noPlayersFrame.BackgroundTransparency = 0.2
+        noPlayersFrame.Parent = featuresContainer
+        
+        local noPlayersCorner = Instance.new("UICorner")
+        noPlayersCorner.CornerRadius = UDim.new(0, 6)
+        noPlayersCorner.Parent = noPlayersFrame
+        
         local noPlayersLabel = Instance.new("TextLabel")
-        noPlayersLabel.Size = UDim2.new(1, 0, 0, 35)
-        noPlayersLabel.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-        noPlayersLabel.BackgroundTransparency = 0.2
+        noPlayersLabel.Size = UDim2.new(1, 0, 1, 0)
+        noPlayersLabel.BackgroundTransparency = 1
         noPlayersLabel.Text = "No other players online"
         noPlayersLabel.TextColor3 = Color3.new(1, 1, 0)
         noPlayersLabel.TextSize = 13
         noPlayersLabel.Font = Enum.Font.Gotham
-        noPlayersLabel.Parent = featuresContainer
-        
-        local noPlayersCorner = Instance.new("UICorner")
-        noPlayersCorner.CornerRadius = UDim.new(0, 6)
-        noPlayersCorner.Parent = noPlayersLabel
+        noPlayersLabel.Parent = noPlayersFrame
     end
 end
 
@@ -968,5 +993,5 @@ gui.Destroying:Connect(function()
     stopAutoFishing()
 end)
 
-print("Moe V1.0 GUI Loaded with Teleport to Player")
+print("Moe V1.0 GUI Loaded with Fixed Teleport to Player")
 notify("Moe V1.0", "GUI Loaded Successfully!", 3)
