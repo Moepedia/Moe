@@ -749,59 +749,53 @@ local function showTeleport()
         end
     end)
     
-    -- Bagian Teleport ke Player dengan Refresh Button
+    -- Bagian Teleport ke Player
     createLabel(featuresContainer, "Teleport to Player")
     
-    -- Frame untuk dropdown dan refresh button
-    local playerRowFrame = Instance.new("Frame")
-    playerRowFrame.Size = UDim2.new(1, 0, 0, 35)
-    playerRowFrame.BackgroundTransparency = 1
-    playerRowFrame.Parent = featuresContainer
+    -- Variable untuk menyimpan player terpilih
+    local selectedPlayer = ""
     
-    local playerDropdownFrame = Instance.new("Frame")
-    playerDropdownFrame.Size = UDim2.new(0.8, -5, 1, 0)
-    playerDropdownFrame.BackgroundTransparency = 1
-    playerDropdownFrame.Parent = playerRowFrame
+    -- Dapatkan daftar player
+    local players = getPlayerList()
     
-    local refreshBtn = Instance.new("TextButton")
-    refreshBtn.Size = UDim2.new(0.2, -5, 1, 0)
-    refreshBtn.Position = UDim2.new(0.8, 5, 0, 0)
-    refreshBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
-    refreshBtn.BackgroundTransparency = 0.2
-    refreshBtn.Text = "↻"
-    refreshBtn.TextColor3 = Color3.new(1, 1, 1)
-    refreshBtn.TextSize = 18
-    refreshBtn.Font = Enum.Font.GothamBold
-    refreshBtn.Parent = playerRowFrame
-    refreshBtn.AutoButtonColor = false
-    refreshBtn.Selectable = false
-    
-    local refreshCorner = Instance.new("UICorner")
-    refreshCorner.CornerRadius = UDim.new(0, 6)
-    refreshCorner.Parent = refreshBtn
-    
-    -- Function to update player list
-    local function updatePlayerList()
-        local players = getPlayerList()
-        local playerDropdown = playerDropdownFrame:FindFirstChildOfClass("Frame")
-        if playerDropdown then
-            playerDropdown:Destroy()
-        end
+    if #players > 0 then
+        selectedPlayer = players[1]
         
-        if #players > 0 then
-            local selectedPlayer = players[1]
-            
-            local newDropdown = createDropdown(playerDropdownFrame, players, players[1], function(selected)
-                selectedPlayer = selected
-            end)
-            
-            -- Tombol teleport terpisah
-            local teleportBtn = featuresContainer:FindFirstChild("TeleportToPlayerBtn")
-            if teleportBtn then
-                teleportBtn:Destroy()
-            end
-            
-            local tpBtn = createButton(featuresContainer, "TELEPORT TO PLAYER", function()
+        -- Frame untuk dropdown dan refresh button
+        local playerRowFrame = Instance.new("Frame")
+        playerRowFrame.Size = UDim2.new(1, 0, 0, 35)
+        playerRowFrame.BackgroundTransparency = 1
+        playerRowFrame.Parent = featuresContainer
+        
+        -- Dropdown untuk player
+        local playerDropdown = createDropdown(playerRowFrame, players, players[1], function(selected)
+            selectedPlayer = selected
+            print("Selected player:", selectedPlayer) -- Debug
+        end)
+        playerDropdown.Size = UDim2.new(0.8, -5, 1, 0)
+        playerDropdown.Parent = playerRowFrame
+        
+        -- Refresh button
+        local refreshBtn = Instance.new("TextButton")
+        refreshBtn.Size = UDim2.new(0.2, -5, 1, 0)
+        refreshBtn.Position = UDim2.new(0.8, 5, 0, 0)
+        refreshBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+        refreshBtn.BackgroundTransparency = 0.2
+        refreshBtn.Text = "↻"
+        refreshBtn.TextColor3 = Color3.new(1, 1, 1)
+        refreshBtn.TextSize = 18
+        refreshBtn.Font = Enum.Font.GothamBold
+        refreshBtn.Parent = playerRowFrame
+        refreshBtn.AutoButtonColor = false
+        refreshBtn.Selectable = false
+        
+        local refreshCorner = Instance.new("UICorner")
+        refreshCorner.CornerRadius = UDim.new(0, 6)
+        refreshCorner.Parent = refreshBtn
+        
+        -- Tombol Teleport ke Player
+        local tpToPlayerBtn = createButton(featuresContainer, "TELEPORT TO PLAYER", function()
+            if selectedPlayer and selectedPlayer ~= "" then
                 local target = game.Players:FindFirstChild(selectedPlayer)
                 if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                     local char = player.Character
@@ -812,61 +806,68 @@ local function showTeleport()
                 else
                     notify("Teleport", "Player not found or invalid", 2)
                 end
-            end)
-            tpBtn.Name = "TeleportToPlayerBtn"
-        else
-            local noPlayersLabel = Instance.new("TextLabel")
-            noPlayersLabel.Size = UDim2.new(1, 0, 0, 35)
-            noPlayersLabel.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-            noPlayersLabel.BackgroundTransparency = 0.2
-            noPlayersLabel.Text = "No other players online"
-            noPlayersLabel.TextColor3 = Color3.new(1, 1, 0)
-            noPlayersLabel.TextSize = 13
-            noPlayersLabel.Font = Enum.Font.Gotham
-            noPlayersLabel.Parent = playerDropdownFrame
-            
-            local noPlayersCorner = Instance.new("UICorner")
-            noPlayersCorner.CornerRadius = UDim.new(0, 6)
-            noPlayersCorner.Parent = noPlayersLabel
-        end
-    end
-    
-    -- Initial player list
-    updatePlayerList()
-    
-    -- Refresh button functionality
-    refreshBtn.MouseButton1Click:Connect(function()
-        updatePlayerList()
-        notify("Player List", "Refreshed!", 1)
-    end)
-    
-    -- Auto-refresh every 10 seconds
-    local refreshConnection
-    refreshConnection = game:GetService("RunService").Stepped:Connect(function()
-        if currentMenu == "Teleport" then
-            updatePlayerList()
-            if refreshConnection then
-                refreshConnection:Disconnect()
-            end
-        end
-    end)
-    task.wait(0.1)
-    if refreshConnection then
-        refreshConnection:Disconnect()
-    end
-    
-    -- Periodic refresh every 10 seconds while in teleport menu
-    local function startPeriodicRefresh()
-        spawn(function()
-            while currentMenu == "Teleport" do
-                task.wait(10)
-                if currentMenu == "Teleport" then
-                    updatePlayerList()
-                end
+            else
+                notify("Teleport", "No player selected", 2)
             end
         end)
+        
+        -- Fungsi refresh
+        refreshBtn.MouseButton1Click:Connect(function()
+            -- Hapus dropdown lama
+            playerDropdown:Destroy()
+            
+            -- Dapatkan daftar player baru
+            local newPlayers = getPlayerList()
+            
+            if #newPlayers > 0 then
+                selectedPlayer = newPlayers[1]
+                
+                -- Buat dropdown baru
+                local newDropdown = createDropdown(playerRowFrame, newPlayers, newPlayers[1], function(selected)
+                    selectedPlayer = selected
+                    print("Selected player:", selectedPlayer) -- Debug
+                end)
+                newDropdown.Size = UDim2.new(0.8, -5, 1, 0)
+                newDropdown.Position = UDim2.new(0, 0, 0, 0)
+                
+                notify("Player List", "Refreshed! " .. #newPlayers .. " players online", 1)
+            else
+                -- Tidak ada player lain
+                local noPlayersLabel = Instance.new("TextLabel")
+                noPlayersLabel.Size = UDim2.new(0.8, -5, 1, 0)
+                noPlayersLabel.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+                noPlayersLabel.BackgroundTransparency = 0.2
+                noPlayersLabel.Text = "No other players"
+                noPlayersLabel.TextColor3 = Color3.new(1, 1, 0)
+                noPlayersLabel.TextSize = 13
+                noPlayersLabel.Font = Enum.Font.Gotham
+                noPlayersLabel.Parent = playerRowFrame
+                
+                local noPlayersCorner = Instance.new("UICorner")
+                noPlayersCorner.CornerRadius = UDim.new(0, 6)
+                noPlayersCorner.Parent = noPlayersLabel
+                
+                selectedPlayer = ""
+                notify("Player List", "No other players online", 1)
+            end
+        end)
+        
+    else
+        -- Tidak ada player lain
+        local noPlayersLabel = Instance.new("TextLabel")
+        noPlayersLabel.Size = UDim2.new(1, 0, 0, 35)
+        noPlayersLabel.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+        noPlayersLabel.BackgroundTransparency = 0.2
+        noPlayersLabel.Text = "No other players online"
+        noPlayersLabel.TextColor3 = Color3.new(1, 1, 0)
+        noPlayersLabel.TextSize = 13
+        noPlayersLabel.Font = Enum.Font.Gotham
+        noPlayersLabel.Parent = featuresContainer
+        
+        local noPlayersCorner = Instance.new("UICorner")
+        noPlayersCorner.CornerRadius = UDim.new(0, 6)
+        noPlayersCorner.Parent = noPlayersLabel
     end
-    startPeriodicRefresh()
 end
 
 -- ===== CREATE LEFT MENU BUTTONS =====
@@ -967,5 +968,5 @@ gui.Destroying:Connect(function()
     stopAutoFishing()
 end)
 
-print("Moe V1.0 GUI Loaded with Teleport to Player and Refresh")
+print("Moe V1.0 GUI Loaded with Teleport to Player")
 notify("Moe V1.0", "GUI Loaded Successfully!", 3)
