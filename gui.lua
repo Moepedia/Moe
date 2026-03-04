@@ -415,11 +415,16 @@ featuresLayout.Parent = featuresContainer
 
 -- ===== UI ELEMENTS FUNCTIONS =====
 local activeDropdown = nil
+local activeOverlay = nil
 
 local function closeAllDropdowns()
     if activeDropdown then
         activeDropdown.Visible = false
         activeDropdown = nil
+    end
+    if activeOverlay then
+        activeOverlay.Visible = false
+        activeOverlay = nil
     end
 end
 
@@ -478,21 +483,50 @@ local function createDropdown(parent, options, default, callback)
     dropdownList.Padding = UDim.new(0, 2)
     dropdownList.Parent = dropdownFrame
     
+    -- OVERLAY GLOBAL untuk menangkap klik di luar dropdown
+    local overlay = Instance.new("TextButton")
+    overlay.Name = "DropdownOverlay"
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.Position = UDim2.new(0, 0, 0, 0)
+    overlay.BackgroundTransparency = 1
+    overlay.Text = ""
+    overlay.Visible = false
+    overlay.ZIndex = 999
+    overlay.Parent = gui
+    overlay.AutoButtonColor = false
+    overlay.Selectable = false
+    
     local function showDropdown()
+        -- Tutup dropdown lain yang mungkin terbuka
         closeAllDropdowns()
+        
         dropdownFrame.Visible = true
         activeDropdown = dropdownFrame
         frame.ZIndex = 10
+        
+        overlay.Visible = true
+        activeOverlay = overlay
     end
     
     local function hideDropdown()
         dropdownFrame.Visible = false
         frame.ZIndex = 5
+        overlay.Visible = false
+        
         if activeDropdown == dropdownFrame then
             activeDropdown = nil
         end
+        if activeOverlay == overlay then
+            activeOverlay = nil
+        end
     end
     
+    -- Klik pada overlay akan menutup dropdown
+    overlay.MouseButton1Click:Connect(function()
+        hideDropdown()
+    end)
+    
+    -- Buat opsi-opsi dropdown
     for i, opt in ipairs(options) do
         local optBtn = Instance.new("TextButton")
         optBtn.Size = UDim2.new(1, 0, 0, 30)
@@ -527,6 +561,13 @@ local function createDropdown(parent, options, default, callback)
             hideDropdown()
         else
             showDropdown()
+        end
+    end)
+    
+    -- Cleanup overlay saat frame di-destroy
+    frame.Destroying:Connect(function()
+        if overlay then
+            overlay:Destroy()
         end
     end)
     
@@ -756,7 +797,6 @@ local function showTeleport()
         -- Dropdown untuk player
         createDropdown(playerDropdownFrame, players, players[1], function(selected)
             selectedPlayer = selected
-            print("Selected player:", selectedPlayer)
         end)
         
         -- Frame untuk refresh button dan teleport button dalam satu baris
@@ -821,14 +861,8 @@ local function showTeleport()
         
         -- Fungsi Refresh
         refreshBtn.MouseButton1Click:Connect(function()
-            -- Hapus isi featuresContainer bagian teleport player saja
-            for _, child in pairs(featuresContainer:GetChildren()) do
-                if child:IsA("Frame") and child ~= playerDropdownFrame and child ~= buttonRowFrame then
-                    if child:FindFirstChild("TextButton") then
-                        -- Hanya hapus frame yang berisi dropdown player dan button
-                    end
-                end
-            end
+            -- Tutup dropdown yang mungkin terbuka
+            closeAllDropdowns()
             
             -- Update dropdown dengan player list baru
             local newPlayers = getPlayerList()
@@ -842,7 +876,6 @@ local function showTeleport()
                 -- Buat dropdown baru
                 createDropdown(playerDropdownFrame, newPlayers, newPlayers[1], function(selected)
                     selectedPlayer = selected
-                    print("Selected player:", selectedPlayer)
                 end)
                 
                 selectedPlayer = newPlayers[1]
@@ -980,18 +1013,11 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- Klik di luar dropdown untuk menutup
-mouse.Button1Down:Connect(function()
-    if activeDropdown then
-        activeDropdown.Visible = false
-        activeDropdown = nil
-    end
-end)
-
 -- Cleanup on gui destroy
 gui.Destroying:Connect(function()
     stopAutoFishing()
+    closeAllDropdowns()
 end)
 
-print("Moe V1.0 GUI Loaded with Fixed Teleport to Player")
+print("Moe V1.0 GUI Loaded with Fixed Dropdown")
 notify("Moe V1.0", "GUI Loaded Successfully!", 3)
