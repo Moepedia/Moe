@@ -44,7 +44,7 @@ local Net = Packages and Packages:FindFirstChild("_Index") and
 
 -- ===== SELL & FAVORITE REMOTES (YANG KAMU MINTA) =====
 local SellRemotes = {
-    SellAllItems = Net and Net["RF/SellAllitems"],
+    SellAllItems = Net and Net["RF/SellAllItems"],
     SellItem = Net and Net["RF/Sellitem"],
     UpdateAutoSellThreshold = Net and Net["RF/UpdateAutoSell Threshold"],
     PromptFavoriteGame = Net and Net["RF/PromptFavoriteGame"],
