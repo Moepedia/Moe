@@ -48,8 +48,8 @@ local SellRemotes = {
     SellItem = Net and Net["RF/SellItem"],
     UpdateAutoSellThreshold = Net and Net["RF/UpdateAutoSellThreshold"],
     PromptFavoriteGame = Net and Net["RF/PromptFavoriteGame"],
-    FavoriteItem = Net and Net["RE/Favoriteltm"],
-    FavoriteStateChanged = Net and Net["RE/Favorite StateChanged"]
+    FavoriteItem = Net and Net["RE/Favoritem"],
+    FavoriteStateChanged = Net and Net["RE/FavoriteStateChanged"]
 }
 
 -- ===== FISHING REMOTES (DARI DEX SEBELUMNYA) =====
