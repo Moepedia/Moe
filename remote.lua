@@ -1,59 +1,57 @@
--- CEK REMOTE - PASTI JALAN
+-- TEST PARAMETER REMOTE
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
-print("🔍 MULAI CEK REMOTE...")
-print("==========================")
-
--- Cari Packages
-local Packages = ReplicatedStorage:FindFirstChild("Packages")
-if not Packages then
-    print("❌ Packages TIDAK DITEMUKAN!")
-    return
-end
-print("✅ Packages ditemukan")
-
--- Cari Net
-local Index = Packages:FindFirstChild("_Index")
-if not Index then
-    print("❌ _Index TIDAK DITEMUKAN!")
-    return
-end
-
-local NetFolder = Index:FindFirstChild("sleitnick_net@0.2.0")
-if not NetFolder then
-    print("❌ sleitnick_net@0.2.0 TIDAK DITEMUKAN!")
-    return
-end
-
-local Net = NetFolder:FindFirstChild("net")
-if not Net then
-    print("❌ net TIDAK DITEMUKAN!")
-    return
-end
-print("✅ Net ditemukan!")
-
--- Daftar remote yang mau dicek
-local remotesToCheck = {
-    "RF/CancelFishingInputs",
-    "RF/ChargeFishingRod",
-    "RF/RequestFishingMinigameStarted",
-    "RF/CatchFishCompleted",
-    "RE/FishCaught",
-    "RE/FishingMinigameChanged"
+local Remote = {
+    Charge = Net["RF/ChargeFishingRod"],
+    Minigame = Net["RF/Request Fishing MinigameStarted"],
+    Catch = Net["RF/CatchFishCompleted"]
 }
 
-print("\n📡 CEK REMOTE SATU PER SATU:")
-print("--------------------------")
+print("🔍 TEST PARAMETER REMOTE")
+print("=========================")
 
-for _, remoteName in ipairs(remotesToCheck) do
-    local remote = Net:FindFirstChild(remoteName)
-    if remote then
-        print("✅ " .. remoteName .. " - " .. remote.ClassName)
-    else
-        print("❌ " .. remoteName .. " - TIDAK DITEMUKAN")
-    end
+-- Test 1: Charge dengan berbagai parameter
+print("\n1. TEST CHARGE FISHING ROD:")
+local params = {
+    {nil, nil, workspace:GetServerTimeNow(), nil},
+    {workspace:GetServerTimeNow()},
+    {0},
+    {}
+}
+
+for i, p in ipairs(params) do
+    local success, result = pcall(function()
+        return Remote.Charge:InvokeServer(unpack(p))
+    end)
+    print("   Parameter set " .. i .. ": " .. (success and "✅" or "❌"))
 end
 
-print("\n✅ CEK SELESAI!")
+-- Test 2: Minigame dengan berbagai parameter
+print("\n2. TEST REQUEST MINIGAME:")
+local minigameParams = {
+    {-50, 0.5, workspace:GetServerTimeNow()},
+    {0, 0.5, workspace:GetServerTimeNow()},
+    {workspace:GetServerTimeNow()},
+    {}
+}
+
+for i, p in ipairs(minigameParams) do
+    local success, result = pcall(function()
+        return Remote.Minigame:InvokeServer(unpack(p))
+    end)
+    print("   Parameter set " .. i .. ": " .. (success and "✅" or "❌"))
+end
+
+-- Test 3: Catch (harusnya tanpa parameter)
+print("\n3. TEST CATCH FISH COMPLETED:")
+local success, result = pcall(function()
+    return Remote.Catch:InvokeServer()
+end)
+print("   Tanpa parameter: " .. (success and "✅" or "❌"))
+
+-- Test 4: Coba catch dengan parameter
+local success2, result2 = pcall(function()
+    return Remote.Catch:InvokeServer(1)
+end)
+print("   Dengan parameter: " .. (success2 and "✅" or "❌"))
