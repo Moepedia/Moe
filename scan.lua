@@ -1,118 +1,49 @@
--- TEST CATCH FISH COMPLETED
+-- FIX ERROR - JALANKAN INI DULU!
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
-local CatchFish = Net["RF/CatchFishCompleted"]
+print("✅ Basic services loaded")
 
-print("🧪 TESTING CATCH FISH COMPLETED")
-print("================================")
+-- Test simple notification
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "Test",
+    Text = "Script berjalan!",
+    Duration = 2
+})
 
--- Test 1: Panggil tanpa apa-apa
-local success1, result1 = pcall(function()
-    return CatchFish:InvokeServer()
-end)
-print("Test 1 (tanpa rod):", success1 and "✅" or "❌", result1)
-
--- Test 2: Panggil dengan rod di tangan
--- (Equip rod dulu manual)
-task.wait(2)
-print("\n🎣 Equip rod dulu...")
-task.wait(3)
-
-local success2, result2 = pcall(function()
-    return CatchFish:InvokeServer()
-end)
-print("Test 2 (dengan rod):", success2 and "✅" or "❌", result2)
-
--- Test 3: Coba spam
-print("\n⚡ Spam test...")
-for i = 1, 5 do
-    local s, r = pcall(function()
-        return CatchFish:InvokeServer()
-    end)
-    print("Spam " .. i .. ":", s and "✅" or "❌")
-    task.wait(0.1)
-endtextBox.TextEditable = false  -- Tidak bisa diedit, tapi bisa di-select
-textBox.Parent = frame
-
-local textCorner = Instance.new("UICorner")
-textCorner.CornerRadius = UDim.new(0, 6)
-textCorner.Parent = textBox
-
--- Scrolling frame otomatis untuk text box
-textBox.AutomaticSize = Enum.AutomaticSize.Y
-textBox.Size = UDim2.new(1, -20, 0, 300)  -- Fixed height with scroll
-
--- ===== BUTTONS FRAME =====
-local buttonsFrame = Instance.new("Frame")
-buttonsFrame.Size = UDim2.new(1, -20, 0, 80)
-buttonsFrame.Position = UDim2.new(0, 10, 1, -90)
-buttonsFrame.BackgroundTransparency = 1
-buttonsFrame.Parent = frame
-
--- Fungsi buat button
-local function createButton(parent, text, posX, posY, width, color, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, width or 140, 0, 35)
-    btn.Position = UDim2.new(0, posX, 0, posY)
-    btn.BackgroundColor3 = color or Color3.fromRGB(60, 60, 70)
-    btn.Text = text
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 12
-    btn.Parent = parent
+-- Cek apakah Net exists
+local Packages = ReplicatedStorage:FindFirstChild("Packages")
+if Packages then
+    local Net = Packages:FindFirstChild("_Index") and 
+                Packages._Index:FindFirstChild("sleitnick_net@0.2.0") and 
+                Packages._Index["sleitnick_net@0.2.0"].net
     
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
-    btnCorner.Parent = btn
-    
-    btn.MouseButton1Click:Connect(callback)
-    
-    return btn
-end
-
--- Buttons row 1
-local scanBtn = createButton(buttonsFrame, "🔍 SCAN SYSTEM", 0, 0, 150, Color3.fromRGB(0, 120, 200))
-local copyBtn = createButton(buttonsFrame, "📋 SELECT ALL", 160, 0, 150, Color3.fromRGB(200, 120, 0))
-local clearBtn = createButton(buttonsFrame, "🗑️ CLEAR", 320, 0, 150, Color3.fromRGB(150, 60, 60))
-
--- Buttons row 2
-local instructionBtn = createButton(buttonsFrame, "ℹ️ INSTRUKSI", 0, 45, 200, Color3.fromRGB(100, 100, 150))
-local closeBtn2 = createButton(buttonsFrame, "✕ CLOSE", 210, 45, 200, Color3.fromRGB(100, 100, 100), function()
-    gui:Destroy()
-end)
-
--- ===== FUNGSI UPDATE HASIL =====
-local function updateResults(text)
-    textBox.Text = text
-    textBox.CursorPosition = #text + 1  -- Move cursor to end
-end
-
--- ===== FUNGSI FORMAT RESULTS =====
-local function formatResults()
-    local lines = {}
-    table.insert(lines, "🔍 FISHING SYSTEM SCAN RESULTS")
-    table.insert(lines, "Generated: " .. ScanResults.Date)
-    table.insert(lines, string.rep("=", 60))
-    table.insert(lines, "")
-    
-    table.insert(lines, "📡 REMOTES FOUND (" .. #ScanResults.Remotes .. "):")
-    for i, r in ipairs(ScanResults.Remotes) do
-        table.insert(lines, string.format("%d. [%s] %s", i, r.Class, r.Name))
-        table.insert(lines, "   Path: " .. r.Path)
+    if Net then
+        print("✅ Net ditemukan!")
+        
+        -- Cek remote-remote penting
+        local remotes = {
+            "RF/CatchFishCompleted",
+            "RF/ChargeFishingRod", 
+            "RF/RequestFishingMinigameStarted",
+            "RE/FishCaught"
+        }
+        
+        for _, remoteName in ipairs(remotes) do
+            local remote = Net[remoteName]
+            if remote then
+                print("✅ " .. remoteName .. " ada")
+            else
+                print("❌ " .. remoteName .. " TIDAK ADA")
+            end
+        end
+    else
+        print("❌ Net tidak ditemukan")
     end
-    table.insert(lines, "")
-    
-    table.insert(lines, "📚 MODULES FOUND (" .. #ScanResults.Modules .. "):")
-    for i, m in ipairs(ScanResults.Modules) do
-        table.insert(lines, string.format("%d. %s", i, m.Name))
-        table.insert(lines, "   Path: " .. m.Path)
-    end
-    table.insert(lines, "")
-    
-    table.insert(lines, "🛡️ ANTI-CHEAT REMOTES (" .. #ScanResults.AntiCheat .. "):")
-    for _, name in ipairs(ScanResults.AntiCheat) do
-        table.insert(lines, "   • " .. name)
+else
+    print("❌ Packages tidak ditemukan")
+end        table.insert(lines, "   • " .. name)
     end
     table.insert(lines, "")
     
