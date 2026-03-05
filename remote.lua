@@ -4,7 +4,7 @@ local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
 local Remote = {
     Charge = Net["RF/ChargeFishingRod"],
-    Minigame = Net["RF/Request Fishing MinigameStarted"],
+    Minigame = Net["RF/RequestFishingMinigameStarted"],
     Catch = Net["RF/CatchFishCompleted"]
 }
 
