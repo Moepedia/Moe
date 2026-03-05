@@ -20,6 +20,7 @@ local sellConnection = nil
 local favoriteConnection = nil
 local currentFishingSpot = nil
 local bobber = nil
+local guiClosed = false  -- Flag untuk cek apakah GUI sudah di-close
 
 -- ===== CONFIG VARIABLES =====
 local Config = {
@@ -100,7 +101,7 @@ local function notify(title, text, duration)
     })
 end
 
--- ===== KONFIRMASI DIALOG =====
+-- ===== KONFIRMASI DIALOG (FIXED) =====
 local function showConfirmDialog(title, message, callback)
     -- Buat dialog frame
     local dialogFrame = Instance.new("Frame")
@@ -200,7 +201,6 @@ local function showConfirmDialog(title, message, callback)
                pos.Y < absPos.Y or pos.Y > absPos.Y + absSize.Y then
                 dialogFrame:Destroy()
                 callback(false)
-                game:GetService("UserInputService").InputBegan:Connect(onClickOutside)
             end
         end
     end
@@ -393,7 +393,7 @@ end
 
 -- ===== MAIN FISHING LOOP =====
 local function startAutoFishing()
-    if autoFishing then return end
+    if autoFishing or guiClosed then return end
     
     if autoEquip and not Config.CurrentRod then
         equipRod("any")
@@ -403,7 +403,7 @@ local function startAutoFishing()
     notify("Auto Fish", "Started!", 2)
     
     fishingConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if not autoFishing then return end
+        if not autoFishing or guiClosed then return end
         
         disableAntiCheat()
         cancelFishing(true)
@@ -431,11 +431,11 @@ end
 
 -- ===== AUTO SELL LOOP =====
 local function startAutoSell()
-    if autoSell then return end
+    if autoSell or guiClosed then return end
     autoSell = true
     
     sellConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if not autoSell then return end
+        if not autoSell or guiClosed then return end
         task.wait(Config.SellDelay)
         sellAllItems()
     end)
@@ -451,11 +451,11 @@ end
 
 -- ===== AUTO FAVORITE LOOP =====
 local function startAutoFavorite()
-    if autoFavorite then return end
+    if autoFavorite or guiClosed then return end
     autoFavorite = true
     
     favoriteConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if not autoFavorite then return end
+        if not autoFavorite or guiClosed then return end
         task.wait(30)
         promptFavorite()
     end)
@@ -469,13 +469,17 @@ local function stopAutoFavorite()
     end
 end
 
--- ===== EXIT FUNCTION WITH CONFIRMATION =====
+-- ===== EXIT FUNCTION WITH CONFIRMATION (FIXED) =====
 local function exitGUI()
+    if guiClosed then return end  -- Cegah double call
+    
     showConfirmDialog("Exit GUI", "Are you sure you want to close?", function(confirmed)
         if confirmed then
+            guiClosed = true
             stopAutoFishing()
             stopAutoSell()
             stopAutoFavorite()
+            task.wait(0.1)  -- Beri waktu untuk cleanup
             gui:Destroy()
         end
     end)
@@ -549,7 +553,7 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 4)
 minCorner.Parent = minButton
 
--- Close button (FIXED - sekarang panggil exitGUI)
+-- Close button (FIXED)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 25, 0, 25)
 closeBtn.Position = UDim2.new(1, -30, 0.5, -12.5)
@@ -1046,7 +1050,17 @@ local function createInput(parent, labelText, default, callback)
     return frame
 end
 
+-- ===== SLIDER FIXED (Tidak error clamp) =====
 local function createSlider(parent, labelText, min, max, default, callback)
+    -- VALIDASI: pastikan min < max
+    if min >= max then
+        warn("Slider error: min (" .. min .. ") must be less than max (" .. max .. ")")
+        min, max = 0, 1  -- fallback default
+    end
+    
+    -- Pastikan default dalam range
+    default = math.clamp(default, min, max)
+    
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 45)
     frame.BackgroundTransparency = 1
@@ -1057,7 +1071,7 @@ local function createSlider(parent, labelText, min, max, default, callback)
     label.Size = UDim2.new(1, -10, 0, 20)
     label.Position = UDim2.new(0, 5, 0, 0)
     label.BackgroundTransparency = 1
-    label.Text = labelText .. ": " .. default
+    label.Text = labelText .. ": " .. string.format("%.1f", default)
     label.TextColor3 = Color3.new(1, 1, 1)
     label.TextSize = 13
     label.Font = Enum.Font.Gotham
@@ -1094,10 +1108,15 @@ local function createSlider(parent, labelText, min, max, default, callback)
     button.ZIndex = 23
     
     local value = default
+    local dragging = false
     
     button.MouseButton1Down:Connect(function()
+        dragging = true
+        
         local connection
         connection = game:GetService("RunService").RenderStepped:Connect(function()
+            if not dragging then return end
+            
             local mousePos = game:GetService("UserInputService"):GetMouseLocation()
             local absPos = slider.AbsolutePosition
             local absSize = slider.AbsoluteSize
@@ -1108,19 +1127,23 @@ local function createSlider(parent, labelText, min, max, default, callback)
             value = math.floor(value * 10) / 10  -- 1 decimal
             
             fill.Size = UDim2.new(percent, 0, 1, 0)
-            label.Text = labelText .. ": " .. value
+            label.Text = labelText .. ": " .. string.format("%.1f", value)
         end)
         
         local function onInputEnded(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                connection:Disconnect()
+                dragging = false
+                if connection then
+                    connection:Disconnect()
+                end
                 callback(value)
-                game:GetService("UserInputService").InputEnded:Connect(onInputEnded)
             end
         end
         
         game:GetService("UserInputService").InputEnded:Connect(onInputEnded)
     end)
+    
+    return frame
 end
 
 local function clearFeatures()
@@ -1494,9 +1517,11 @@ end)
 -- Cleanup (panggil exitGUI untuk konfirmasi)
 gui.Destroying:Connect(function()
     -- This is just in case, but we already have confirmation
-    stopAutoFishing()
-    stopAutoSell()
-    stopAutoFavorite()
+    if not guiClosed then
+        stopAutoFishing()
+        stopAutoSell()
+        stopAutoFavorite()
+    end
     closeAllDropdowns()
 end)
 
