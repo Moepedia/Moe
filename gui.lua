@@ -27,7 +27,8 @@ local Config = {
     CatchDelay = 1,
     SellDelay = 60,
     FavoriteRarity = "Mythic",
-    CurrentRod = nil
+    CurrentRod = nil,
+    CastPower = 0.5  -- 0-1, makin besar makin jauh
 }
 
 -- ===== DATA LOKASI TELEPORT (COMPLETE LIST) =====
@@ -62,14 +63,18 @@ local Net = Packages and Packages:FindFirstChild("_Index") and
            Packages._Index:FindFirstChild("sleitnick_net@0.2.0") and 
            Packages._Index["sleitnick_net@0.2.0"].net
 
--- ===== REMOTE YANG BENAR (DARI DEX EXPLORER) =====
+-- ===== REMOTE YANG BENAR (DARI FISHINGCONTROLLER) =====
 local Remote = {
-    -- Fishing Remotes
+    -- Fishing Remotes (dari FishingController)
+    CancelFishingInputs = Net and Net["RF/CancelFishingInputs"],
     ChargeFishingRod = Net and Net["RF/ChargeFishingRod"],
     RequestFishingMinigame = Net and Net["RF/RequestFishingMinigameStarted"],
+    FishingMinigameChanged = Net and Net["RE/FishingMinigameChanged"],
+    FishingStopped = Net and Net["RE/FishingStopped"],
+    UpdateChargeState = Net and Net["RE/UpdateChargeState"],
     CatchFishCompleted = Net and Net["RF/CatchFishCompleted"],
-    CancelFishingInputs = Net and Net["RF/CancelFishingInputs"],
     FishCaught = Net and Net["RE/FishCaught"],
+    BaitSpawned = Net and Net["RE/BaitSpawned"],
     
     -- Anti-Cheat Remotes
     UpdateAutoFishingState = Net and Net["RF/UpdateAutoFishingState"],
@@ -93,6 +98,114 @@ local function notify(title, text, duration)
         Text = text,
         Duration = duration or 2
     })
+end
+
+-- ===== KONFIRMASI DIALOG =====
+local function showConfirmDialog(title, message, callback)
+    -- Buat dialog frame
+    local dialogFrame = Instance.new("Frame")
+    dialogFrame.Size = UDim2.new(0, 300, 0, 150)
+    dialogFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
+    dialogFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    dialogFrame.BackgroundTransparency = 0.1
+    dialogFrame.BorderSizePixel = 0
+    dialogFrame.Parent = gui
+    dialogFrame.ZIndex = 1000
+    
+    local dialogCorner = Instance.new("UICorner")
+    dialogCorner.CornerRadius = UDim.new(0, 8)
+    dialogCorner.Parent = dialogFrame
+    
+    local dialogStroke = Instance.new("UIStroke")
+    dialogStroke.Thickness = 1
+    dialogStroke.Color = Color3.new(1, 1, 1)
+    dialogStroke.Transparency = 0.5
+    dialogStroke.Parent = dialogFrame
+    
+    -- Title
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, 0, 0, 40)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.TextSize = 18
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Parent = dialogFrame
+    titleLabel.ZIndex = 1001
+    
+    -- Message
+    local msgLabel = Instance.new("TextLabel")
+    msgLabel.Size = UDim2.new(1, -20, 0, 40)
+    msgLabel.Position = UDim2.new(0, 10, 0, 40)
+    msgLabel.BackgroundTransparency = 1
+    msgLabel.Text = message
+    msgLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    msgLabel.TextSize = 14
+    msgLabel.Font = Enum.Font.Gotham
+    msgLabel.TextWrapped = true
+    msgLabel.Parent = dialogFrame
+    msgLabel.ZIndex = 1001
+    
+    -- Yes button
+    local yesBtn = Instance.new("TextButton")
+    yesBtn.Size = UDim2.new(0.4, -5, 0, 35)
+    yesBtn.Position = UDim2.new(0.1, 0, 0, 95)
+    yesBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+    yesBtn.Text = "YES"
+    yesBtn.TextColor3 = Color3.new(1, 1, 1)
+    yesBtn.TextSize = 14
+    yesBtn.Font = Enum.Font.GothamBold
+    yesBtn.Parent = dialogFrame
+    yesBtn.ZIndex = 1001
+    
+    local yesCorner = Instance.new("UICorner")
+    yesCorner.CornerRadius = UDim.new(0, 6)
+    yesCorner.Parent = yesBtn
+    
+    -- No button
+    local noBtn = Instance.new("TextButton")
+    noBtn.Size = UDim2.new(0.4, -5, 0, 35)
+    noBtn.Position = UDim2.new(0.5, 5, 0, 95)
+    noBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    noBtn.Text = "NO"
+    noBtn.TextColor3 = Color3.new(1, 1, 1)
+    noBtn.TextSize = 14
+    noBtn.Font = Enum.Font.GothamBold
+    noBtn.Parent = dialogFrame
+    noBtn.ZIndex = 1001
+    
+    local noCorner = Instance.new("UICorner")
+    noCorner.CornerRadius = UDim.new(0, 6)
+    noCorner.Parent = noBtn
+    
+    -- Button events
+    yesBtn.MouseButton1Click:Connect(function()
+        dialogFrame:Destroy()
+        callback(true)
+    end)
+    
+    noBtn.MouseButton1Click:Connect(function()
+        dialogFrame:Destroy()
+        callback(false)
+    end)
+    
+    -- Click outside to cancel
+    local function onClickOutside(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local pos = input.Position
+            local absPos = dialogFrame.AbsolutePosition
+            local absSize = dialogFrame.AbsoluteSize
+            
+            if pos.X < absPos.X or pos.X > absPos.X + absSize.X or
+               pos.Y < absPos.Y or pos.Y > absPos.Y + absSize.Y then
+                dialogFrame:Destroy()
+                callback(false)
+                game:GetService("UserInputService").InputBegan:Connect(onClickOutside)
+            end
+        end
+    end
+    
+    game:GetService("UserInputService").InputBegan:Connect(onClickOutside)
 end
 
 -- ===== EQUIP ROD SYSTEM =====
@@ -147,7 +260,28 @@ local function disableAntiCheat()
     end
 end
 
--- ===== AUTO FISHING FUNCTIONS =====
+-- ===== GET WATER HEIGHT =====
+local function getWaterHeight()
+    local character = player.Character
+    if not character then return 0 end
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return 0 end
+    
+    -- Raycast ke bawah untuk cari air
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+    rayParams.FilterDescendantsInstances = {character}
+    rayParams.IgnoreWater = false
+    
+    local rayResult = workspace:Raycast(rootPart.Position, Vector3.new(0, -100, 0), rayParams)
+    if rayResult and rayResult.Material == Enum.Material.Water then
+        return rayResult.Position.Y
+    end
+    return 0
+end
+
+-- ===== AUTO FISHING FUNCTIONS (Berdasarkan FishingController) =====
 local function findBobber()
     for _, v in pairs(workspace:GetDescendants()) do
         if v.Name == "Bobber" and v:IsA("Part") and v:FindFirstChild("Owner") then
@@ -163,24 +297,53 @@ end
 local function castRod()
     if not Remote.ChargeFishingRod then return false end
     
-    return pcall(function()
-        Remote.ChargeFishingRod:InvokeServer()
-        notify("Fishing", "Casting...", 0.5)
+    -- Dapatkan server time (WAJIB!)
+    local serverTime = workspace:GetServerTimeNow()
+    
+    -- Charge rod dengan parameter yang benar (nil, nil, serverTime, nil)
+    local chargeSuccess = pcall(function()
+        return Remote.ChargeFishingRod:InvokeServer(nil, nil, serverTime, nil)
     end)
+    
+    if not chargeSuccess then 
+        print("Charge failed")
+        return false 
+    end
+    
+    notify("Fishing", "Casting...", 0.5)
+    
+    -- Tunggu bentar untuk charge animation
+    task.wait(0.5)
+    
+    -- Dapatkan posisi air
+    local waterY = getWaterHeight()
+    if waterY == 0 then
+        waterY = -50 -- default fallback
+    end
+    
+    -- Request minigame dengan parameter (posY, power, serverTime)
+    local minigameSuccess = pcall(function()
+        return Remote.RequestFishingMinigame:InvokeServer(waterY, Config.CastPower, serverTime)
+    end)
+    
+    return minigameSuccess
 end
 
 local function catchFish()
-    if not Remote.FishCaught then return false end
+    if not Remote.CatchFishCompleted then return false end
     
-    return pcall(function()
-        Remote.FishCaught:FireServer()
+    -- CatchFishCompleted TANPA PARAMETER!
+    local success = pcall(function()
+        return Remote.CatchFishCompleted:InvokeServer()
     end)
+    
+    return success
 end
 
-local function cancelFishing()
+local function cancelFishing(force)
     if Remote.CancelFishingInputs then
         pcall(function()
-            Remote.CancelFishingInputs:InvokeServer()
+            Remote.CancelFishingInputs:InvokeServer(force or true)
         end)
     end
 end
@@ -243,13 +406,15 @@ local function startAutoFishing()
         if not autoFishing then return end
         
         disableAntiCheat()
-        cancelFishing()
+        cancelFishing(true)
         task.wait(0.2)
         
-        castRod()
-        task.wait(Config.FishDelay)
+        local castSuccess = castRod()
+        if castSuccess then
+            task.wait(Config.FishDelay)
+            catchFish()
+        end
         
-        catchFish()
         task.wait(Config.CatchDelay)
     end)
 end
@@ -260,7 +425,7 @@ local function stopAutoFishing()
         fishingConnection:Disconnect()
         fishingConnection = nil
     end
-    cancelFishing()
+    cancelFishing(true)
     notify("Auto Fish", "Stopped!", 2)
 end
 
@@ -304,11 +469,23 @@ local function stopAutoFavorite()
     end
 end
 
--- ===== MAIN FRAME (650x450) =====
+-- ===== EXIT FUNCTION WITH CONFIRMATION =====
+local function exitGUI()
+    showConfirmDialog("Exit GUI", "Are you sure you want to close?", function(confirmed)
+        if confirmed then
+            stopAutoFishing()
+            stopAutoSell()
+            stopAutoFavorite()
+            gui:Destroy()
+        end
+    end)
+end
+
+-- ===== MAIN FRAME (650x500) =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 650, 0, 450)
-mainFrame.Position = UDim2.new(0.5, -325, 0.5, -225)
+mainFrame.Size = UDim2.new(0, 650, 0, 500)  -- Diperbesar untuk power setting
+mainFrame.Position = UDim2.new(0.5, -325, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
@@ -372,7 +549,7 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 4)
 minCorner.Parent = minButton
 
--- Close button
+-- Close button (FIXED - sekarang panggil exitGUI)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 25, 0, 25)
 closeBtn.Position = UDim2.new(1, -30, 0.5, -12.5)
@@ -389,12 +566,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
-closeBtn.MouseButton1Click:Connect(function()
-    stopAutoFishing()
-    stopAutoSell()
-    stopAutoFavorite()
-    gui:Destroy()
-end)
+closeBtn.MouseButton1Click:Connect(exitGUI)
 
 -- ===== FLOATING LOGO =====
 local floatingLogo = Instance.new("Frame")
@@ -874,6 +1046,83 @@ local function createInput(parent, labelText, default, callback)
     return frame
 end
 
+local function createSlider(parent, labelText, min, max, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 45)
+    frame.BackgroundTransparency = 1
+    frame.Parent = parent
+    frame.ZIndex = 20
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 0, 20)
+    label.Position = UDim2.new(0, 5, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = labelText .. ": " .. default
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextSize = 13
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    label.ZIndex = 21
+    
+    local slider = Instance.new("Frame")
+    slider.Size = UDim2.new(1, -20, 0, 15)
+    slider.Position = UDim2.new(0, 10, 0, 25)
+    slider.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    slider.Parent = frame
+    slider.ZIndex = 21
+    
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.CornerRadius = UDim.new(0, 4)
+    sliderCorner.Parent = slider
+    
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.new(0, 0.6, 0.8)
+    fill.Parent = slider
+    fill.ZIndex = 22
+    
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 4)
+    fillCorner.Parent = fill
+    
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, 0, 1, 0)
+    button.BackgroundTransparency = 1
+    button.Text = ""
+    button.Parent = slider
+    button.ZIndex = 23
+    
+    local value = default
+    
+    button.MouseButton1Down:Connect(function()
+        local connection
+        connection = game:GetService("RunService").RenderStepped:Connect(function()
+            local mousePos = game:GetService("UserInputService"):GetMouseLocation()
+            local absPos = slider.AbsolutePosition
+            local absSize = slider.AbsoluteSize
+            
+            local relativeX = math.clamp(mousePos.X - absPos.X, 0, absSize.X)
+            local percent = relativeX / absSize.X
+            value = min + (max - min) * percent
+            value = math.floor(value * 10) / 10  -- 1 decimal
+            
+            fill.Size = UDim2.new(percent, 0, 1, 0)
+            label.Text = labelText .. ": " .. value
+        end)
+        
+        local function onInputEnded(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                connection:Disconnect()
+                callback(value)
+                game:GetService("UserInputService").InputEnded:Connect(onInputEnded)
+            end
+        end
+        
+        game:GetService("UserInputService").InputEnded:Connect(onInputEnded)
+    end)
+end
+
 local function clearFeatures()
     for _, child in pairs(featuresContainer:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("TextButton") then
@@ -918,6 +1167,11 @@ local function showFishing()
         Config.CatchDelay = val
     end)
     
+    createLabel(featuresContainer, "🎯 CAST POWER")
+    createSlider(featuresContainer, "Power", 0.1, 1.0, Config.CastPower, function(val)
+        Config.CastPower = val
+    end)
+    
     createLabel(featuresContainer, "🎣 ROD SELECTION")
     local rods = findFishingRods()
     local rodNames = {"any"}
@@ -941,7 +1195,7 @@ local function showFishing()
         catchFish()
     end)
     createButton(featuresContainer, "Cancel", function()
-        cancelFishing()
+        cancelFishing(true)
     end)
 end
 
@@ -1083,8 +1337,6 @@ local function showTeleport()
     
     createButton(featuresContainer, "REFRESH PLAYERS", function()
         local newPlayerList = getPlayerList()
-        local newList = #newPlayerList > 0 and newPlayerList or {"No players"}
-        -- Refresh dropdown (implementasi sederhana)
         notify("Players", #newPlayerList .. " online", 1)
     end)
     
@@ -1112,8 +1364,9 @@ local function showStatus()
     local statusText = ""
     statusText = statusText .. "🎣 FISHING REMOTES:\n"
     statusText = statusText .. "ChargeFishingRod: " .. (Remote.ChargeFishingRod and "✅" or "❌") .. "\n"
-    statusText = statusText .. "FishCaught: " .. (Remote.FishCaught and "✅" or "❌") .. "\n"
-    statusText = statusText .. "CatchFishCompleted: " .. (Remote.CatchFishCompleted and "✅" or "❌") .. "\n\n"
+    statusText = statusText .. "RequestFishingMinigame: " .. (Remote.RequestFishingMinigame and "✅" or "❌") .. "\n"
+    statusText = statusText .. "CatchFishCompleted: " .. (Remote.CatchFishCompleted and "✅" or "❌") .. "\n"
+    statusText = statusText .. "FishCaught: " .. (Remote.FishCaught and "✅" or "❌") .. "\n\n"
     
     statusText = statusText .. "🛡️ ANTI-CHEAT:\n"
     statusText = statusText .. "UpdateAutoFishing: " .. (Remote.UpdateAutoFishingState and "✅" or "❌") .. "\n"
@@ -1128,7 +1381,7 @@ local function showStatus()
     statusText = statusText .. "PromptFavorite: " .. (Remote.PromptFavoriteGame and "✅" or "❌")
     
     local statusFrame = Instance.new("Frame")
-    statusFrame.Size = UDim2.new(1, 0, 0, 200)
+    statusFrame.Size = UDim2.new(1, 0, 0, 220)
     statusFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
     statusFrame.BackgroundTransparency = 0.2
     statusFrame.Parent = featuresContainer
@@ -1238,8 +1491,9 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- Cleanup
+-- Cleanup (panggil exitGUI untuk konfirmasi)
 gui.Destroying:Connect(function()
+    -- This is just in case, but we already have confirmation
     stopAutoFishing()
     stopAutoSell()
     stopAutoFavorite()
