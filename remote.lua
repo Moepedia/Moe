@@ -12,9 +12,9 @@ local Remote = {
     Cancel = Net["RF/CancelFishingInputs"],
     Charge = Net["RF/ChargeFishingRod"],
     Minigame = Net["RF/RequestFishingMinigameStarted"],
-    MinigameEvent = Net["RE/Fishing MinigameChanged"],
+    MinigameEvent = Net["RE/FishingMinigameChanged"],
     Catch = Net["RF/CatchFishCompleted"],
-    FishCaught = Net["RE/Fish Caught"]
+    FishCaught = Net["RE/FishCaught"]
 }
 
 -- Variables
