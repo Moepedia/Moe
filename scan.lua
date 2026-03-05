@@ -8,10 +8,10 @@ print("==========================================")
 -- Daftar remote yang mau dipantau
 local remoteNames = {
     "RF/ChargeFishingRod",
-    "RF/Request Fishing MinigameStarted",
-    "RE/Fishing MinigameChanged",
+    "RF/RequestFishingMinigameStarted",
+    "RE/FishingMinigameChanged",
     "RF/CatchFishCompleted",
-    "RE/Fish Caught"
+    "RE/FishCaught"
 }
 
 -- Pantau satu per satu
