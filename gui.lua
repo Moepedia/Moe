@@ -1,4 +1,4 @@
--- Moe V1.0 GUI for FISH IT - COMPLETE EDITION (Fishing, Sell, Favorite, Teleport, Status)
+-- Moe V1.0 GUI for FISH IT - FINAL FIXED VERSION
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -18,21 +18,21 @@ local autoEquip = false
 local fishingConnection = nil
 local sellConnection = nil
 local favoriteConnection = nil
-local currentFishingSpot = nil
-local bobber = nil
-local guiClosed = false  -- Flag untuk cek apakah GUI sudah di-close
+local minigameConnection = nil
+local isMinigameActive = false
+local guiClosed = false
 
--- ===== CONFIG VARIABLES (DEFAULT SETTINGS) =====
+-- ===== CONFIG VARIABLES =====
 local Config = {
-    FishDelay = 2.0,        -- Default 2 detik
-    CatchDelay = 1.0,        -- Default 1 detik
-    SellDelay = 60,          -- Default 60 detik
-    FavoriteRarity = "Mythic", -- Default Mythic
+    FishDelay = 2.0,
+    CatchDelay = 1.0,
+    SellDelay = 60,
+    FavoriteRarity = "Mythic",
     CurrentRod = nil,
-    CastPower = 0.5           -- Default 0.5
+    CastPower = 0.5
 }
 
--- ===== DATA LOKASI TELEPORT (COMPLETE LIST) =====
+-- ===== DATA LOKASI TELEPORT =====
 local LOCATIONS = {
     ["Spawn"] = CFrame.new(45.2788086, 252.562927, 2987.10913, 1, 0, 0, 0, 1, 0, 0, 0, 1),
     ["Sisyphus Statue"] = CFrame.new(-3728.21606, -135.074417, -1012.12744, -0.977224171, 7.74980258e-09, -0.212209702, 1.566994e-08, 1, -3.5640408e-08, 0.212209702, -3.81539813e-08, -0.977224171),
@@ -50,21 +50,19 @@ local LOCATIONS = {
     ["Sacred Temple"] = CFrame.new(1466.92151, -21.8750591, -622.835693, -0.764787138, 8.14444334e-09, 0.644283056, 2.31097452e-08, 1, 1.4791004e-08, -0.644283056, 2.6201187e-08, -0.764787138)
 }
 
--- Daftar lokasi untuk dropdown
 local TeleportLocations = {}
 for loc, _ in pairs(LOCATIONS) do
     table.insert(TeleportLocations, loc)
 end
 table.sort(TeleportLocations)
 
--- ===== REMOTE FUNCTIONS DARI PACKAGES (DEX RESULTS) =====
+-- ===== REMOTE FUNCTIONS DARI FISHINGCONTROLLER =====
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Packages = ReplicatedStorage:FindFirstChild("Packages")
 local Net = Packages and Packages:FindFirstChild("_Index") and 
            Packages._Index:FindFirstChild("sleitnick_net@0.2.0") and 
            Packages._Index["sleitnick_net@0.2.0"].net
 
--- ===== REMOTE YANG BENAR (DARI FISHINGCONTROLLER) =====
 local Remote = {
     -- Fishing Remotes (dari FishingController)
     CancelFishingInputs = Net and Net["RF/CancelFishingInputs"],
@@ -75,21 +73,18 @@ local Remote = {
     UpdateChargeState = Net and Net["RE/UpdateChargeState"],
     CatchFishCompleted = Net and Net["RF/CatchFishCompleted"],
     FishCaught = Net and Net["RE/FishCaught"],
-    BaitSpawned = Net and Net["RE/BaitSpawned"],
     
-    -- Anti-Cheat Remotes
+    -- Anti-Cheat
     UpdateAutoFishingState = Net and Net["RF/UpdateAutoFishingState"],
     MarkAutoFishingUsed = Net and Net["RF/MarkAutoFishingUsed"],
     
-    -- Sell Remotes
+    -- Sell
     SellAllItems = Net and Net["RF/SellAllItems"],
     SellItem = Net and Net["RF/SellItem"],
-    UpdateAutoSellThreshold = Net and Net["RF/UpdateAutoSellThreshold"],
     
-    -- Favorite Remotes
+    -- Favorite
     FavoriteItem = Net and Net["RE/FavoriteItem"],
-    PromptFavoriteGame = Net and Net["RF/PromptFavoriteGame"],
-    FavoriteStateChanged = Net and Net["RE/FavoriteStateChanged"]
+    PromptFavoriteGame = Net and Net["RF/PromptFavoriteGame"]
 }
 
 -- ===== NOTIFY =====
@@ -101,9 +96,8 @@ local function notify(title, text, duration)
     })
 end
 
--- ===== KONFIRMASI DIALOG (FIXED - PASTI BISA CLOSE) =====
+-- ===== KONFIRMASI DIALOG =====
 local function showConfirmDialog(title, message, callback)
-    -- Buat dialog frame
     local dialogFrame = Instance.new("Frame")
     dialogFrame.Size = UDim2.new(0, 300, 0, 150)
     dialogFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
@@ -123,7 +117,6 @@ local function showConfirmDialog(title, message, callback)
     dialogStroke.Transparency = 0.5
     dialogStroke.Parent = dialogFrame
     
-    -- Title
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, 0, 0, 40)
     titleLabel.BackgroundTransparency = 1
@@ -134,7 +127,6 @@ local function showConfirmDialog(title, message, callback)
     titleLabel.Parent = dialogFrame
     titleLabel.ZIndex = 1001
     
-    -- Message
     local msgLabel = Instance.new("TextLabel")
     msgLabel.Size = UDim2.new(1, -20, 0, 40)
     msgLabel.Position = UDim2.new(0, 10, 0, 40)
@@ -147,7 +139,6 @@ local function showConfirmDialog(title, message, callback)
     msgLabel.Parent = dialogFrame
     msgLabel.ZIndex = 1001
     
-    -- Yes button
     local yesBtn = Instance.new("TextButton")
     yesBtn.Size = UDim2.new(0.4, -5, 0, 35)
     yesBtn.Position = UDim2.new(0.1, 0, 0, 95)
@@ -163,7 +154,6 @@ local function showConfirmDialog(title, message, callback)
     yesCorner.CornerRadius = UDim.new(0, 6)
     yesCorner.Parent = yesBtn
     
-    -- No button
     local noBtn = Instance.new("TextButton")
     noBtn.Size = UDim2.new(0.4, -5, 0, 35)
     noBtn.Position = UDim2.new(0.5, 5, 0, 95)
@@ -179,7 +169,6 @@ local function showConfirmDialog(title, message, callback)
     noCorner.CornerRadius = UDim.new(0, 6)
     noCorner.Parent = noBtn
     
-    -- Button events
     yesBtn.MouseButton1Click:Connect(function()
         dialogFrame:Destroy()
         callback(true)
@@ -189,35 +178,16 @@ local function showConfirmDialog(title, message, callback)
         dialogFrame:Destroy()
         callback(false)
     end)
-    
-    -- Click outside to cancel
-    local function onClickOutside(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            local pos = input.Position
-            local absPos = dialogFrame.AbsolutePosition
-            local absSize = dialogFrame.AbsoluteSize
-            
-            if pos.X < absPos.X or pos.X > absPos.X + absSize.X or
-               pos.Y < absPos.Y or pos.Y > absPos.Y + absSize.Y then
-                dialogFrame:Destroy()
-                callback(false)
-            end
-        end
-    end
-    
-    game:GetService("UserInputService").InputBegan:Connect(onClickOutside)
 end
 
 -- ===== EQUIP ROD SYSTEM =====
 local function findFishingRods()
     local rods = {}
-    -- Scan backpack
     for _, tool in ipairs(player.Backpack:GetChildren()) do
         if tool:IsA("Tool") and (tool.Name:lower():match("rod") or tool.Name:lower():match("fishing")) then
             table.insert(rods, {Name = tool.Name, Instance = tool, Location = "Backpack"})
         end
     end
-    -- Scan character
     if player.Character then
         for _, tool in ipairs(player.Character:GetChildren()) do
             if tool:IsA("Tool") and (tool.Name:lower():match("rod") or tool.Name:lower():match("fishing")) then
@@ -249,14 +219,10 @@ end
 -- ===== ANTI-CHEAT BYPASS =====
 local function disableAntiCheat()
     if Remote.UpdateAutoFishingState then
-        pcall(function()
-            Remote.UpdateAutoFishingState:InvokeServer(false)
-        end)
+        pcall(function() Remote.UpdateAutoFishingState:InvokeServer(false) end)
     end
     if Remote.MarkAutoFishingUsed then
-        pcall(function()
-            Remote.MarkAutoFishingUsed:InvokeServer(0)
-        end)
+        pcall(function() Remote.MarkAutoFishingUsed:InvokeServer(0) end)
     end
 end
 
@@ -264,11 +230,9 @@ end
 local function getWaterHeight()
     local character = player.Character
     if not character then return 0 end
-    
     local rootPart = character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return 0 end
     
-    -- Raycast ke bawah untuk cari air
     local rayParams = RaycastParams.new()
     rayParams.FilterType = Enum.RaycastFilterType.Blacklist
     rayParams.FilterDescendantsInstances = {character}
@@ -282,44 +246,59 @@ local function getWaterHeight()
 end
 
 -- ===== AUTO FISHING FUNCTIONS (Berdasarkan FishingController) =====
-local function findBobber()
-    for _, v in pairs(workspace:GetDescendants()) do
-        if v.Name == "Bobber" and v:IsA("Part") and v:FindFirstChild("Owner") then
-            local owner = v:FindFirstChild("Owner")
-            if owner and owner.Value == player then
-                return v
-            end
-        end
+local function setupMinigameListener()
+    if minigameConnection then
+        minigameConnection:Disconnect()
     end
-    return nil
+    
+    if Remote.FishingMinigameChanged then
+        minigameConnection = Remote.FishingMinigameChanged.OnClientEvent:Connect(function(state, data)
+            print("🎣 Minigame state:", state)
+            
+            if state == "Activated" or state == "Started" then
+                isMinigameActive = true
+                print("🎣 Minigame started")
+            elseif state == "Completed" or state == "Stop" then
+                isMinigameActive = false
+                print("✅ Minigame completed")
+                
+                -- Langsung catch setelah minigame selesai
+                if autoFishing and Remote.CatchFishCompleted then
+                    task.spawn(function()
+                        pcall(function()
+                            Remote.CatchFishCompleted:InvokeServer()
+                            print("✅ Fish caught!")
+                        end)
+                    end)
+                end
+            end
+        end)
+    end
 end
 
-local function castRod()
+local function startFishing()
     if not Remote.ChargeFishingRod then return false end
     
-    -- Dapatkan server time (WAJIB!)
     local serverTime = workspace:GetServerTimeNow()
     
-    -- Charge rod dengan parameter yang benar (nil, nil, serverTime, nil)
+    -- 1. CHARGE ROD (nil, nil, serverTime, nil)
     local chargeSuccess = pcall(function()
         return Remote.ChargeFishingRod:InvokeServer(nil, nil, serverTime, nil)
     end)
     
     if not chargeSuccess then 
-        print("Charge failed")
+        print("❌ Charge failed")
         return false 
     end
     
-    -- Tunggu bentar untuk charge animation
+    -- Tunggu charge animation
     task.wait(0.5)
     
     -- Dapatkan posisi air
     local waterY = getWaterHeight()
-    if waterY == 0 then
-        waterY = -50 -- default fallback
-    end
+    if waterY == 0 then waterY = -50 end
     
-    -- Request minigame dengan parameter (posY, power, serverTime)
+    -- 2. REQUEST MINIGAME (posY, power, serverTime)
     local minigameSuccess = pcall(function()
         return Remote.RequestFishingMinigame:InvokeServer(waterY, Config.CastPower, serverTime)
     end)
@@ -327,93 +306,68 @@ local function castRod()
     return minigameSuccess
 end
 
-local function catchFish()
-    if not Remote.CatchFishCompleted then return false end
-    
-    -- CatchFishCompleted TANPA PARAMETER!
-    local success = pcall(function()
-        return Remote.CatchFishCompleted:InvokeServer()
-    end)
-    
-    return success
-end
-
-local function cancelFishing(force)
+local function cancelFishing()
     if Remote.CancelFishingInputs then
-        pcall(function()
-            Remote.CancelFishingInputs:InvokeServer(force or true)
-        end)
+        pcall(function() Remote.CancelFishingInputs:InvokeServer(true) end)
     end
 end
 
--- ===== AUTO SELL FUNCTIONS =====
+-- ===== AUTO SELL =====
 local function sellAllItems()
     if Remote.SellAllItems then
-        local success = pcall(function()
-            Remote.SellAllItems:InvokeServer()
-        end)
+        local success = pcall(function() Remote.SellAllItems:InvokeServer() end)
         notify("Sell", success and "All items sold!" or "Sell failed", 2)
     end
 end
 
--- ===== AUTO FAVORITE FUNCTIONS =====
+-- ===== AUTO FAVORITE =====
 local function promptFavorite()
     if Remote.PromptFavoriteGame then
-        pcall(function()
-            Remote.PromptFavoriteGame:InvokeServer()
-        end)
+        pcall(function() Remote.PromptFavoriteGame:InvokeServer() end)
     end
 end
 
--- ===== TELEPORT FUNCTION =====
+-- ===== TELEPORT =====
 local function teleportTo(locationName)
     local cframe = LOCATIONS[locationName]
-    if not cframe then
-        notify("Teleport", "Lokasi tidak ditemukan!", 2)
-        return
-    end
+    if not cframe then return end
     
     local character = player.Character
-    if not character then
-        notify("Teleport", "Karakter tidak ditemukan!", 2)
-        return
-    end
+    if not character then return end
     
     local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then
-        notify("Teleport", "RootPart tidak ditemukan!", 2)
-        return
+    if rootPart then
+        rootPart.CFrame = cframe
+        notify("Teleport", "Teleported to " .. locationName, 1.5)
     end
-    
-    rootPart.CFrame = cframe
-    notify("Teleport", "Teleport ke " .. locationName, 1.5)
 end
 
 -- ===== MAIN FISHING LOOP =====
 local function startAutoFishing()
     if autoFishing or guiClosed then return end
     
+    -- Setup listener
+    setupMinigameListener()
+    
     if autoEquip and not Config.CurrentRod then
         equipRod("any")
     end
     
     autoFishing = true
-    notify("Auto Fish", "Started! (Delay: " .. Config.FishDelay .. "s)", 2)
+    notify("Auto Fish", "Started!", 2)
     
     fishingConnection = game:GetService("RunService").Heartbeat:Connect(function()
         if not autoFishing or guiClosed then return end
         
         disableAntiCheat()
-        cancelFishing(true)
+        cancelFishing()
         task.wait(0.2)
         
-        local castSuccess = castRod()
-        if castSuccess then
-            task.wait(Config.FishDelay)
-            catchFish()
-        end
+        -- Start fishing (charge + request minigame)
+        startFishing()
         
-        task.wait(Config.CatchDelay)
+        -- Tunggu sesuai delay sebelum next cycle
+        task.wait(Config.FishDelay + Config.CatchDelay)
     end)
 end
 
@@ -423,7 +377,11 @@ local function stopAutoFishing()
         fishingConnection:Disconnect()
         fishingConnection = nil
     end
-    cancelFishing(true)
+    if minigameConnection then
+        minigameConnection:Disconnect()
+        minigameConnection = nil
+    end
+    cancelFishing()
     notify("Auto Fish", "Stopped!", 2)
 end
 
@@ -467,24 +425,33 @@ local function stopAutoFavorite()
     end
 end
 
--- ===== EXIT FUNCTION WITH CONFIRMATION (FIXED - PASTI BISA CLOSE) =====
+-- ===== EXIT FUNCTION (PASTI CLOSE) =====
 local function exitGUI()
-    if guiClosed then return end  -- Cegah double call
+    if guiClosed then return end
     
     showConfirmDialog("Exit GUI", "Are you sure you want to close?", function(confirmed)
         if confirmed then
             guiClosed = true
+            
+            -- Stop semua loops
             stopAutoFishing()
             stopAutoSell()
             stopAutoFavorite()
-            closeAllDropdowns()
-            task.wait(0.1)  -- Beri waktu untuk cleanup
-            gui:Destroy()
+            
+            -- Close dropdowns
+            if activeDropdown then
+                activeDropdown.Visible = false
+                activeDropdown = nil
+            end
+            
+            -- Destroy GUI dengan paksa
+            task.wait(0.1)
+            pcall(function() gui:Destroy() end)
         end
     end)
 end
 
--- ===== MAIN FRAME (650x500) =====
+-- ===== MAIN FRAME =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 650, 0, 500)
@@ -496,12 +463,10 @@ mainFrame.Parent = gui
 mainFrame.Active = true
 mainFrame.Selectable = true
 
--- Rounded corners
 local corners = Instance.new("UICorner")
 corners.CornerRadius = UDim.new(0, 12)
 corners.Parent = mainFrame
 
--- Border
 local stroke = Instance.new("UIStroke")
 stroke.Thickness = 1.2
 stroke.Color = Color3.new(1, 1, 1)
@@ -514,7 +479,6 @@ headerFrame.Size = UDim2.new(1, 0, 0, 35)
 headerFrame.BackgroundTransparency = 1
 headerFrame.Parent = mainFrame
 
--- Logo
 local logo = Instance.new("ImageLabel")
 logo.Size = UDim2.new(0, 25, 0, 25)
 logo.Position = UDim2.new(0, 8, 0.5, -12.5)
@@ -523,7 +487,6 @@ logo.Image = "rbxassetid://115935586997848"
 logo.ScaleType = Enum.ScaleType.Fit
 logo.Parent = headerFrame
 
--- Title
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(0, 100, 1, 0)
 title.Position = UDim2.new(0, 38, 0, 0)
@@ -552,7 +515,7 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 4)
 minCorner.Parent = minButton
 
--- Close button (FIXED)
+-- Close button
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 25, 0, 25)
 closeBtn.Position = UDim2.new(1, -30, 0.5, -12.5)
@@ -618,7 +581,6 @@ floatButton.MouseButton1Click:Connect(function()
     floatingLogo.Visible = false
 end)
 
--- Horizontal line
 local hLine = Instance.new("Frame")
 hLine.Size = UDim2.new(1, -20, 0, 1)
 hLine.Position = UDim2.new(0, 10, 0, 35)
@@ -646,7 +608,6 @@ menuLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 menuLayout.Padding = UDim.new(0, 6)
 menuLayout.Parent = leftMenu
 
--- Vertical line
 local vLine = Instance.new("Frame")
 vLine.Size = UDim2.new(0, 1, 1, 0)
 vLine.Position = UDim2.new(0, 130, 0, 0)
@@ -662,14 +623,12 @@ contentArea.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
 contentArea.BackgroundTransparency = 0.3
 contentArea.Parent = contentContainer
 contentArea.Active = true
-contentArea.Selectable = true
 contentArea.ClipsDescendants = true
 
 local contentCorner = Instance.new("UICorner")
 contentCorner.CornerRadius = UDim.new(0, 8)
 contentCorner.Parent = contentArea
 
--- Content title
 local contentTitle = Instance.new("TextLabel")
 contentTitle.Size = UDim2.new(1, -10, 0, 25)
 contentTitle.Position = UDim2.new(0, 5, 0, 5)
@@ -682,7 +641,6 @@ contentTitle.TextXAlignment = Enum.TextXAlignment.Left
 contentTitle.Parent = contentArea
 contentTitle.ZIndex = 5
 
--- Scrolling frame for features
 local scrollFrame = Instance.new("ScrollingFrame")
 scrollFrame.Size = UDim2.new(1, -10, 1, -35)
 scrollFrame.Position = UDim2.new(0, 5, 0, 30)
@@ -694,7 +652,6 @@ scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scrollFrame.Parent = contentArea
 scrollFrame.ZIndex = 5
 
--- Container untuk features
 local featuresContainer = Instance.new("Frame")
 featuresContainer.Size = UDim2.new(1, 0, 0, 0)
 featuresContainer.BackgroundTransparency = 1
@@ -708,7 +665,7 @@ featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 featuresLayout.Padding = UDim.new(0, 8)
 featuresLayout.Parent = featuresContainer
 
--- ===== DROPDOWN FUNCTIONS (dari script asli) =====
+-- ===== DROPDOWN FUNCTIONS =====
 local activeDropdown = nil
 
 local function closeAllDropdowns()
@@ -723,17 +680,14 @@ local function setupInputTracking()
     
     userInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
-        
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             task.wait(0.05)
-            
             if not activeDropdown then return end
             
             local mousePos = userInputService:GetMouseLocation()
             local objects = gui:GetGuiObjectsAtPosition(mousePos.X, mousePos.Y)
             
             local clickedOnDropdown = false
-            
             for _, obj in ipairs(objects) do
                 local current = obj
                 while current do
@@ -1009,7 +963,6 @@ local function createToggle(parent, text, default, callback)
     return toggleBtn
 end
 
--- ===== INPUT MANUAL (GANTI SLIDER) =====
 local function createInput(parent, labelText, default, callback, min, max)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 35)
@@ -1044,7 +997,6 @@ local function createInput(parent, labelText, default, callback, min, max)
     
     input.FocusLost:Connect(function()
         local val = tonumber(input.Text) or default
-        -- Validasi min/max kalau ada
         if min and max then
             val = math.max(min, math.min(max, val))
         end
@@ -1069,7 +1021,7 @@ local autoSellToggle = nil
 local autoFavoriteToggle = nil
 local autoEquipToggle = nil
 
--- ===== FISHING MENU (TANPA TOMBOL CAST/CATCH/CANCEL) =====
+-- ===== FISHING MENU =====
 local function showFishing()
     clearFeatures()
     contentTitle.Text = "Fishing Features"
@@ -1093,23 +1045,14 @@ local function showFishing()
     
     createLabel(featuresContainer, "⏱️ DELAY SETTINGS (Default: 2.0s / 1.0s)")
     
-    -- Input manual untuk Fish Delay
     createInput(featuresContainer, "Fish Delay (s)", Config.FishDelay, function(val)
         Config.FishDelay = val
-        if autoFishing then
-            notify("Settings", "Fish Delay: " .. val .. "s", 1)
-        end
     end, 0.1, 10)
     
-    -- Input manual untuk Catch Delay
     createInput(featuresContainer, "Catch Delay (s)", Config.CatchDelay, function(val)
         Config.CatchDelay = val
-        if autoFishing then
-            notify("Settings", "Catch Delay: " .. val .. "s", 1)
-        end
     end, 0.1, 10)
     
-    -- Input manual untuk Cast Power
     createLabel(featuresContainer, "🎯 CAST POWER (Default: 0.5)")
     createInput(featuresContainer, "Power (0.1-1.0)", Config.CastPower, function(val)
         Config.CastPower = val
@@ -1155,7 +1098,6 @@ local function showSell()
         sellAllItems()
     end)
     
-    -- Status
     local statusFrame = Instance.new("Frame")
     statusFrame.Size = UDim2.new(1, 0, 0, 60)
     statusFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
@@ -1206,7 +1148,6 @@ local function showFavorite()
         promptFavorite()
     end)
     
-    -- Status
     local statusFrame = Instance.new("Frame")
     statusFrame.Size = UDim2.new(1, 0, 0, 60)
     statusFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
@@ -1423,15 +1364,5 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- Cleanup
-gui.Destroying:Connect(function()
-    if not guiClosed then
-        stopAutoFishing()
-        stopAutoSell()
-        stopAutoFavorite()
-    end
-    closeAllDropdowns()
-end)
-
-print("✅ Moe V1.0 Complete Edition - Manual Input Version")
-notify("Moe V1.0", "5 Menus Loaded! (Manual Input)", 3)
+print("✅ Moe V1.0 Final Fixed - Auto Fishing SHOULD WORK!")
+notify("Moe V1.0", "Fixed: Auto Fishing & Close Button", 3)
