@@ -1,118 +1,38 @@
--- ====================================================================
---     FISHING SYSTEM SCANNER v2.1 - MANUAL COPY EDITION
---     Hasil ditampilkan di TextBox agar bisa di-copy manual
--- ====================================================================
+-- TEST CATCH FISH COMPLETED
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
-local player = game.Players.LocalPlayer
-local gui = Instance.new("ScreenGui")
-gui.Name = "FishingScanner"
-gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+local CatchFish = Net["RF/CatchFishCompleted"]
 
--- Variables untuk menyimpan hasil
-local ScanResults = {
-    Remotes = {},
-    Modules = {},
-    AntiCheat = {},
-    Timestamp = os.time(),
-    Date = os.date("%Y-%m-%d %H:%M:%S")
-}
+print("🧪 TESTING CATCH FISH COMPLETED")
+print("================================")
 
--- ===== MAIN FRAME =====
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 650, 0, 500)
-frame.Position = UDim2.new(0.5, -325, 0.5, -250)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-frame.Parent = gui
-
--- Rounded corners
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
-corner.Parent = frame
-
--- Border
-local stroke = Instance.new("UIStroke")
-stroke.Thickness = 1
-stroke.Color = Color3.fromRGB(80, 80, 90)
-stroke.Parent = frame
-
--- ===== HEADER =====
-local header = Instance.new("Frame")
-header.Size = UDim2.new(1, 0, 0, 35)
-header.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-header.BorderSizePixel = 0
-header.Parent = frame
-
-local headerCorner = Instance.new("UICorner")
-headerCorner.CornerRadius = UDim.new(0, 8)
-headerCorner.Parent = header
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -40, 1, 0)
-title.Position = UDim2.new(0, 10, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "🔍 FISHING SYSTEM SCANNER v2.1 (Manual Copy)"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 14
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = header
-
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 30, 0, 30)
-closeBtn.Position = UDim2.new(1, -30, 0, 0)
-closeBtn.BackgroundTransparency = 1
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 16
-closeBtn.Parent = header
-
-closeBtn.MouseButton1Click:Connect(function()
-    gui:Destroy()
+-- Test 1: Panggil tanpa apa-apa
+local success1, result1 = pcall(function()
+    return CatchFish:InvokeServer()
 end)
+print("Test 1 (tanpa rod):", success1 and "✅" or "❌", result1)
 
--- ===== STATUS BAR =====
-local statusBar = Instance.new("Frame")
-statusBar.Size = UDim2.new(1, -20, 0, 30)
-statusBar.Position = UDim2.new(0, 10, 0, 45)
-statusBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-statusBar.BorderSizePixel = 0
-statusBar.Parent = frame
+-- Test 2: Panggil dengan rod di tangan
+-- (Equip rod dulu manual)
+task.wait(2)
+print("\n🎣 Equip rod dulu...")
+task.wait(3)
 
-local statusCorner = Instance.new("UICorner")
-statusCorner.CornerRadius = UDim.new(0, 6)
-statusCorner.Parent = statusBar
+local success2, result2 = pcall(function()
+    return CatchFish:InvokeServer()
+end)
+print("Test 2 (dengan rod):", success2 and "✅" or "❌", result2)
 
-local statusText = Instance.new("TextLabel")
-statusText.Size = UDim2.new(1, -10, 1, 0)
-statusText.Position = UDim2.new(0, 10, 0, 0)
-statusText.BackgroundTransparency = 1
-statusText.Text = "⏳ Ready to scan..."
-statusText.TextColor3 = Color3.fromRGB(255, 255, 0)
-statusText.Font = Enum.Font.Gotham
-statusText.TextSize = 12
-statusText.TextXAlignment = Enum.TextXAlignment.Left
-statusText.Parent = statusBar
-
--- ===== TEXT BOX UNTUK HASIL (BIASA DI-SELECT & COPY MANUAL) =====
-local textBox = Instance.new("TextBox")
-textBox.Size = UDim2.new(1, -20, 1, -130)
-textBox.Position = UDim2.new(0, 10, 0, 80)
-textBox.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-textBox.BackgroundTransparency = 0
-textBox.Text = "Klik SCAN untuk memulai..."
-textBox.TextColor3 = Color3.fromRGB(220, 220, 220)
-textBox.TextSize = 11
-textBox.Font = Enum.Font.Code
-textBox.TextXAlignment = Enum.TextXAlignment.Left
-textBox.TextYAlignment = Enum.TextYAlignment.Top
-textBox.MultiLine = true
-textBox.ClearTextOnFocus = false
-textBox.TextEditable = false  -- Tidak bisa diedit, tapi bisa di-select
+-- Test 3: Coba spam
+print("\n⚡ Spam test...")
+for i = 1, 5 do
+    local s, r = pcall(function()
+        return CatchFish:InvokeServer()
+    end)
+    print("Spam " .. i .. ":", s and "✅" or "❌")
+    task.wait(0.1)
+endtextBox.TextEditable = false  -- Tidak bisa diedit, tapi bisa di-select
 textBox.Parent = frame
 
 local textCorner = Instance.new("UICorner")
