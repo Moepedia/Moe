@@ -1,59 +1,51 @@
--- CEK REMOTE - PASTI JALAN
+-- REMOTE SPY - Lihat semua remote yang dipanggil
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local Logs = {}
 
-print("🔍 MULAI CEK REMOTE...")
-print("==========================")
-
--- Cari Packages
-local Packages = ReplicatedStorage:FindFirstChild("Packages")
-if not Packages then
-    print("❌ Packages TIDAK DITEMUKAN!")
-    return
-end
-print("✅ Packages ditemukan")
-
--- Cari Net
-local Index = Packages:FindFirstChild("_Index")
-if not Index then
-    print("❌ _Index TIDAK DITEMUKAN!")
-    return
+-- Cari semua remote
+local function scanAllRemotes()
+    print("🔍 SCANNING ALL REMOTES...")
+    local remotes = {}
+    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            if obj.Name:match("Fish") or obj.Name:match("Rod") or obj.Name:match("Cast") or 
+               obj.Name:match("Catch") or obj.Name:match("Reel") or obj.Name:match("Minigame") then
+                table.insert(remotes, obj)
+            end
+        end
+    end
+    return remotes
 end
 
-local NetFolder = Index:FindFirstChild("sleitnick_net@0.2.0")
-if not NetFolder then
-    print("❌ sleitnick_net@0.2.0 TIDAK DITEMUKAN!")
-    return
-end
+-- Pasang spy
+local remotes = scanAllRemotes()
+print("📡 Memata-matai " .. #remotes .. " remote...")
+print("🟢 Silahkan FISHING MANUAL sekarang!")
+print("========================================")
 
-local Net = NetFolder:FindFirstChild("net")
-if not Net then
-    print("❌ net TIDAK DITEMUKAN!")
-    return
-end
-print("✅ Net ditemukan!")
-
--- Daftar remote yang mau dicek
-local remotesToCheck = {
-    "RF/CancelFishingInputs",
-    "RF/ChargeFishingRod",
-    "RF/RequestFishingMinigameStarted",
-    "RF/CatchFishCompleted",
-    "RE/FishCaught",
-    "RE/FishingMinigameChanged"
-}
-
-print("\n📡 CEK REMOTE SATU PER SATU:")
-print("--------------------------")
-
-for _, remoteName in ipairs(remotesToCheck) do
-    local remote = Net:FindFirstChild(remoteName)
-    if remote then
-        print("✅ " .. remoteName .. " - " .. remote.ClassName)
-    else
-        print("❌ " .. remoteName .. " - TIDAK DITEMUKAN")
+-- Hook ke semua remote
+for _, remote in ipairs(remotes) do
+    if remote:IsA("RemoteEvent") then
+        local oldFire = remote.FireServer
+        remote.FireServer = function(self, ...)
+            local args = {...}
+            print("📤 REMOTE EVENT:", remote.Name)
+            for i, arg in ipairs(args) do
+                print("   Arg " .. i .. ": " .. tostring(arg))
+            end
+            return oldFire(self, ...)
+        end
+    elseif remote:IsA("RemoteFunction") then
+        local oldInvoke = remote.InvokeServer
+        remote.InvokeServer = function(self, ...)
+            local args = {...}
+            print("📤 REMOTE FUNCTION:", remote.Name)
+            for i, arg in ipairs(args) do
+                print("   Arg " .. i .. ": " .. tostring(arg))
+            end
+            local result = {oldInvoke(self, ...)}
+            print("   Return: " .. tostring(result[1]))
+            return unpack(result)
+        end
     end
 end
-
-print("\n✅ CEK SELESAI!")
