@@ -1,51 +1,37 @@
--- REMOTE SPY - Lihat semua remote yang dipanggil
+-- REMOTE LOGGER SEDERHANA
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Logs = {}
+local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
--- Cari semua remote
-local function scanAllRemotes()
-    print("🔍 SCANNING ALL REMOTES...")
-    local remotes = {}
-    for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-            if obj.Name:match("Fish") or obj.Name:match("Rod") or obj.Name:match("Cast") or 
-               obj.Name:match("Catch") or obj.Name:match("Reel") or obj.Name:match("Minigame") then
-                table.insert(remotes, obj)
-            end
-        end
-    end
-    return remotes
-end
+print("🔍 MULAI LOGGING - SILAHKAN FISHING MANUAL")
+print("==========================================")
 
--- Pasang spy
-local remotes = scanAllRemotes()
-print("📡 Memata-matai " .. #remotes .. " remote...")
-print("🟢 Silahkan FISHING MANUAL sekarang!")
-print("========================================")
+-- Daftar remote yang mau dipantau
+local remoteNames = {
+    "RF/ChargeFishingRod",
+    "RF/Request Fishing MinigameStarted",
+    "RE/Fishing MinigameChanged",
+    "RF/CatchFishCompleted",
+    "RE/Fish Caught"
+}
 
--- Hook ke semua remote
-for _, remote in ipairs(remotes) do
-    if remote:IsA("RemoteEvent") then
-        local oldFire = remote.FireServer
-        remote.FireServer = function(self, ...)
-            local args = {...}
-            print("📤 REMOTE EVENT:", remote.Name)
-            for i, arg in ipairs(args) do
-                print("   Arg " .. i .. ": " .. tostring(arg))
-            end
-            return oldFire(self, ...)
+-- Pantau satu per satu
+for _, name in ipairs(remoteNames) do
+    local remote = Net[name]
+    if remote then
+        if remote:IsA("RemoteEvent") then
+            remote.OnClientEvent:Connect(function(...)
+                print("📥 EVENT:", name)
+                local args = {...}
+                for i, arg in ipairs(args) do
+                    print("   Arg", i, ":", typeof(arg), tostring(arg))
+                end
+            end)
+        else
+            print("📤 FUNCTION SIAP:", name)
         end
-    elseif remote:IsA("RemoteFunction") then
-        local oldInvoke = remote.InvokeServer
-        remote.InvokeServer = function(self, ...)
-            local args = {...}
-            print("📤 REMOTE FUNCTION:", remote.Name)
-            for i, arg in ipairs(args) do
-                print("   Arg " .. i .. ": " .. tostring(arg))
-            end
-            local result = {oldInvoke(self, ...)}
-            print("   Return: " .. tostring(result[1]))
-            return unpack(result)
-        end
+    else
+        print("❌ REMOTE TIDAK ADA:", name)
     end
 end
+
+print("🟢 Silahkan fishing manual sekarang!")
