@@ -22,14 +22,14 @@ local currentFishingSpot = nil
 local bobber = nil
 local guiClosed = false  -- Flag untuk cek apakah GUI sudah di-close
 
--- ===== CONFIG VARIABLES =====
+-- ===== CONFIG VARIABLES (DEFAULT SETTINGS) =====
 local Config = {
-    FishDelay = 2,
-    CatchDelay = 1,
-    SellDelay = 60,
-    FavoriteRarity = "Mythic",
+    FishDelay = 2.0,        -- Default 2 detik
+    CatchDelay = 1.0,        -- Default 1 detik
+    SellDelay = 60,          -- Default 60 detik
+    FavoriteRarity = "Mythic", -- Default Mythic
     CurrentRod = nil,
-    CastPower = 0.5  -- 0-1, makin besar makin jauh
+    CastPower = 0.5           -- Default 0.5
 }
 
 -- ===== DATA LOKASI TELEPORT (COMPLETE LIST) =====
@@ -101,7 +101,7 @@ local function notify(title, text, duration)
     })
 end
 
--- ===== KONFIRMASI DIALOG (FIXED) =====
+-- ===== KONFIRMASI DIALOG (FIXED - PASTI BISA CLOSE) =====
 local function showConfirmDialog(title, message, callback)
     -- Buat dialog frame
     local dialogFrame = Instance.new("Frame")
@@ -310,8 +310,6 @@ local function castRod()
         return false 
     end
     
-    notify("Fishing", "Casting...", 0.5)
-    
     -- Tunggu bentar untuk charge animation
     task.wait(0.5)
     
@@ -400,7 +398,7 @@ local function startAutoFishing()
     end
     
     autoFishing = true
-    notify("Auto Fish", "Started!", 2)
+    notify("Auto Fish", "Started! (Delay: " .. Config.FishDelay .. "s)", 2)
     
     fishingConnection = game:GetService("RunService").Heartbeat:Connect(function()
         if not autoFishing or guiClosed then return end
@@ -469,7 +467,7 @@ local function stopAutoFavorite()
     end
 end
 
--- ===== EXIT FUNCTION WITH CONFIRMATION (FIXED) =====
+-- ===== EXIT FUNCTION WITH CONFIRMATION (FIXED - PASTI BISA CLOSE) =====
 local function exitGUI()
     if guiClosed then return end  -- Cegah double call
     
@@ -479,6 +477,7 @@ local function exitGUI()
             stopAutoFishing()
             stopAutoSell()
             stopAutoFavorite()
+            closeAllDropdowns()
             task.wait(0.1)  -- Beri waktu untuk cleanup
             gui:Destroy()
         end
@@ -488,7 +487,7 @@ end
 -- ===== MAIN FRAME (650x500) =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 650, 0, 500)  -- Diperbesar untuk power setting
+mainFrame.Size = UDim2.new(0, 650, 0, 500)
 mainFrame.Position = UDim2.new(0.5, -325, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.15
@@ -1010,7 +1009,8 @@ local function createToggle(parent, text, default, callback)
     return toggleBtn
 end
 
-local function createInput(parent, labelText, default, callback)
+-- ===== INPUT MANUAL (GANTI SLIDER) =====
+local function createInput(parent, labelText, default, callback, min, max)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 35)
     frame.BackgroundTransparency = 1
@@ -1044,103 +1044,12 @@ local function createInput(parent, labelText, default, callback)
     
     input.FocusLost:Connect(function()
         local val = tonumber(input.Text) or default
-        callback(val)
-    end)
-    
-    return frame
-end
-
--- ===== SLIDER FIXED (Tidak error clamp) =====
-local function createSlider(parent, labelText, min, max, default, callback)
-    -- VALIDASI: pastikan min < max
-    if min >= max then
-        warn("Slider error: min (" .. min .. ") must be less than max (" .. max .. ")")
-        min, max = 0, 1  -- fallback default
-    end
-    
-    -- Pastikan default dalam range
-    default = math.clamp(default, min, max)
-    
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 45)
-    frame.BackgroundTransparency = 1
-    frame.Parent = parent
-    frame.ZIndex = 20
-    
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -10, 0, 20)
-    label.Position = UDim2.new(0, 5, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = labelText .. ": " .. string.format("%.1f", default)
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextSize = 13
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-    label.ZIndex = 21
-    
-    local slider = Instance.new("Frame")
-    slider.Size = UDim2.new(1, -20, 0, 15)
-    slider.Position = UDim2.new(0, 10, 0, 25)
-    slider.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    slider.Parent = frame
-    slider.ZIndex = 21
-    
-    local sliderCorner = Instance.new("UICorner")
-    sliderCorner.CornerRadius = UDim.new(0, 4)
-    sliderCorner.Parent = slider
-    
-    local fill = Instance.new("Frame")
-    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-    fill.BackgroundColor3 = Color3.new(0, 0.6, 0.8)
-    fill.Parent = slider
-    fill.ZIndex = 22
-    
-    local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(0, 4)
-    fillCorner.Parent = fill
-    
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, 0, 1, 0)
-    button.BackgroundTransparency = 1
-    button.Text = ""
-    button.Parent = slider
-    button.ZIndex = 23
-    
-    local value = default
-    local dragging = false
-    
-    button.MouseButton1Down:Connect(function()
-        dragging = true
-        
-        local connection
-        connection = game:GetService("RunService").RenderStepped:Connect(function()
-            if not dragging then return end
-            
-            local mousePos = game:GetService("UserInputService"):GetMouseLocation()
-            local absPos = slider.AbsolutePosition
-            local absSize = slider.AbsoluteSize
-            
-            local relativeX = math.clamp(mousePos.X - absPos.X, 0, absSize.X)
-            local percent = relativeX / absSize.X
-            value = min + (max - min) * percent
-            value = math.floor(value * 10) / 10  -- 1 decimal
-            
-            fill.Size = UDim2.new(percent, 0, 1, 0)
-            label.Text = labelText .. ": " .. string.format("%.1f", value)
-        end)
-        
-        local function onInputEnded(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-                if connection then
-                    connection:Disconnect()
-                end
-                callback(value)
-            end
+        -- Validasi min/max kalau ada
+        if min and max then
+            val = math.max(min, math.min(max, val))
         end
-        
-        game:GetService("UserInputService").InputEnded:Connect(onInputEnded)
+        input.Text = tostring(val)
+        callback(val)
     end)
     
     return frame
@@ -1160,7 +1069,7 @@ local autoSellToggle = nil
 local autoFavoriteToggle = nil
 local autoEquipToggle = nil
 
--- ===== FISHING MENU =====
+-- ===== FISHING MENU (TANPA TOMBOL CAST/CATCH/CANCEL) =====
 local function showFishing()
     clearFeatures()
     contentTitle.Text = "Fishing Features"
@@ -1182,18 +1091,29 @@ local function showFishing()
         end
     end)
     
-    createLabel(featuresContainer, "⏱️ DELAY SETTINGS")
+    createLabel(featuresContainer, "⏱️ DELAY SETTINGS (Default: 2.0s / 1.0s)")
+    
+    -- Input manual untuk Fish Delay
     createInput(featuresContainer, "Fish Delay (s)", Config.FishDelay, function(val)
         Config.FishDelay = val
-    end)
+        if autoFishing then
+            notify("Settings", "Fish Delay: " .. val .. "s", 1)
+        end
+    end, 0.1, 10)
+    
+    -- Input manual untuk Catch Delay
     createInput(featuresContainer, "Catch Delay (s)", Config.CatchDelay, function(val)
         Config.CatchDelay = val
-    end)
+        if autoFishing then
+            notify("Settings", "Catch Delay: " .. val .. "s", 1)
+        end
+    end, 0.1, 10)
     
-    createLabel(featuresContainer, "🎯 CAST POWER")
-    createSlider(featuresContainer, "Power", 0.1, 1.0, Config.CastPower, function(val)
+    -- Input manual untuk Cast Power
+    createLabel(featuresContainer, "🎯 CAST POWER (Default: 0.5)")
+    createInput(featuresContainer, "Power (0.1-1.0)", Config.CastPower, function(val)
         Config.CastPower = val
-    end)
+    end, 0.1, 1.0)
     
     createLabel(featuresContainer, "🎣 ROD SELECTION")
     local rods = findFishingRods()
@@ -1208,18 +1128,6 @@ local function showFishing()
     else
         createLabel(featuresContainer, "No rods found")
     end
-    
-    createLabel(featuresContainer, "🎮 MANUAL CONTROLS")
-    createButton(featuresContainer, "Cast", function()
-        disableAntiCheat()
-        castRod()
-    end)
-    createButton(featuresContainer, "Catch", function()
-        catchFish()
-    end)
-    createButton(featuresContainer, "Cancel", function()
-        cancelFishing(true)
-    end)
 end
 
 -- ===== SELL MENU =====
@@ -1237,9 +1145,10 @@ local function showSell()
         end
     end)
     
+    createLabel(featuresContainer, "⏱️ SELL DELAY (Default: 60s)")
     createInput(featuresContainer, "Sell Delay (s)", Config.SellDelay, function(val)
         Config.SellDelay = val
-    end)
+    end, 10, 300)
     
     createLabel(featuresContainer, "⚡ MANUAL SELL")
     createButton(featuresContainer, "SELL ALL NOW", function()
@@ -1286,7 +1195,7 @@ local function showFavorite()
         end
     end)
     
-    createLabel(featuresContainer, "Rarity Settings")
+    createLabel(featuresContainer, "Rarity Settings (Default: Mythic)")
     local rarities = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret"}
     createDropdown(featuresContainer, rarities, Config.FavoriteRarity, function(selected)
         Config.FavoriteRarity = selected
@@ -1514,9 +1423,8 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- Cleanup (panggil exitGUI untuk konfirmasi)
+-- Cleanup
 gui.Destroying:Connect(function()
-    -- This is just in case, but we already have confirmation
     if not guiClosed then
         stopAutoFishing()
         stopAutoSell()
@@ -1525,5 +1433,5 @@ gui.Destroying:Connect(function()
     closeAllDropdowns()
 end)
 
-print("✅ Moe V1.0 Complete Edition Loaded (Fishing, Sell, Favorite, Teleport, Status)")
-notify("Moe V1.0", "5 Menus Loaded!", 3)
+print("✅ Moe V1.0 Complete Edition - Manual Input Version")
+notify("Moe V1.0", "5 Menus Loaded! (Manual Input)", 3)
