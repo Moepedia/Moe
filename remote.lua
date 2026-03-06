@@ -6,7 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
 -- Remote Equip (dari hasil debug)
-local EquipRemote = Net["RE/Equipltem"]
+local EquipRemote = Net["RE/EquipItem"]
 
 -- GUI sederhana
 local gui = Instance.new("ScreenGui")
