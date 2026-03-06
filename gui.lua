@@ -1,4 +1,4 @@
--- Moe V1.0 GUI for FISH IT - FINAL FIXED VERSION
+-- Moe V1.0 GUI for FISH IT - FINAL FIXED VERSION (DENGAN HASH EQUIP)
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -65,8 +65,8 @@ local Net = Packages and Packages:FindFirstChild("_Index") and
 
 -- ===== REMOTE YANG DIGUNAKAN =====
 local Remote = {
-    -- Equip Rod (DARI REQUEST USER)
-    EquipTool = Net and Net["RE/18f898ab6a5660c9c24ad72de3c8a6100f9c80df599396ec5a70b8d94d4f860c"],
+    -- Equip Rod (HASH DARI RSPY)
+    EquipTool = Net and Net["RE/EquipToolFromHotbar"],
     
     -- Fishing Remotes (dari FishingController)
     CancelFishingInputs = Net and Net["RF/CancelFishingInputs"],
@@ -184,7 +184,7 @@ local function showConfirmDialog(title, message, callback)
     end)
 end
 
--- ===== EQUIP ROD SYSTEM (PAKAI REMOTE) =====
+-- ===== EQUIP ROD SYSTEM (PAKAI HASH) =====
 local function findFishingRods()
     local rods = {}
     for _, tool in ipairs(player.Backpack:GetChildren()) do
@@ -218,7 +218,7 @@ local function equipRod(rodName)
     for _, rod in ipairs(rods) do
         if rod.Name == rodName or rodName == "any" then
             if rod.Location == "Backpack" then
-                -- Coba remote equip dulu
+                -- Coba remote equip dulu (pakai hash)
                 if equipRodViaRemote(1) then
                     Config.CurrentRod = rod.Name
                     notify("Equip", "Equipped: " .. rod.Name .. " (via remote)", 1)
