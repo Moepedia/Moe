@@ -56,14 +56,18 @@ for loc, _ in pairs(LOCATIONS) do
 end
 table.sort(TeleportLocations)
 
--- ===== REMOTE FUNCTIONS DARI FISHINGCONTROLLER =====
+-- ===== REMOTE FUNCTIONS DARI PACKAGES =====
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Packages = ReplicatedStorage:FindFirstChild("Packages")
 local Net = Packages and Packages:FindFirstChild("_Index") and 
            Packages._Index:FindFirstChild("sleitnick_net@0.2.0") and 
            Packages._Index["sleitnick_net@0.2.0"].net
 
+-- ===== REMOTE YANG DIGUNAKAN =====
 local Remote = {
+    -- Equip Rod (DARI REQUEST USER)
+    EquipTool = Net and Net["RE/EquipToolFromHotbar"],
+    
     -- Fishing Remotes (dari FishingController)
     CancelFishingInputs = Net and Net["RF/CancelFishingInputs"],
     ChargeFishingRod = Net and Net["RF/ChargeFishingRod"],
@@ -180,7 +184,7 @@ local function showConfirmDialog(title, message, callback)
     end)
 end
 
--- ===== EQUIP ROD SYSTEM =====
+-- ===== EQUIP ROD SYSTEM (PAKAI REMOTE) =====
 local function findFishingRods()
     local rods = {}
     for _, tool in ipairs(player.Backpack:GetChildren()) do
@@ -198,15 +202,34 @@ local function findFishingRods()
     return rods
 end
 
+local function equipRodViaRemote(slot)
+    if Remote.EquipTool then
+        local success = pcall(function()
+            Remote.EquipTool:FireServer(slot or 1)
+            print("✅ Equip remote called with slot:", slot or 1)
+        end)
+        return success
+    end
+    return false
+end
+
 local function equipRod(rodName)
     local rods = findFishingRods()
     for _, rod in ipairs(rods) do
         if rod.Name == rodName or rodName == "any" then
             if rod.Location == "Backpack" then
-                rod.Instance.Parent = player.Character
-                Config.CurrentRod = rod.Name
-                notify("Equip", "Equipped: " .. rod.Name, 1)
-                return true
+                -- Coba remote equip dulu
+                if equipRodViaRemote(1) then
+                    Config.CurrentRod = rod.Name
+                    notify("Equip", "Equipped: " .. rod.Name .. " (via remote)", 1)
+                    return true
+                else
+                    -- Fallback ke manual
+                    rod.Instance.Parent = player.Character
+                    Config.CurrentRod = rod.Name
+                    notify("Equip", "Equipped: " .. rod.Name .. " (manual)", 1)
+                    return true
+                end
             elseif rod.Location == "Character" then
                 Config.CurrentRod = rod.Name
                 return true
@@ -245,7 +268,7 @@ local function getWaterHeight()
     return 0
 end
 
--- ===== AUTO FISHING FUNCTIONS (Berdasarkan FishingController) =====
+-- ===== AUTO FISHING FUNCTIONS =====
 local function setupMinigameListener()
     if minigameConnection then
         minigameConnection:Disconnect()
