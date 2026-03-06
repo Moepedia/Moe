@@ -66,7 +66,7 @@ local Net = Packages and Packages:FindFirstChild("_Index") and
 -- ===== REMOTE YANG DIGUNAKAN =====
 local Remote = {
     -- Equip Rod (DARI REQUEST USER)
-    EquipTool = Net and Net["RE/EquipToolFromHotbar"],
+    EquipTool = Net and Net["RE/18f898ab6a5660c9c24ad72de3c8a6100f9c80df599396ec5a70b8d94d4f860c"],
     
     -- Fishing Remotes (dari FishingController)
     CancelFishingInputs = Net and Net["RF/CancelFishingInputs"],
