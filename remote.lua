@@ -1,4 +1,4 @@
--- SIMPLE EQUIP ROD GUI
+-- SIMPLE EQUIP ROD GUI - FIXED VERSION
 local player = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui.Name = "EquipRodGUI"
@@ -9,28 +9,68 @@ gui.Parent = player:WaitForChild("PlayerGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
--- Remote equip yang benar (dari hasil debug)
-local EquipRemote = Net["RE/Equipltem"]  -- <-- PASTI INI!
+-- ===== AUTO FIND EQUIP REMOTE =====
+local EquipRemote = nil
+
+-- Cari semua RemoteEvent yang mungkin untuk equip
+print("🔍 Mencari remote equip...")
+for _, obj in ipairs(Net:GetChildren()) do
+    if obj:IsA("RemoteEvent") then
+        local name = obj.Name
+        print("  RE: " .. name)
+        
+        -- Cek apakah ini remote equip (berdasarkan pola nama)
+        if name:match("Equip") or name:match("equip") then
+            if not EquipRemote then
+                EquipRemote = obj
+                print("✅ Equip remote terpilih: " .. name)
+            end
+        end
+    end
+end
+
+-- Kalau tidak ketemu, coba remote function
+if not EquipRemote then
+    for _, obj in ipairs(Net:GetChildren()) do
+        if obj:IsA("RemoteFunction") and (obj.Name:match("Equip") or obj.Name:match("equip")) then
+            EquipRemote = obj
+            print("✅ Equip remote (RF) terpilih: " .. obj.Name)
+            break
+        end
+    end
+end
 
 -- ===== FUNGSI EQUIP ROD =====
 local function equipRod(rodTool)
     if not EquipRemote then
-        return false, "Remote tidak ditemukan"
+        return false, "Tidak ada remote equip ditemukan"
     end
+    
+    local isFunction = EquipRemote:IsA("RemoteFunction")
+    print("Menggunakan remote: " .. EquipRemote.Name .. " (" .. (isFunction and "RF" or "RE") .. ")")
     
     -- Coba berbagai cara equip
     local methods = {
         {rodTool},                          -- Kirim rod object
         {rodTool.Name},                      -- Kirim nama rod
+        {1},                                 -- Slot 1 aja
         {rodTool, 1},                         -- Rod + slot 1
         {1, rodTool},                         -- Slot 1 + rod
-        {rodTool, player.Character}           -- Rod + character
     }
     
     for i, args in ipairs(methods) do
-        local success = pcall(function()
-            EquipRemote:FireServer(unpack(args))
-        end)
+        local success
+        if isFunction then
+            success = pcall(function()
+                EquipRemote:InvokeServer(unpack(args))
+            end)
+        else
+            success = pcall(function()
+                EquipRemote:FireServer(unpack(args))
+            end)
+        end
+        
+        print("Method " .. i .. ": " .. (success and "✅" or "❌"))
         
         if success then
             task.wait(0.3)
@@ -58,8 +98,8 @@ end
 
 -- ===== GUI SEDERHANA =====
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 200)
-frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+frame.Size = UDim2.new(0, 350, 0, 250)
+frame.Position = UDim2.new(0.5, -175, 0.5, -125)
 frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
 frame.BackgroundTransparency = 0.1
 frame.Active = true
@@ -92,7 +132,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(1, -30, 1, 0)
 titleText.Position = UDim2.new(0, 10, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "🎣 EQUIP ROD SIMPLE"
+titleText.Text = "🎣 EQUIP ROD"
 titleText.TextColor3 = Color3.new(1, 1, 1)
 titleText.Font = Enum.Font.GothamBold
 titleText.TextSize = 14
@@ -125,10 +165,22 @@ content.Position = UDim2.new(0, 10, 0, 35)
 content.BackgroundTransparency = 1
 content.Parent = frame
 
+-- Remote info
+local remoteLabel = Instance.new("TextLabel")
+remoteLabel.Size = UDim2.new(1, 0, 0, 30)
+remoteLabel.Position = UDim2.new(0, 0, 0, 0)
+remoteLabel.BackgroundTransparency = 1
+remoteLabel.Text = "Remote: " .. (EquipRemote and EquipRemote.Name or "Tidak ditemukan")
+remoteLabel.TextColor3 = EquipRemote and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+remoteLabel.Font = Enum.Font.Gotham
+remoteLabel.TextSize = 11
+remoteLabel.TextWrapped = true
+remoteLabel.Parent = content
+
 -- Status label
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, 0, 0, 40)
-statusLabel.Position = UDim2.new(0, 0, 0, 0)
+statusLabel.Size = UDim2.new(1, 0, 0, 30)
+statusLabel.Position = UDim2.new(0, 0, 0, 35)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Text = "Ready"
 statusLabel.TextColor3 = Color3.new(0, 1, 0)
@@ -137,27 +189,28 @@ statusLabel.TextSize = 12
 statusLabel.TextWrapped = true
 statusLabel.Parent = content
 
--- Rod list label
-local listLabel = Instance.new("TextLabel")
-listLabel.Size = UDim2.new(1, 0, 0, 60)
-listLabel.Position = UDim2.new(0, 0, 0, 45)
-listLabel.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-listLabel.BackgroundTransparency = 0.3
-listLabel.Text = "Scanning for rods..."
-listLabel.TextColor3 = Color3.new(1, 1, 1)
-listLabel.Font = Enum.Font.Gotham
-listLabel.TextSize = 11
-listLabel.TextWrapped = true
-listLabel.Parent = content
+-- Rod list
+local listBox = Instance.new("TextLabel")
+listBox.Size = UDim2.new(1, 0, 0, 80)
+listBox.Position = UDim2.new(0, 0, 0, 70)
+listBox.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+listBox.Text = "Scanning for rods..."
+listBox.TextColor3 = Color3.new(1, 1, 1)
+listBox.Font = Enum.Font.Gotham
+listBox.TextSize = 11
+listBox.TextWrapped = true
+listBox.TextXAlignment = Enum.TextXAlignment.Left
+listBox.TextYAlignment = Enum.TextYAlignment.Top
+listBox.Parent = content
 
 local listCorner = Instance.new("UICorner")
 listCorner.CornerRadius = UDim.new(0, 4)
-listCorner.Parent = listLabel
+listCorner.Parent = listBox
 
 -- Buttons
 local equipBtn = Instance.new("TextButton")
 equipBtn.Size = UDim2.new(0.45, 0, 0, 35)
-equipBtn.Position = UDim2.new(0, 0, 0, 110)
+equipBtn.Position = UDim2.new(0, 0, 0, 160)
 equipBtn.BackgroundColor3 = Color3.new(0, 0.5, 0.8)
 equipBtn.Text = "EQUIP"
 equipBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -171,7 +224,7 @@ equipCorner.Parent = equipBtn
 
 local refreshBtn = Instance.new("TextButton")
 refreshBtn.Size = UDim2.new(0.45, 0, 0, 35)
-refreshBtn.Position = UDim2.new(0.55, 0, 0, 110)
+refreshBtn.Position = UDim2.new(0.55, 0, 0, 160)
 refreshBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
 refreshBtn.Text = "REFRESH"
 refreshBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -195,7 +248,7 @@ local function scanRods()
     for _, tool in ipairs(player.Backpack:GetChildren()) do
         if tool:IsA("Tool") and tool.Name:lower():match("rod") then
             table.insert(rods, tool)
-            table.insert(rodNames, tool.Name .. " (Backpack)")
+            table.insert(rodNames, "📦 " .. tool.Name)
         end
     end
     
@@ -204,13 +257,13 @@ local function scanRods()
         for _, tool in ipairs(player.Character:GetChildren()) do
             if tool:IsA("Tool") and tool.Name:lower():match("rod") then
                 table.insert(rods, tool)
-                table.insert(rodNames, tool.Name .. " (Equipped)")
+                table.insert(rodNames, "🎣 " .. tool.Name .. " (Equipped)")
             end
         end
     end
     
     if #rods == 0 then
-        listLabel.Text = "❌ No fishing rods found!"
+        listBox.Text = "❌ No fishing rods found!"
         equipBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
         equipBtn.Text = "NO ROD"
         selectedRod = nil
@@ -219,7 +272,7 @@ local function scanRods()
         for i, name in ipairs(rodNames) do
             text = text .. i .. ". " .. name .. "\n"
         end
-        listLabel.Text = text
+        listBox.Text = text
         selectedRod = rods[1]
         equipBtn.BackgroundColor3 = Color3.new(0, 0.5, 0.8)
         equipBtn.Text = "EQUIP #1"
