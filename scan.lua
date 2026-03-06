@@ -8,7 +8,7 @@ local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
 -- HASH REMOTE (dari hasil rspy)
 local Remote = {
-    Equip = Net["RE/2398ce3474f69652a94da482fed3730b7dd467ebc7cb7df8d19f71673ee211af"],
+    Equip = Net["RE/EquipToolFromHotbar"],
     Charge = Net["RF/b8e8ac720a467490635b5d0ed389b56e4cff73bc96f689c9d5e7c6f97be9ee3d"],
     Minigame = Net["RF/ab3de34afc9bab685fd7b7c4de2a47c8fcd612c746cd28d43128b6e6a7ac8ffa"],
     Catch = Net["RF/08a640ee5a04090c8dfeceddd9dec1b6d1a18afe1b98a10b8a05cfac92a497c7"]
