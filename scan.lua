@@ -1,37 +1,36 @@
--- REMOTE LOGGER SEDERHANA
+-- SIMPLE REMOTE SPY (TANPA HOOK)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
-print("🔍 MULAI LOGGING - SILAHKAN FISHING MANUAL")
-print("==========================================")
-
--- Daftar remote yang mau dipantau
-local remoteNames = {
+local remotes = {
     "RF/ChargeFishingRod",
-    "RF/RequestFishingMinigameStarted",
-    "RE/FishingMinigameChanged",
+    "RF/RequestFishingMinigameStarted", 
     "RF/CatchFishCompleted",
+    "RE/FishingMinigameChanged",
     "RE/FishCaught"
 }
 
--- Pantau satu per satu
-for _, name in ipairs(remoteNames) do
+print("🔍 SPY AKTIF - FISHING MANUAL SEKARANG!")
+print("=========================================")
+
+for _, name in ipairs(remotes) do
     local remote = Net[name]
     if remote then
         if remote:IsA("RemoteEvent") then
+            -- Untuk RemoteEvent, kita bisa connect listener
             remote.OnClientEvent:Connect(function(...)
                 print("📥 EVENT:", name)
                 local args = {...}
                 for i, arg in ipairs(args) do
-                    print("   Arg", i, ":", typeof(arg), tostring(arg))
+                    print("   Arg" .. i .. ":", typeof(arg), tostring(arg))
                 end
             end)
+            print("✅ Listening:", name)
         else
-            print("📤 FUNCTION SIAP:", name)
+            print("✅ RemoteFunction siap:", name)
+            -- Untuk RemoteFunction, kita gak bisa spy return value tanpa hook
         end
     else
-        print("❌ REMOTE TIDAK ADA:", name)
+        print("❌ Tidak ditemukan:", name)
     end
 end
-
-print("🟢 Silahkan fishing manual sekarang!")
