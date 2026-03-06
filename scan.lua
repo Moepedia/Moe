@@ -1,132 +1,188 @@
--- DEBUG AUTO FISH - CEK REMOTE MANUAL
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+-- Moe V1.0 GUI with Dynamic Hash Detection
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local gui = Instance.new("ScreenGui")
+gui.Name = "MoeGUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
 
--- Net path
+-- Services
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
--- HASH REMOTE (dari hasil rspy)
+-- ===== AUTO DETECT HASH REMOTES =====
 local Remote = {
-    Equip = Net["RE/EquipToolFromHotbar"],
-    Charge = Net["RF/b8e8ac720a467490635b5d0ed389b56e4cff73bc96f689c9d5e7c6f97be9ee3d"],
-    Minigame = Net["RF/ab3de34afc9bab685fd7b7c4de2a47c8fcd612c746cd28d43128b6e6a7ac8ffa"],
-    Catch = Net["RF/08a640ee5a04090c8dfeceddd9dec1b6d1a18afe1b98a10b8a05cfac92a497c7"]
+    -- Akan diisi otomatis
+    Equip = nil,
+    Charge = nil,
+    Minigame = nil,
+    Catch = nil,
+    Cancel = nil,
+    MinigameEvent = nil,
+    FishCaught = nil
 }
 
--- GUI untuk debug
-local gui = Instance.new("ScreenGui")
-gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+-- Fungsi untuk mencari remote berdasarkan pola
+local function findRemoteByType(typePattern, namePattern)
+    for _, obj in ipairs(Net:GetChildren()) do
+        local isCorrectType = (typePattern == "RF" and obj:IsA("RemoteFunction")) or 
+                              (typePattern == "RE" and obj:IsA("RemoteEvent"))
+        
+        if isCorrectType then
+            if namePattern == "any" or obj.Name:match(namePattern) then
+                return obj
+            end
+        end
+    end
+    return nil
+end
 
+-- Deteksi semua remote yang dibutuhkan
+print("🔍 Mendeteksi hash remote...")
+
+-- Cari Equip (RE/EquipToolFromHotbar) - biasanya masih pake nama asli
+Remote.Equip = Net:FindFirstChild("RE/EquipToolFromHotbar") or 
+               findRemoteByType("RE", "Equip") or
+               findRemoteByType("RE", "Tool")
+
+-- Cari Charge (RF/ChargeFishingRod) - hash panjang
+Remote.Charge = Net:FindFirstChild("RF/ChargeFishingRod") or
+                findRemoteByType("RF", "Charge") or
+                findRemoteByType("RF", "Fishing") or
+                Net:FindFirstChildOfClass("RemoteFunction") -- fallback ke remote function pertama
+
+-- Cari Minigame (RF/RequestFishingMinigameStarted)
+Remote.Minigame = Net:FindFirstChild("RF/RequestFishingMinigameStarted") or
+                  findRemoteByType("RF", "Minigame") or
+                  findRemoteByType("RF", "Request")
+
+-- Cari Catch (RF/CatchFishCompleted)
+Remote.Catch = Net:FindFirstChild("RF/CatchFishCompleted") or
+               findRemoteByType("RF", "Catch")
+
+-- Cari Cancel (RF/CancelFishingInputs)
+Remote.Cancel = Net:FindFirstChild("RF/CancelFishingInputs") or
+                findRemoteByType("RF", "Cancel")
+
+-- Cari Minigame Event (RE/FishingMinigameChanged)
+Remote.MinigameEvent = Net:FindFirstChild("RE/FishingMinigameChanged") or
+                       findRemoteByType("RE", "Minigame") or
+                       findRemoteByType("RE", "Changed")
+
+-- Cari FishCaught Event (RE/FishCaught)
+Remote.FishCaught = Net:FindFirstChild("RE/FishCaught") or
+                    findRemoteByType("RE", "Fish") or
+                    findRemoteByType("RE", "Caught")
+
+-- Tampilkan hasil deteksi
+print("\n📡 HASIL DETEKSI REMOTE:")
+for name, remote in pairs(Remote) do
+    if remote then
+        local type = remote:IsA("RemoteFunction") and "RF" or "RE"
+        print(string.format("✅ %s: %s/%s", name, type, remote.Name))
+    else
+        print(string.format("❌ %s: TIDAK DITEMUKAN", name))
+    end
+end
+
+-- ===== EQUIP ROD FUNCTION =====
+local function equipRod()
+    if Remote.Equip then
+        local success = pcall(function()
+            Remote.Equip:FireServer(1)  -- Slot 1
+            print("✅ Equip remote called")
+        end)
+        return success
+    else
+        -- Fallback ke manual
+        for _, tool in ipairs(player.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and (tool.Name:lower():match("rod") or tool.Name:lower():match("fishing")) then
+                tool.Parent = player.Character
+                print("✅ Equipped manually: " .. tool.Name)
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- ===== TEST EQUIP =====
+local function testEquip()
+    print("\n🧪 TESTING EQUIP ROD...")
+    if equipRod() then
+        print("✅ Equip berhasil!")
+    else
+        print("❌ Equip gagal!")
+    end
+end
+
+-- Simple GUI untuk test
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 250)
-frame.Position = UDim2.new(0.5, -150, 0.5, -125)
+frame.Size = UDim2.new(0, 300, 0, 150)
+frame.Position = UDim2.new(0.5, -150, 0.5, -75)
 frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
 
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = frame
+
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Text = "🔍 DEBUG AUTO FISH"
-title.TextColor3 = Color3.new(1, 1, 1)
+title.Size = UDim2.new(1, 0, 0, 40)
 title.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+title.Text = "🎣 AUTO FISH - HASH DETECTOR"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.GothamBold
 title.Parent = frame
 
+local equipBtn = Instance.new("TextButton")
+equipBtn.Size = UDim2.new(0.8, 0, 0.4, 0)
+equipBtn.Position = UDim2.new(0.1, 0, 0.3, 0)
+equipBtn.BackgroundColor3 = Color3.new(0, 0.6, 0.8)
+equipBtn.Text = "TEST EQUIP ROD"
+equipBtn.TextColor3 = Color3.new(1, 1, 1)
+equipBtn.Font = Enum.Font.GothamBold
+equipBtn.Parent = frame
+
 local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -10, 0, 40)
-status.Position = UDim2.new(0, 5, 0, 35)
+status.Size = UDim2.new(1, 0, 0.3, 0)
+status.Position = UDim2.new(0, 0, 0.7, 0)
 status.BackgroundTransparency = 1
 status.Text = "Ready"
 status.TextColor3 = Color3.new(1, 1, 0)
-status.TextWrapped = true
+status.Font = Enum.Font.Gotham
 status.Parent = frame
 
-local yPos = 80
-
--- Tombol Equip
-local equipBtn = Instance.new("TextButton")
-equipBtn.Size = UDim2.new(0.9, 0, 0, 30)
-equipBtn.Position = UDim2.new(0.05, 0, 0, yPos)
-equipBtn.Text = "1. EQUIP ROD"
-equipBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-equipBtn.Parent = frame
-yPos = yPos + 35
-
--- Tombol Charge
-local chargeBtn = Instance.new("TextButton")
-chargeBtn.Size = UDim2.new(0.9, 0, 0, 30)
-chargeBtn.Position = UDim2.new(0.05, 0, 0, yPos)
-chargeBtn.Text = "2. CHARGE"
-chargeBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-chargeBtn.Parent = frame
-yPos = yPos + 35
-
--- Tombol Minigame
-local minigameBtn = Instance.new("TextButton")
-minigameBtn.Size = UDim2.new(0.9, 0, 0, 30)
-minigameBtn.Position = UDim2.new(0.05, 0, 0, yPos)
-minigameBtn.Text = "3. MINIGAME"
-minigameBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-minigameBtn.Parent = frame
-yPos = yPos + 35
-
--- Tombol Catch
-local catchBtn = Instance.new("TextButton")
-catchBtn.Size = UDim2.new(0.9, 0, 0, 30)
-catchBtn.Position = UDim2.new(0.05, 0, 0, yPos)
-catchBtn.Text = "4. CATCH"
-catchBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-catchBtn.Parent = frame
-
--- Fungsi update status
-local function setStatus(text, color)
-    status.Text = text
-    status.TextColor3 = color or Color3.new(1, 1, 1)
-end
-
--- Equip
 equipBtn.MouseButton1Click:Connect(function()
-    setStatus("Equipping...", Color3.new(1, 1, 0))
-    local success = pcall(function()
-        Remote.Equip:FireServer(1)
-    end)
-    setStatus(success and "✅ Equip success" or "❌ Equip failed", 
-              success and Color3.new(0, 1, 0) or Color3.new(1, 0, 0))
+    status.Text = "Equipping..."
+    status.TextColor3 = Color3.new(1, 1, 0)
+    
+    local success = equipRod()
+    
+    if success then
+        status.Text = "✅ Equip Success!"
+        status.TextColor3 = Color3.new(0, 1, 0)
+    else
+        status.Text = "❌ Equip Failed!"
+        status.TextColor3 = Color3.new(1, 0, 0)
+    end
 end)
 
--- Charge
-chargeBtn.MouseButton1Click:Connect(function()
-    setStatus("Charging...", Color3.new(1, 1, 0))
-    local success = pcall(function()
-        local result = Remote.Charge:InvokeServer()
-        print("Charge result:", result)
-    end)
-    setStatus(success and "✅ Charge success" or "❌ Charge failed", 
-              success and Color3.new(0, 1, 0) or Color3.new(1, 0, 0))
+-- Close button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 25, 0, 25)
+closeBtn.Position = UDim2.new(1, -30, 0, 5)
+closeBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = frame
+
+closeBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
 end)
 
--- Minigame
-minigameBtn.MouseButton1Click:Connect(function()
-    setStatus("Requesting minigame...", Color3.new(1, 1, 0))
-    local serverTime = workspace:GetServerTimeNow()
-    local success = pcall(function()
-        local result = Remote.Minigame:InvokeServer(-50, 0.5, serverTime)
-        print("Minigame result:", result)
-    end)
-    setStatus(success and "✅ Minigame success" or "❌ Minigame failed", 
-              success and Color3.new(0, 1, 0) or Color3.new(1, 0, 0))
-end)
-
--- Catch
-catchBtn.MouseButton1Click:Connect(function()
-    setStatus("Catching...", Color3.new(1, 1, 0))
-    local success = pcall(function()
-        local result = Remote.Catch:InvokeServer()
-        print("Catch result:", result)
-    end)
-    setStatus(success and "✅ Catch success" or "❌ Catch failed", 
-              success and Color3.new(0, 1, 0) or Color3.new(1, 0, 0))
-end)
-
-print("🔍 DEBUG GUI READY - Klik tombol urut!")
+print("\n✅ Script siap! Klik TEST EQUIP ROD")
