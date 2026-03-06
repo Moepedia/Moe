@@ -1,145 +1,103 @@
--- AUTO FISH - FIXED VERSION
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
+-- SIMPLE EQUIP ROD GUI
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "EquipRodGUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
 
--- Net path
+-- Services
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
--- Remote functions
-local Remote = {
-    Cancel = Net["RF/CancelFishingInputs"],
-    Charge = Net["RF/ChargeFishingRod"],
-    Minigame = Net["RF/RequestFishingMinigameStarted"],
-    MinigameEvent = Net["RE/FishingMinigameChanged"],
-    Catch = Net["RF/CatchFishCompleted"],
-    FishCaught = Net["RE/FishCaught"]
-}
+-- Remote equip yang benar (dari hasil debug)
+local EquipRemote = Net["RE/Equipltem"]  -- <-- PASTI INI!
 
--- Variables
-local autoFishing = false
-local connection = nil
-
--- Listener untuk minigame
-Remote.MinigameEvent.OnClientEvent:Connect(function(state, data)
-    if state == "Completed" or state == "Stop" then
-        -- Auto catch saat minigame selesai
-        pcall(function()
-            Remote.Catch:InvokeServer()
-            print("✅ Ikan didapat!")
-        end)
+-- ===== FUNGSI EQUIP ROD =====
+local function equipRod(rodTool)
+    if not EquipRemote then
+        return false, "Remote tidak ditemukan"
     end
-end)
-
--- Listener untuk fish caught (notifikasi)
-Remote.FishCaught.OnClientEvent:Connect(function(fishData)
-    print("🎣 Dapat ikan:", fishData)
-end)
-
--- Fungsi casting
-local function cast()
-    local serverTime = workspace:GetServerTimeNow()
     
-    -- Charge (parameter 1 work)
-    local chargeSuccess = pcall(function()
-        return Remote.Charge:InvokeServer(nil, nil, serverTime, nil)
-    end)
+    -- Coba berbagai cara equip
+    local methods = {
+        {rodTool},                          -- Kirim rod object
+        {rodTool.Name},                      -- Kirim nama rod
+        {rodTool, 1},                         -- Rod + slot 1
+        {1, rodTool},                         -- Slot 1 + rod
+        {rodTool, player.Character}           -- Rod + character
+    }
     
-    if not chargeSuccess then return false end
-    
-    task.wait(0.3)
-    
-    -- Minigame (parameter 1 work)
-    local minigameSuccess = pcall(function()
-        return Remote.Minigame:InvokeServer(-50, 0.5, serverTime)
-    end)
-    
-    return minigameSuccess
-end
-
--- Start auto fishing
-local function startAutoFishing()
-    if autoFishing then return end
-    autoFishing = true
-    print("🎣 AUTO FISHING STARTED!")
-    
-    connection = RunService.Heartbeat:Connect(function()
-        if not autoFishing then return end
-        
-        -- Cancel fishing sebelumnya
-        pcall(function()
-            Remote.Cancel:InvokeServer(true)
+    for i, args in ipairs(methods) do
+        local success = pcall(function()
+            EquipRemote:FireServer(unpack(args))
         end)
-        task.wait(0.2)
         
-        -- Cast
-        cast()
-        task.wait(2) -- Delay antar casting
-    end)
-end
-
-local function stopAutoFishing()
-    autoFishing = false
-    if connection then
-        connection:Disconnect()
-        connection = nil
+        if success then
+            task.wait(0.3)
+            -- Cek apakah rod pindah ke tangan
+            if player.Character then
+                for _, tool in ipairs(player.Character:GetChildren()) do
+                    if tool:IsA("Tool") and tool.Name == rodTool.Name then
+                        return true, "Method " .. i .. " berhasil"
+                    end
+                end
+            end
+        end
     end
-    pcall(function()
-        Remote.Cancel:InvokeServer(true)
-    end)
-    print("🛑 AUTO FISHING STOPPED!")
+    
+    -- Fallback: manual equip
+    rodTool.Parent = player.Character
+    task.wait(0.2)
+    
+    if rodTool.Parent == player.Character then
+        return true, "Manual equip berhasil"
+    end
+    
+    return false, "Semua metode gagal"
 end
 
--- GUI
-local gui = Instance.new("ScreenGui")
-gui.Name = "AutoFishGUI"
-gui.ResetOnSpawn = false
-gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
+-- ===== GUI SEDERHANA =====
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 120)
-frame.Position = UDim2.new(0.5, -125, 0.5, -60)
+frame.Size = UDim2.new(0, 300, 0, 200)
+frame.Position = UDim2.new(0.5, -150, 0.5, -100)
 frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-frame.BackgroundTransparency = 0.2
+frame.BackgroundTransparency = 0.1
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
 
+-- Rounded corners
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 8)
 corner.Parent = frame
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-title.Text = "🎣 AUTO FISH"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.Font = Enum.Font.GothamBold
-title.Parent = frame
+-- Border
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 1
+stroke.Color = Color3.new(1, 1, 1)
+stroke.Transparency = 0.5
+stroke.Parent = frame
 
-local btn = Instance.new("TextButton")
-btn.Size = UDim2.new(0.8, 0, 0.35, 0)
-btn.Position = UDim2.new(0.1, 0, 0.4, 0)
-btn.BackgroundColor3 = Color3.new(0, 0.6, 0)
-btn.Text = "START"
-btn.TextColor3 = Color3.new(1, 1, 1)
-btn.Font = Enum.Font.GothamBold
-btn.Parent = frame
+-- Title bar
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+titleBar.Parent = frame
 
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 6)
-btnCorner.Parent = btn
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleBar
 
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, 0, 0.25, 0)
-status.Position = UDim2.new(0, 0, 0.8, 0)
-status.BackgroundTransparency = 1
-status.Text = "⏹️ Stopped"
-status.TextColor3 = Color3.new(1, 0.3, 0.3)
-status.Font = Enum.Font.Gotham
-status.TextSize = 12
-status.Parent = frame
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(1, -30, 1, 0)
+titleText.Position = UDim2.new(0, 10, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "🎣 EQUIP ROD SIMPLE"
+titleText.TextColor3 = Color3.new(1, 1, 1)
+titleText.Font = Enum.Font.GothamBold
+titleText.TextSize = 14
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = titleBar
 
 -- Close button
 local closeBtn = Instance.new("TextButton")
@@ -150,40 +108,188 @@ closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextSize = 12
-closeBtn.Parent = frame
+closeBtn.Parent = titleBar
 
 local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
 closeBtn.MouseButton1Click:Connect(function()
-    stopAutoFishing()
     gui:Destroy()
 end)
 
--- Toggle button
-btn.MouseButton1Click:Connect(function()
-    if not autoFishing then
-        startAutoFishing()
-        btn.Text = "STOP"
-        btn.BackgroundColor3 = Color3.new(0.8, 0, 0)
-        status.Text = "🎣 Fishing..."
-        status.TextColor3 = Color3.new(0.3, 1, 0.3)
+-- Content
+local content = Instance.new("Frame")
+content.Size = UDim2.new(1, -20, 1, -40)
+content.Position = UDim2.new(0, 10, 0, 35)
+content.BackgroundTransparency = 1
+content.Parent = frame
+
+-- Status label
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, 0, 0, 40)
+statusLabel.Position = UDim2.new(0, 0, 0, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Ready"
+statusLabel.TextColor3 = Color3.new(0, 1, 0)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 12
+statusLabel.TextWrapped = true
+statusLabel.Parent = content
+
+-- Rod list label
+local listLabel = Instance.new("TextLabel")
+listLabel.Size = UDim2.new(1, 0, 0, 60)
+listLabel.Position = UDim2.new(0, 0, 0, 45)
+listLabel.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+listLabel.BackgroundTransparency = 0.3
+listLabel.Text = "Scanning for rods..."
+listLabel.TextColor3 = Color3.new(1, 1, 1)
+listLabel.Font = Enum.Font.Gotham
+listLabel.TextSize = 11
+listLabel.TextWrapped = true
+listLabel.Parent = content
+
+local listCorner = Instance.new("UICorner")
+listCorner.CornerRadius = UDim.new(0, 4)
+listCorner.Parent = listLabel
+
+-- Buttons
+local equipBtn = Instance.new("TextButton")
+equipBtn.Size = UDim2.new(0.45, 0, 0, 35)
+equipBtn.Position = UDim2.new(0, 0, 0, 110)
+equipBtn.BackgroundColor3 = Color3.new(0, 0.5, 0.8)
+equipBtn.Text = "EQUIP"
+equipBtn.TextColor3 = Color3.new(1, 1, 1)
+equipBtn.Font = Enum.Font.GothamBold
+equipBtn.TextSize = 12
+equipBtn.Parent = content
+
+local equipCorner = Instance.new("UICorner")
+equipCorner.CornerRadius = UDim.new(0, 4)
+equipCorner.Parent = equipBtn
+
+local refreshBtn = Instance.new("TextButton")
+refreshBtn.Size = UDim2.new(0.45, 0, 0, 35)
+refreshBtn.Position = UDim2.new(0.55, 0, 0, 110)
+refreshBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+refreshBtn.Text = "REFRESH"
+refreshBtn.TextColor3 = Color3.new(1, 1, 1)
+refreshBtn.Font = Enum.Font.GothamBold
+refreshBtn.TextSize = 12
+refreshBtn.Parent = content
+
+local refreshCorner = Instance.new("UICorner")
+refreshCorner.CornerRadius = UDim.new(0, 4)
+refreshCorner.Parent = refreshBtn
+
+-- ===== FUNGSI SCAN ROD =====
+local rods = {}
+local selectedRod = nil
+
+local function scanRods()
+    rods = {}
+    local rodNames = {}
+    
+    -- Scan backpack
+    for _, tool in ipairs(player.Backpack:GetChildren()) do
+        if tool:IsA("Tool") and tool.Name:lower():match("rod") then
+            table.insert(rods, tool)
+            table.insert(rodNames, tool.Name .. " (Backpack)")
+        end
+    end
+    
+    -- Scan character
+    if player.Character then
+        for _, tool in ipairs(player.Character:GetChildren()) do
+            if tool:IsA("Tool") and tool.Name:lower():match("rod") then
+                table.insert(rods, tool)
+                table.insert(rodNames, tool.Name .. " (Equipped)")
+            end
+        end
+    end
+    
+    if #rods == 0 then
+        listLabel.Text = "❌ No fishing rods found!"
+        equipBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+        equipBtn.Text = "NO ROD"
+        selectedRod = nil
     else
-        stopAutoFishing()
-        btn.Text = "START"
-        btn.BackgroundColor3 = Color3.new(0, 0.6, 0)
-        status.Text = "⏹️ Stopped"
-        status.TextColor3 = Color3.new(1, 0.3, 0.3)
+        local text = "🎣 Rods found:\n"
+        for i, name in ipairs(rodNames) do
+            text = text .. i .. ". " .. name .. "\n"
+        end
+        listLabel.Text = text
+        selectedRod = rods[1]
+        equipBtn.BackgroundColor3 = Color3.new(0, 0.5, 0.8)
+        equipBtn.Text = "EQUIP #1"
+    end
+end
+
+-- Panggil scan pertama
+scanRods()
+
+-- Refresh button
+refreshBtn.MouseButton1Click:Connect(function()
+    statusLabel.Text = "Scanning..."
+    statusLabel.TextColor3 = Color3.new(1, 1, 0)
+    scanRods()
+    statusLabel.Text = "Scan complete"
+    statusLabel.TextColor3 = Color3.new(0, 1, 0)
+end)
+
+-- Equip button
+equipBtn.MouseButton1Click:Connect(function()
+    if not selectedRod then
+        statusLabel.Text = "❌ No rod selected"
+        statusLabel.TextColor3 = Color3.new(1, 0, 0)
+        return
+    end
+    
+    statusLabel.Text = "Equipping " .. selectedRod.Name .. "..."
+    statusLabel.TextColor3 = Color3.new(1, 1, 0)
+    
+    local success, msg = equipRod(selectedRod)
+    
+    if success then
+        statusLabel.Text = "✅ " .. msg
+        statusLabel.TextColor3 = Color3.new(0, 1, 0)
+        scanRods()  -- Refresh list
+    else
+        statusLabel.Text = "❌ " .. msg
+        statusLabel.TextColor3 = Color3.new(1, 0, 0)
     end
 end)
 
-print("✅ AUTO FISH READY! Tekan START untuk mulai")
-notify = function(t, msg) 
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = t or "Auto Fish",
-        Text = msg or "",
-        Duration = 2
-    })
-end
-notify("Auto Fish", "Ready! Tekan START")
+-- Drag functionality
+local dragging = false
+local dragStart
+local startPos
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+titleBar.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+print("✅ Simple Equip GUI Loaded")
