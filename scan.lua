@@ -1,36 +1,29 @@
--- SIMPLE REMOTE SPY (TANPA HOOK)
+-- AUTO DETECT HASH REMOTE
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
 
-local remotes = {
-    "RF/ChargeFishingRod",
-    "RF/RequestFishingMinigameStarted", 
-    "RF/CatchFishCompleted",
-    "RE/FishingMinigameChanged",
-    "RE/FishCaught"
-}
+-- Cari semua remote ber-hash
+print("🔍 MENCARI REMOTE HASH...")
+print("==========================")
 
-print("🔍 SPY AKTIF - FISHING MANUAL SEKARANG!")
-print("=========================================")
+local hashRemotes = {}
 
-for _, name in ipairs(remotes) do
-    local remote = Net[name]
-    if remote then
-        if remote:IsA("RemoteEvent") then
-            -- Untuk RemoteEvent, kita bisa connect listener
-            remote.OnClientEvent:Connect(function(...)
-                print("📥 EVENT:", name)
-                local args = {...}
-                for i, arg in ipairs(args) do
-                    print("   Arg" .. i .. ":", typeof(arg), tostring(arg))
-                end
-            end)
-            print("✅ Listening:", name)
-        else
-            print("✅ RemoteFunction siap:", name)
-            -- Untuk RemoteFunction, kita gak bisa spy return value tanpa hook
-        end
-    else
-        print("❌ Tidak ditemukan:", name)
+for _, remote in pairs(Net:GetChildren()) do
+    local name = remote.Name
+    -- Cek apakah nama seperti hash (64 karakter hex)
+    if string.match(name, "^[RF][E/F]/[a-f0-9]+$") then
+        table.insert(hashRemotes, {
+            Name = name,
+            Class = remote.ClassName,
+            FullName = remote:GetFullName()
+        })
     end
 end
+
+print("📊 DITEMUKAN " .. #hashRemotes .. " HASH REMOTE:")
+for i, r in ipairs(hashRemotes) do
+    print(i .. ". " .. r.Name)
+end
+
+print("\n💡 SIMPAN DAFTAR INI!")
+print("Gunakan hash ini di script auto fish")
