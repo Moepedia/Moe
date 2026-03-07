@@ -1,4 +1,4 @@
--- Moe V1.0 GUI for FISH IT - FINAL FIXED VERSION (DENGAN HASH EQUIP)
+-- Moe V1.0 GUI for FISH IT - FIXED WITH SWITCH TOGGLE
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -27,7 +27,7 @@ local Config = {
     FishDelay = 2.0,
     CatchDelay = 1.0,
     SellDelay = 60,
-    FavoriteRarity = "Mythic",
+    FavoriteRarity = "Secret",
     CurrentRod = nil,
     CastPower = 0.5
 }
@@ -42,7 +42,6 @@ local LOCATIONS = {
     ["Lost Isle"] = CFrame.new(-3618.15698, 240.836655, -1317.45801, 1, 0, 0, 0, 1, 0, 0, 0, 1),
     ["Weather Machine"] = CFrame.new(-1488.51196, 83.1732635, 1876.30298, 1, 0, 0, 0, 1, 0, 0, 0, 1),
     ["Tropical Grove"] = CFrame.new(-2095.34106, 197.199997, 3718.08008),
-    ["Mount Hallow"] = CFrame.new(2136.62305, 78.9163895, 3272.50439, -0.977613986, -1.77645827e-08, 0.210406482, -2.42338203e-08, 1, -2.81680421e-08, -0.210406482, -3.26364251e-08, -0.977613986),
     ["Treasure Room"] = CFrame.new(-3606.34985, -266.57373, -1580.97339, 0.998743415, 1.12141152e-13, -0.0501160324, -1.56847693e-13, 1, -8.88127842e-13, 0.0501160324, 8.94872392e-13, 0.998743415),
     ["Kohana"] = CFrame.new(-663.904236, 3.04580712, 718.796875, -0.100799225, -2.14183729e-08, -0.994906783, -1.12300391e-08, 1, -2.03902459e-08, 0.994906783, 9.11752096e-09, -0.100799225),
     ["Underground Cellar"] = CFrame.new(2109.52148, -94.1875076, -708.609131, 0.418592364, 3.34794485e-08, -0.908174217, -5.24141512e-08, 1, 1.27060247e-08, 0.908174217, 4.22825366e-08, 0.418592364),
@@ -474,11 +473,11 @@ local function exitGUI()
     end)
 end
 
--- ===== MAIN FRAME =====
+-- ===== MAIN FRAME (UKURAN DIUBAH MENJADI 650x400) =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 650, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -325, 0.5, -250)
+mainFrame.Size = UDim2.new(0, 650, 0, 400)  -- Diubah dari 500 menjadi 400
+mainFrame.Position = UDim2.new(0.5, -325, 0.5, -200)  -- Disesuaikan (setengah dari 400)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
@@ -932,6 +931,7 @@ local function createLabel(parent, text)
     label.ZIndex = 20
 end
 
+-- ===== FUNGSI CREATE TOGGLE SWITCH (MODERN) =====
 local function createToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 35)
@@ -957,29 +957,54 @@ local function createToggle(parent, text, default, callback)
     label.Parent = frame
     label.ZIndex = 21
     
-    local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(0, 50, 0, 25)
-    toggleBtn.Position = UDim2.new(1, -60, 0.5, -12.5)
-    toggleBtn.BackgroundColor3 = default and Color3.new(0, 0.6, 0) or Color3.new(0.3, 0.3, 0.3)
-    toggleBtn.Text = default and "ON" or "OFF"
-    toggleBtn.TextColor3 = Color3.new(1, 1, 1)
-    toggleBtn.TextSize = 11
-    toggleBtn.Font = Enum.Font.GothamBold
-    toggleBtn.Parent = frame
-    toggleBtn.ZIndex = 21
-    toggleBtn.AutoButtonColor = false
+    -- SWITCH BACKGROUND
+    local switchBg = Instance.new("Frame")
+    switchBg.Size = UDim2.new(0, 50, 0, 25)
+    switchBg.Position = UDim2.new(1, -60, 0.5, -12.5)
+    switchBg.BackgroundColor3 = default and Color3.new(0, 0.6, 0) or Color3.new(0.4, 0.4, 0.4)
+    switchBg.Parent = frame
+    switchBg.ZIndex = 21
     
-    local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(0, 4)
-    toggleCorner.Parent = toggleBtn
+    local switchCorner = Instance.new("UICorner")
+    switchCorner.CornerRadius = UDim.new(0, 15)
+    switchCorner.Parent = switchBg
+    
+    -- SWITCH KNOB
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 21, 0, 21)
+    knob.Position = default and UDim2.new(1, -25, 0.5, -10.5) or UDim2.new(0, 4, 0.5, -10.5)
+    knob.BackgroundColor3 = Color3.new(1, 1, 1)
+    knob.Parent = switchBg
+    knob.ZIndex = 22
+    
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(0, 10)
+    knobCorner.Parent = knob
+    
+    -- TOMBOL TRANSPARENT UNTUK KLIK
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(1, 0, 1, 0)
+    toggleBtn.BackgroundTransparency = 1
+    toggleBtn.Text = ""
+    toggleBtn.Parent = switchBg
+    toggleBtn.ZIndex = 23
     
     local state = default
+    
+    local function updateSwitch()
+        if state then
+            switchBg.BackgroundColor3 = Color3.new(0, 0.6, 0)
+            knob:TweenPosition(UDim2.new(1, -25, 0.5, -10.5), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+        else
+            switchBg.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+            knob:TweenPosition(UDim2.new(0, 4, 0.5, -10.5), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+        end
+    end
     
     toggleBtn.MouseButton1Click:Connect(function()
         closeAllDropdowns()
         state = not state
-        toggleBtn.Text = state and "ON" or "OFF"
-        toggleBtn.BackgroundColor3 = state and Color3.new(0, 0.6, 0) or Color3.new(0.3, 0.3, 0.3)
+        updateSwitch()
         callback(state)
     end)
     
@@ -1049,7 +1074,7 @@ local function showFishing()
     clearFeatures()
     contentTitle.Text = "Fishing Features"
     
-    createLabel(featuresContainer, "⚡ AUTO FISHING")
+    createLabel(featuresContainer, "AUTO FISHING")
     
     autoFishToggle = createToggle(featuresContainer, "Auto Fish", false, function(state)
         if state then
@@ -1066,7 +1091,7 @@ local function showFishing()
         end
     end)
     
-    createLabel(featuresContainer, "⏱️ DELAY SETTINGS (Default: 2.0s / 1.0s)")
+    createLabel(featuresContainer, "DELAY SETTINGS (Default: 2.0s / 1.0s)")
     
     createInput(featuresContainer, "Fish Delay (s)", Config.FishDelay, function(val)
         Config.FishDelay = val
@@ -1076,12 +1101,12 @@ local function showFishing()
         Config.CatchDelay = val
     end, 0.1, 10)
     
-    createLabel(featuresContainer, "🎯 CAST POWER (Default: 0.5)")
+    createLabel(featuresContainer, "CAST POWER (Default: 0.5)")
     createInput(featuresContainer, "Power (0.1-1.0)", Config.CastPower, function(val)
         Config.CastPower = val
     end, 0.1, 1.0)
     
-    createLabel(featuresContainer, "🎣 ROD SELECTION")
+    createLabel(featuresContainer, "ROD SELECTION")
     local rods = findFishingRods()
     local rodNames = {"any"}
     for _, rod in ipairs(rods) do
@@ -1150,7 +1175,7 @@ local function showFavorite()
     clearFeatures()
     contentTitle.Text = "Favorite Features"
     
-    createLabel(featuresContainer, "⭐ AUTO FAVORITE")
+    createLabel(featuresContainer, "AUTO FAVORITE")
     
     autoFavoriteToggle = createToggle(featuresContainer, "Auto Favorite", false, function(state)
         if state then
@@ -1160,13 +1185,13 @@ local function showFavorite()
         end
     end)
     
-    createLabel(featuresContainer, "Rarity Settings (Default: Mythic)")
+    createLabel(featuresContainer, "Rarity Settings (Default: Secret)")
     local rarities = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret"}
     createDropdown(featuresContainer, rarities, Config.FavoriteRarity, function(selected)
         Config.FavoriteRarity = selected
     end)
     
-    createLabel(featuresContainer, "⚡ MANUAL FAVORITE")
+    createLabel(featuresContainer, "MANUAL FAVORITE")
     createButton(featuresContainer, "PROMPT FAVORITE", function()
         promptFavorite()
     end)
@@ -1200,7 +1225,7 @@ local function showTeleport()
     clearFeatures()
     contentTitle.Text = "Teleport"
     
-    createLabel(featuresContainer, "🌍 TELEPORT TO LOCATION")
+    createLabel(featuresContainer, "TELEPORT TO LOCATION")
     
     local selectedLoc = TeleportLocations[1]
     
@@ -1212,7 +1237,7 @@ local function showTeleport()
         teleportTo(selectedLoc)
     end)
     
-    createLabel(featuresContainer, "📋 TELEPORT TO PLAYER")
+    createLabel(featuresContainer, "TELEPORT TO PLAYER")
     
     local function getPlayerList()
         local players = {}
@@ -1250,63 +1275,12 @@ local function showTeleport()
     end)
 end
 
--- ===== STATUS MENU =====
-local function showStatus()
-    clearFeatures()
-    contentTitle.Text = "Status"
-    
-    createLabel(featuresContainer, "📊 REMOTE STATUS")
-    
-    local statusText = ""
-    statusText = statusText .. "🎣 FISHING REMOTES:\n"
-    statusText = statusText .. "ChargeFishingRod: " .. (Remote.ChargeFishingRod and "✅" or "❌") .. "\n"
-    statusText = statusText .. "RequestFishingMinigame: " .. (Remote.RequestFishingMinigame and "✅" or "❌") .. "\n"
-    statusText = statusText .. "CatchFishCompleted: " .. (Remote.CatchFishCompleted and "✅" or "❌") .. "\n"
-    statusText = statusText .. "FishCaught: " .. (Remote.FishCaught and "✅" or "❌") .. "\n\n"
-    
-    statusText = statusText .. "🛡️ ANTI-CHEAT:\n"
-    statusText = statusText .. "UpdateAutoFishing: " .. (Remote.UpdateAutoFishingState and "✅" or "❌") .. "\n"
-    statusText = statusText .. "MarkAutoFishing: " .. (Remote.MarkAutoFishingUsed and "✅" or "❌") .. "\n\n"
-    
-    statusText = statusText .. "💰 SELL:\n"
-    statusText = statusText .. "SellAllItems: " .. (Remote.SellAllItems and "✅" or "❌") .. "\n"
-    statusText = statusText .. "SellItem: " .. (Remote.SellItem and "✅" or "❌") .. "\n\n"
-    
-    statusText = statusText .. "⭐ FAVORITE:\n"
-    statusText = statusText .. "FavoriteItem: " .. (Remote.FavoriteItem and "✅" or "❌") .. "\n"
-    statusText = statusText .. "PromptFavorite: " .. (Remote.PromptFavoriteGame and "✅" or "❌")
-    
-    local statusFrame = Instance.new("Frame")
-    statusFrame.Size = UDim2.new(1, 0, 0, 220)
-    statusFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
-    statusFrame.BackgroundTransparency = 0.2
-    statusFrame.Parent = featuresContainer
-    
-    local statusCorner = Instance.new("UICorner")
-    statusCorner.CornerRadius = UDim.new(0, 6)
-    statusCorner.Parent = statusFrame
-    
-    local statusLabel = Instance.new("TextLabel")
-    statusLabel.Size = UDim2.new(1, -10, 1, -10)
-    statusLabel.Position = UDim2.new(0, 5, 0, 5)
-    statusLabel.BackgroundTransparency = 1
-    statusLabel.Text = statusText
-    statusLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    statusLabel.Font = Enum.Font.Gotham
-    statusLabel.TextSize = 12
-    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-    statusLabel.TextYAlignment = Enum.TextYAlignment.Top
-    statusLabel.TextWrapped = true
-    statusLabel.Parent = statusFrame
-end
-
 -- ===== LEFT MENU BUTTONS =====
 local menuButtons = {
     {name = "Fishing", func = showFishing},
     {name = "Sell", func = showSell},
     {name = "Favorite", func = showFavorite},
-    {name = "Teleport", func = showTeleport},
-    {name = "Status", func = showStatus}
+    {name = "Teleport", func = showTeleport}
 }
 
 local currentMenu = ""
@@ -1387,5 +1361,4 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
-print("✅ Moe V1.0 Final Fixed - Auto Fishing SHOULD WORK!")
-notify("Moe V1.0", "Fixed: Auto Fishing & Close Button", 3)
+notify("Moe V1.0", "GUI Loaded with Switch Toggles", 3)
