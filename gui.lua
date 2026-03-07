@@ -1,4 +1,4 @@
--- Moe V1.0 GUI for FISH IT - UPDATED WITH NEW HASHES
+-- Moe V1.0 GUI for FISH IT - MERGED WITH VEL.LUA FEATURES
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -22,6 +22,13 @@ local minigameConnection = nil
 local isMinigameActive = false
 local guiClosed = false
 
+-- ===== WEBHOOK VARIABLES =====
+local webhookEnabled = false
+local webhookURL = ""
+local webhookConnection = nil
+local lastNotifiedFish = {}
+local webhookCooldown = 5
+
 -- ===== CONFIG VARIABLES =====
 local Config = {
     FishDelay = 2.0,
@@ -29,10 +36,15 @@ local Config = {
     SellDelay = 60,
     FavoriteRarity = "Secret",
     CurrentRod = nil,
-    CastPower = 0.5
+    CastPower = 0.5,
+    WebhookURL = "",
+    WebhookEnabled = false,
+    WebhookNotifyRarity = {"Legendary", "Mythic", "Secret"},
+    WebhookNotifySell = true,
+    WebhookNotifyFavorite = true
 }
 
--- ===== DATA LOKASI TELEPORT =====
+-- ===== DATA LOKASI TELEPORT (DARI GUI.LUA) =====
 local LOCATIONS = {
     ["Spawn"] = CFrame.new(45.2788086, 252.562927, 2987.10913, 1, 0, 0, 0, 1, 0, 0, 0, 1),
     ["Sisyphus Statue"] = CFrame.new(-3728.21606, -135.074417, -1012.12744, -0.977224171, 7.74980258e-09, -0.212209702, 1.566994e-08, 1, -3.5640408e-08, 0.212209702, -3.81539813e-08, -0.977224171),
@@ -49,6 +61,34 @@ local LOCATIONS = {
     ["Sacred Temple"] = CFrame.new(1466.92151, -21.8750591, -622.835693, -0.764787138, 8.14444334e-09, 0.644283056, 2.31097452e-08, 1, 1.4791004e-08, -0.644283056, 2.6201187e-08, -0.764787138)
 }
 
+-- ===== FISHING AREAS DARI VEL.LUA =====
+local FishingAreas = {
+    ["Ancient Jungle"] = { cframe = Vector3.new(1896.9, 8.4, -578.7), lookup = Vector3.new(0.973, 0.000, 0.229) },
+    ["Ancient Ruins"] = { cframe = Vector3.new(6081.4, -585.9, 4634.5), lookup = Vector3.new(-0.619, -0.000, 0.785) },
+    ["Ancient Ruins Door "] = { cframe = Vector3.new(6051.0, -538.9, 4386.0), lookup = Vector3.new(-0.000, -0.000, -1.000) },
+    ["Christmast Island"] = { cframe = Vector3.new(1175.3,23.5,1545.3), lookup = Vector3.new(-0.787,-0.000,0.616) },
+    ["Christmast Cave"] = { cfrane = Vector3.new(743.5,-487.1,8863.5), lookup = Vector3.new(-0.020,-0.000,1.000) },
+    ["Classic Event"] = { cframe = Vector3.new(1171.3, 4.0, 2839.4), lookup = Vector3.new(-0.994, 0.000, -0.107) },
+    ["Classic Event River "] = { cframe = Vector3.new(1439.7, 46.0, 2778.1), lookup = Vector3.new(0.894, 0.000, -0.448) },
+    ["Coral Reefs"] = { cframe = Vector3.new(-2935.1,4.8,2050.9), lookup = Vector3.new(-0.306,-0.000,0.952) },
+    ["Crater Island "] = { cframe = Vector3.new(1077.6, 2.8, 5080.9), lookup = Vector3.new(-0.987, 0.000, -0.159) },
+    ["Esoteric Deep"] = { cframe = Vector3.new(3202.2, -1302.9, 1432.7), lookup = Vector3.new(0.896, 0.000, -0.444) },
+    ["Iron Cavern "] = { cframe = Vector3.new(-8794.5, -585.0, 89.0), lookup = Vector3.new(0.741, -0.000, -0.672) },
+    ["Iron Cave"] = { cframe = Vector3.new(-8641.3, -547.5, 162.0), lookup = Vector3.new(1.000, 0.000, -0.016) },
+    ["Kohana"] = { cframe = Vector3.new(-367.8, 6.8, 521.9), lookup = Vector3.new(0.000, -0.000, -1.000) },
+    ["Kohana Volcano "] = { cframe = Vector3.new(-561.6, 21.1, 158.6), lookup = Vector3.new(-0.403, -0.000, 0.915) },
+    ["Sacred Temple "] = { cframe = Vector3.new(1466.6, -22.8, -618.8), lookup = Vector3.new(-0.389, 0.000, 0.921) },
+    ["Sisyphus Statue "] = { cframe = Vector3.new(-3715.1, -136.8, -1010.6), lookup = Vector3.new(-0.764, 0.000, 0.646) },
+    ["Treasure Room "] = { cframe = Vector3.new(-3604.2, -283.2, -1613.7), lookup = Vector3.new(-0.557, -0.000, -0.831) },
+    ["Tropical Grove "] = { cframe = Vector3.new(-2173.3,53.5,3632.3), lookup = Vector3.new(0.729,0.000,0.684) },
+    ["Underground Cellar"] = { cframe = Vector3.new(2136.0, -91.2, -699.0), lookup = Vector3.new(-0.000, 0.000, -1.000) }
+}
+
+-- Gabungkan kedua lokasi teleport
+for name, data in pairs(FishingAreas) do
+    LOCATIONS[name] = CFrame.new(data.cframe, data.cframe + data.lookup)
+end
+
 local TeleportLocations = {}
 for loc, _ in pairs(LOCATIONS) do
     table.insert(TeleportLocations, loc)
@@ -62,12 +102,12 @@ local Net = Packages and Packages:FindFirstChild("_Index") and
            Packages._Index:FindFirstChild("sleitnick_net@0.2.0") and 
            Packages._Index["sleitnick_net@0.2.0"].net
 
--- ===== REMOTE YANG DIGUNAKAN (DENGAN HASH TERBARU) =====
+-- ===== REMOTE YANG DIGUNAKAN =====
 local Remote = {
     -- Equip Rod
     EquipTool = Net and Net["RE/c6dd8019183b4837632988a186ea356b21b8ff046bb0151182a1167e3936bc9f"],
     
-    -- Fishing Remotes (HASHED)
+    -- Fishing Remotes
     CancelFishingInputs = Net and Net["RF/f9a876154b063e332e1667cef846eeab3bd7fe8485cf1491fc927f0f9718b436"],
     ChargeFishingRod = Net and Net["RF/e4017e43355f4661b1e07f77fe2bfe13b5a48f4eff9ba55b0398ec0ef3c66765"],
     RequestFishingMinigame = Net and Net["RF/4d6dc93c9ecb915a8ae6425c83c8bb597b015e0bc4f874181ea308dcc7ae5015"],
@@ -77,18 +117,305 @@ local Remote = {
     CatchFishCompleted = Net and Net["RF/76a108e0c7fed0fe6174984ba5c748621c6d347466644a819a806ed594a344b4"],
     FishCaught = Net and Net["RE/26bf5726781d1f44792109ce394bcf1e11fa41ae5bf157bb143ae79cbe6d44da"],
     
-    -- Anti-Cheat (HASHED)
+    -- Anti-Cheat
     UpdateAutoFishingState = Net and Net["RF/c68d9e2817eb664656e9e9076a0591c6b9e1a2ab03d8b8b8bce02bfe0af47fe0"],
     MarkAutoFishingUsed = Net and Net["RF/3369617d84c7299bdf2c8122e364d61a9f03d680e8faec8dfcb77529ef57d841"],
     
-    -- Sell (HASHED)
+    -- Sell
     SellAllItems = Net and Net["RF/4417ef209575b73e441890816440faf3f5fa6a503ff1805d70afa5cf2b6d1453"],
     SellItem = Net and Net["RF/ca4e553b1bac1d59fea0f81bf7a3cedb46f0e11a90e7f72755009716dda575e9"],
     
-    -- Favorite (HASHED)
+    -- Favorite
     FavoriteItem = Net and Net["RE/f0e8ec714246b48fc2056f81a5106252267b280570723e12fef90d8cf1c4cc8e"],
-    PromptFavoriteGame = Net and Net["RF/faec503b4c4a1859c79435903a10bed7e880cb893277e19692fa37d10991b011"]
+    PromptFavoriteGame = Net and Net["RF/faec503b4c4a1859c79435903a10bed7e880cb893277e19692fa37d10991b011"],
+    
+    -- Additional from VEL.lua
+    RE_EquipToolFromHotbar = Net and Net["RE/EquipToolFromHotbar"],
+    RF_UpdateFishingRadar = Net and Net["RF/UpdateFishingRadar"],
+    RF_EquipOxygenTank = Net and Net["RF/EquipOxygenTank"],
+    RF_UnequipOxygenTank = Net and Net["RF/UnequipOxygenTank"]
 }
+
+-- ===== HELPER FUNCTIONS FROM VEL.LUA =====
+local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Stats = game:GetService("Stats")
+local LocalPlayer = Players.LocalPlayer
+
+local function SafeWait(parent, childName, timeout)
+    if not parent then return nil end
+    local ok, result = pcall(function()
+        return parent:WaitForChild(childName, timeout)
+    end)
+    if ok then return result end
+    return nil
+end
+
+local function SafeRequire(moduleScript)
+    if not moduleScript then return nil end
+    local ok, result = pcall(require, moduleScript)
+    if ok then return result end
+    return nil
+end
+
+local SharedFolder = SafeWait(ReplicatedStorage, "Shared", 10)
+local ItemUtility = SafeRequire(SafeWait(SharedFolder, "ItemUtility", 10))
+local TierUtility = SafeRequire(SafeWait(SharedFolder, "TierUtility", 10))
+
+local PlayerDataReplion = nil
+local function GetPlayerDataReplion()
+    if PlayerDataReplion then return PlayerDataReplion end
+    local ReplionModule = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Replion", 10)
+    if not ReplionModule then return nil end
+    local ReplionClient = require(ReplionModule).Client
+    PlayerDataReplion = ReplionClient:WaitReplion("Data", 5)
+    return PlayerDataReplion
+end
+
+local function GetHumanoid()
+    local Character = LocalPlayer.Character
+    if not Character then
+        Character = LocalPlayer.CharacterAdded:Wait()
+    end
+    return Character:FindFirstChildOfClass("Humanoid")
+end
+
+local function GetHRP()
+    local Character = LocalPlayer.Character
+    if not Character then
+        Character = LocalPlayer.CharacterAdded:Wait()
+    end
+    return Character:WaitForChild("HumanoidRootPart", 5)
+end
+
+local function GetFishNameAndRarity(item)
+    local name = item.Identifier or "Unknown"
+    local rarity = item.Metadata and item.Metadata.Rarity or "COMMON"
+    local itemID = item.Id
+
+    local itemData = nil
+
+    if ItemUtility and itemID then
+        pcall(function()
+            itemData = ItemUtility:GetItemData(itemID)
+            if not itemData then
+                local numericID = tonumber(item.Id) or tonumber(item.Identifier)
+                if numericID then
+                    itemData = ItemUtility:GetItemData(numericID)
+                end
+            end
+        end)
+    end
+
+    if itemData and itemData.Data and itemData.Data.Name then
+        name = itemData.Data.Name
+    end
+
+    if item.Metadata and item.Metadata.Rarity then
+        rarity = item.Metadata.Rarity
+    elseif itemData and itemData.Probability and itemData.Probability.Chance and TierUtility then
+        local tierObj = nil
+        pcall(function()
+            tierObj = TierUtility:GetTierFromRarity(itemData.Probability.Chance)
+        end)
+
+        if tierObj and tierObj.Name then
+            rarity = tierObj.Name
+        end
+    end
+
+    return name, rarity
+end
+
+local function GetItemMutationString(item)
+    if item.Metadata and item.Metadata.Shiny == true then return "Shiny" end
+    return item.Metadata and item.Metadata.VariantId or ""
+end
+
+local function CensorName(name)
+    if not name or type(name) ~= "string" or #name < 1 then
+        return "N/A" 
+    end
+    
+    if #name <= 3 then
+        return name
+    end
+
+    local prefix = name:sub(1, 3)
+    local censureLength = #name - 3
+    local censorString = string.rep("*", censureLength)
+    
+    return prefix .. censorString
+end
+
+-- ===== ANTI AFK =====
+pcall(function()
+    local player = Players.LocalPlayer
+    for i, v in pairs(getconnections(player.Idled)) do
+        if v.Disable then
+            v:Disable()
+        end
+    end
+end)
+
+-- ===== WEBHOOK FUNCTIONS =====
+local function sendWebhook(message, embedData)
+    if not Config.WebhookEnabled or Config.WebhookURL == "" then return end
+    
+    local data = {
+        ["content"] = message or "",
+        ["username"] = "Moe V1.0",
+        ["avatar_url"] = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. player.UserId .. "&width=420&height=420&format=png"
+    }
+    
+    if embedData then
+        data["embeds"] = {embedData}
+    end
+    
+    local jsonData = HttpService:JSONEncode(data)
+    
+    local success = pcall(function()
+        request = syn and syn.request or http and http.request or request
+        if request then
+            request({
+                Url = Config.WebhookURL,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = jsonData
+            })
+        end
+    end)
+    
+    if not success then
+        print("❌ Failed to send webhook")
+    end
+end
+
+local function createFishEmbed(fishData)
+    local rarityColors = {
+        Common = 8421504,
+        Uncommon = 43520,
+        Rare = 255,
+        Epic = 12745742,
+        Legendary = 16766720,
+        Mythic = 16711935,
+        Secret = 16711680
+    }
+    
+    local color = rarityColors[fishData.rarity] or 3092790
+    
+    local embed = {
+        ["title"] = "🎣 Fish Caught!",
+        ["description"] = "**" .. fishData.name .. "**",
+        ["color"] = color,
+        ["fields"] = {
+            {
+                ["name"] = "Rarity",
+                ["value"] = fishData.rarity or "Unknown",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "Value",
+                ["value"] = fishData.value or "Unknown",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "Player",
+                ["value"] = player.Name,
+                ["inline"] = true
+            }
+        },
+        ["footer"] = {
+            ["text"] = "Moe V1.0 • " .. os.date("%H:%M:%S")
+        },
+        ["thumbnail"] = {
+            ["url"] = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. player.UserId .. "&width=420&height=420&format=png"
+        }
+    }
+    
+    return embed
+end
+
+local function createSellEmbed(totalAmount, itemCount)
+    local embed = {
+        ["title"] = "💰 Items Sold",
+        ["description"] = "Sold **" .. itemCount .. "** items",
+        ["color"] = 16776960,
+        ["fields"] = {
+            {
+                ["name"] = "Total Value",
+                ["value"] = "**$" .. tostring(totalAmount) .. "**",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "Player",
+                ["value"] = player.Name,
+                ["inline"] = true
+            }
+        },
+        ["footer"] = {
+            ["text"] = "Moe V1.0 • " .. os.date("%H:%M:%S")
+        }
+    }
+    
+    return embed
+end
+
+local function createFavoriteEmbed(itemData)
+    local embed = {
+        ["title"] = "⭐ Item Favorited",
+        ["description"] = "**" .. itemData.name .. "** has been favorited!",
+        ["color"] = 16744703,
+        ["fields"] = {
+            {
+                ["name"] = "Rarity",
+                ["value"] = itemData.rarity or "Unknown",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "Player",
+                ["value"] = player.Name,
+                ["inline"] = true
+            }
+        },
+        ["footer"] = {
+            ["text"] = "Moe V1.0 • " .. os.date("%H:%M:%S")
+        }
+    }
+    
+    return embed
+end
+
+-- Setup FishCaught listener untuk webhook
+local function setupWebhookListeners()
+    if Remote.FishCaught then
+        Remote.FishCaught.OnClientEvent:Connect(function(fishData)
+            if Config.WebhookEnabled and Config.WebhookURL ~= "" then
+                local rarity = fishData.rarity or "Common"
+                
+                local shouldNotify = false
+                for _, r in ipairs(Config.WebhookNotifyRarity) do
+                    if r == rarity then
+                        shouldNotify = true
+                        break
+                    end
+                end
+                
+                if shouldNotify then
+                    local fishKey = fishData.name .. "_" .. rarity
+                    local currentTime = os.time()
+                    
+                    if not lastNotifiedFish[fishKey] or (currentTime - lastNotifiedFish[fishKey]) > webhookCooldown then
+                        lastNotifiedFish[fishKey] = currentTime
+                        sendWebhook(nil, createFishEmbed(fishData))
+                    end
+                end
+            end
+        end)
+    end
+end
 
 -- ===== NOTIFY =====
 local function notify(title, text, duration)
@@ -205,7 +532,6 @@ local function equipRodViaRemote(slot)
     if Remote.EquipTool then
         local success = pcall(function()
             Remote.EquipTool:FireServer(slot or 1)
-            print("✅ Equip remote called with slot:", slot or 1)
         end)
         return success
     end
@@ -273,20 +599,15 @@ local function setupMinigameListener()
     
     if Remote.FishingMinigameChanged then
         minigameConnection = Remote.FishingMinigameChanged.OnClientEvent:Connect(function(state, data)
-            print("🎣 Minigame state:", state)
-            
             if state == "Activated" or state == "Started" then
                 isMinigameActive = true
-                print("🎣 Minigame started")
             elseif state == "Completed" or state == "Stop" then
                 isMinigameActive = false
-                print("✅ Minigame completed")
                 
                 if autoFishing and Remote.CatchFishCompleted then
                     task.spawn(function()
                         pcall(function()
                             Remote.CatchFishCompleted:InvokeServer()
-                            print("✅ Fish caught!")
                         end)
                     end)
                 end
@@ -300,13 +621,11 @@ local function startFishing()
     
     local serverTime = workspace:GetServerTimeNow()
     
-    -- Charge rod
     local chargeSuccess = pcall(function()
         return Remote.ChargeFishingRod:InvokeServer(nil, nil, serverTime, nil)
     end)
     
     if not chargeSuccess then 
-        print("❌ Charge failed")
         return false 
     end
     
@@ -315,7 +634,6 @@ local function startFishing()
     local waterY = getWaterHeight()
     if waterY == 0 then waterY = -50 end
     
-    -- Request minigame
     local minigameSuccess = pcall(function()
         return Remote.RequestFishingMinigame:InvokeServer(waterY, Config.CastPower, serverTime)
     end)
@@ -334,6 +652,10 @@ local function sellAllItems()
     if Remote.SellAllItems then
         local success = pcall(function() Remote.SellAllItems:InvokeServer() end)
         notify("Sell", success and "All items sold!" or "Sell failed", 2)
+        
+        if success and Config.WebhookEnabled and Config.WebhookNotifySell and Config.WebhookURL ~= "" then
+            sendWebhook(nil, createSellEmbed("?", "?"))
+        end
     end
 end
 
@@ -372,7 +694,7 @@ local function startAutoFishing()
     autoFishing = true
     notify("Auto Fish", "Started!", 2)
     
-    fishingConnection = game:GetService("RunService").Heartbeat:Connect(function()
+    fishingConnection = RunService.Heartbeat:Connect(function()
         if not autoFishing or guiClosed then return end
         
         disableAntiCheat()
@@ -404,7 +726,7 @@ local function startAutoSell()
     if autoSell or guiClosed then return end
     autoSell = true
     
-    sellConnection = game:GetService("RunService").Heartbeat:Connect(function()
+    sellConnection = RunService.Heartbeat:Connect(function()
         if not autoSell or guiClosed then return end
         task.wait(Config.SellDelay)
         sellAllItems()
@@ -424,7 +746,7 @@ local function startAutoFavorite()
     if autoFavorite or guiClosed then return end
     autoFavorite = true
     
-    favoriteConnection = game:GetService("RunService").Heartbeat:Connect(function()
+    favoriteConnection = RunService.Heartbeat:Connect(function()
         if not autoFavorite or guiClosed then return end
         task.wait(30)
         promptFavorite()
@@ -436,6 +758,120 @@ local function stopAutoFavorite()
     if favoriteConnection then
         favoriteConnection:Disconnect()
         favoriteConnection = nil
+    end
+end
+
+-- ===== WALK ON WATER =====
+local walkOnWaterConnection = nil
+local isWalkOnWater = false
+local waterPlatform = nil
+
+local function WoW()
+    if not waterPlatform then
+        waterPlatform = Instance.new("Part")
+        waterPlatform.Name = "WaterPlatform"
+        waterPlatform.Anchored = true
+        waterPlatform.CanCollide = true
+        waterPlatform.Transparency = 1 
+        waterPlatform.Size = Vector3.new(15, 1, 15)
+        waterPlatform.Parent = workspace
+    end
+    
+    if walkOnWaterConnection then walkOnWaterConnection:Disconnect() end
+    
+    walkOnWaterConnection = RunService.RenderStepped:Connect(function()
+        local character = player.Character
+        if not isWalkOnWater or not character then return end
+        
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+    
+        if not waterPlatform or not waterPlatform.Parent then
+            waterPlatform = Instance.new("Part")
+            waterPlatform.Name = "WaterPlatform"
+            waterPlatform.Anchored = true
+            waterPlatform.CanCollide = true
+            waterPlatform.Transparency = 1 
+            waterPlatform.Size = Vector3.new(15, 1, 15)
+            waterPlatform.Parent = workspace
+        end
+    
+        local rayParams = RaycastParams.new()
+        rayParams.FilterDescendantsInstances = {workspace.Terrain} 
+        rayParams.FilterType = Enum.RaycastFilterType.Include
+        rayParams.IgnoreWater = false
+    
+        local rayOrigin = hrp.Position + Vector3.new(0, 5, 0) 
+        local rayDirection = Vector3.new(0, -200, 0)
+    
+        local result = workspace:Raycast(rayOrigin, rayDirection, rayParams)
+    
+        if result and result.Material == Enum.Material.Water then
+            local waterSurfaceHeight = result.Position.Y
+            
+            waterPlatform.Position = Vector3.new(hrp.Position.X, waterSurfaceHeight, hrp.Position.Z)
+            
+            if hrp.Position.Y < (waterSurfaceHeight + 2) and hrp.Position.Y > (waterSurfaceHeight - 5) then
+                if not UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    hrp.CFrame = CFrame.new(hrp.Position.X, waterSurfaceHeight + 3.2, hrp.Position.Z)
+                end
+            end
+        else
+            waterPlatform.Position = Vector3.new(hrp.Position.X, -500, hrp.Position.Z)
+        end
+    end)
+end
+
+-- ===== DISABLE ANIMATIONS =====
+local isNoAnimationActive = false
+local originalAnimator = nil
+local originalAnimateScript = nil
+
+local function DisableAnimations()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = GetHumanoid()
+    
+    if not humanoid then return end
+
+    local animateScript = character:FindFirstChild("Animate")
+    if animateScript and animateScript:IsA("LocalScript") and animateScript.Enabled then
+        originalAnimateScript = animateScript.Enabled
+        animateScript.Enabled = false
+    end
+
+    local animator = humanoid:FindFirstChildOfClass("Animator")
+    if animator then
+        originalAnimator = animator 
+        animator:Destroy()
+    end
+end
+
+local function EnableAnimations()
+    local character = player.Character or player.CharacterAdded:Wait()
+    
+    local animateScript = character:FindFirstChild("Animate")
+    if animateScript and originalAnimateScript ~= nil then
+        animateScript.Enabled = originalAnimateScript
+    end
+    
+    local humanoid = GetHumanoid()
+    if not humanoid then return end
+
+    local existingAnimator = humanoid:FindFirstChildOfClass("Animator")
+    if not existingAnimator then
+        if originalAnimator and not originalAnimator.Parent then
+            originalAnimator.Parent = humanoid
+        else
+            Instance.new("Animator").Parent = humanoid
+        end
+    end
+    originalAnimator = nil
+end
+
+function OnCharacterAdded(newCharacter)
+    if isNoAnimationActive then
+        task.wait(0.2)
+        DisableAnimations()
     end
 end
 
@@ -465,8 +901,8 @@ end
 -- ===== MAIN FRAME =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 650, 0, 400)
-mainFrame.Position = UDim2.new(0.5, -325, 0.5, -200)
+mainFrame.Size = UDim2.new(0, 700, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -350, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
@@ -644,7 +1080,7 @@ local contentTitle = Instance.new("TextLabel")
 contentTitle.Size = UDim2.new(1, -10, 0, 25)
 contentTitle.Position = UDim2.new(0, 5, 0, 5)
 contentTitle.BackgroundTransparency = 1
-contentTitle.Text = "Fishing Features"
+contentTitle.Text = "Main Features"
 contentTitle.TextColor3 = Color3.new(1, 1, 1)
 contentTitle.TextSize = 14
 contentTitle.Font = Enum.Font.GothamBold
@@ -687,15 +1123,13 @@ local function closeAllDropdowns()
 end
 
 local function setupInputTracking()
-    local userInputService = game:GetService("UserInputService")
-    
-    userInputService.InputBegan:Connect(function(input, gameProcessed)
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             task.wait(0.05)
             if not activeDropdown then return end
             
-            local mousePos = userInputService:GetMouseLocation()
+            local mousePos = UserInputService:GetMouseLocation()
             local objects = gui:GetGuiObjectsAtPosition(mousePos.X, mousePos.Y)
             
             local clickedOnDropdown = false
@@ -755,7 +1189,6 @@ local function createDropdown(parent, options, default, callback)
     arrow.Parent = frame
     arrow.ZIndex = 21
     
-    -- Dropdown frame
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     dropdownFrame.Visible = false
@@ -920,7 +1353,6 @@ local function createLabel(parent, text)
     label.ZIndex = 20
 end
 
--- ===== FUNGSI CREATE TOGGLE SWITCH =====
 local function createToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 35)
@@ -946,7 +1378,6 @@ local function createToggle(parent, text, default, callback)
     label.Parent = frame
     label.ZIndex = 21
     
-    -- SWITCH BACKGROUND
     local switchBg = Instance.new("Frame")
     switchBg.Size = UDim2.new(0, 50, 0, 25)
     switchBg.Position = UDim2.new(1, -60, 0.5, -12.5)
@@ -958,7 +1389,6 @@ local function createToggle(parent, text, default, callback)
     switchCorner.CornerRadius = UDim.new(0, 15)
     switchCorner.Parent = switchBg
     
-    -- SWITCH KNOB
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 21, 0, 21)
     knob.Position = default and UDim2.new(1, -25, 0.5, -10.5) or UDim2.new(0, 4, 0.5, -10.5)
@@ -970,7 +1400,6 @@ local function createToggle(parent, text, default, callback)
     knobCorner.CornerRadius = UDim.new(0, 10)
     knobCorner.Parent = knob
     
-    -- TOMBOL TRANSPARENT
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(1, 0, 1, 0)
     toggleBtn.BackgroundTransparency = 1
@@ -1044,6 +1473,83 @@ local function createInput(parent, labelText, default, callback, min, max)
     return frame
 end
 
+local function createSlider(parent, title, min, max, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 45)
+    frame.BackgroundTransparency = 1
+    frame.Parent = parent
+    frame.ZIndex = 20
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = title .. ": " .. tostring(default)
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextSize = 13
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    label.ZIndex = 21
+    
+    local sliderBg = Instance.new("Frame")
+    sliderBg.Size = UDim2.new(1, 0, 0, 10)
+    sliderBg.Position = UDim2.new(0, 0, 0, 25)
+    sliderBg.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    sliderBg.Parent = frame
+    sliderBg.ZIndex = 21
+    
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.CornerRadius = UDim.new(0, 5)
+    sliderCorner.Parent = sliderBg
+    
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.new(0, 0.6, 1)
+    fill.Parent = sliderBg
+    fill.ZIndex = 22
+    
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 5)
+    fillCorner.Parent = fill
+    
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, 0, 1, 0)
+    button.BackgroundTransparency = 1
+    button.Text = ""
+    button.Parent = sliderBg
+    button.ZIndex = 23
+    
+    local dragging = false
+    
+    button.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePos = UserInputService:GetMouseLocation()
+            local absPos = sliderBg.AbsolutePosition
+            local absSize = sliderBg.AbsoluteSize
+            
+            local relativeX = math.clamp(mousePos.X - absPos.X, 0, absSize.X)
+            local percent = relativeX / absSize.X
+            local value = min + (percent * (max - min))
+            
+            fill.Size = UDim2.new(percent, 0, 1, 0)
+            label.Text = title .. ": " .. string.format("%.2f", value)
+            callback(value)
+        end
+    end)
+    
+    return frame
+end
+
 local function clearFeatures()
     for _, child in pairs(featuresContainer:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("TextButton") then
@@ -1058,12 +1564,12 @@ local autoSellToggle = nil
 local autoFavoriteToggle = nil
 local autoEquipToggle = nil
 
--- ===== FISHING MENU =====
-local function showFishing()
+-- ===== MAIN MENU (FITUR DARI VEL.LUA) =====
+local function showMain()
     clearFeatures()
-    contentTitle.Text = "Fishing Features"
+    contentTitle.Text = "Main Features"
     
-    createLabel(featuresContainer, "AUTO FISHING")
+    createLabel(featuresContainer, "🎣 AUTO FISHING")
     
     autoFishToggle = createToggle(featuresContainer, "Auto Fish", false, function(state)
         if state then
@@ -1080,7 +1586,7 @@ local function showFishing()
         end
     end)
     
-    createLabel(featuresContainer, "DELAY SETTINGS (Default: 2.0s / 1.0s)")
+    createLabel(featuresContainer, "⚙️ FISHING SETTINGS")
     
     createInput(featuresContainer, "Fish Delay (s)", Config.FishDelay, function(val)
         Config.FishDelay = val
@@ -1090,12 +1596,42 @@ local function showFishing()
         Config.CatchDelay = val
     end, 0.1, 10)
     
-    createLabel(featuresContainer, "CAST POWER (Default: 0.5)")
-    createInput(featuresContainer, "Power (0.1-1.0)", Config.CastPower, function(val)
+    createSlider(featuresContainer, "Cast Power", 0.1, 1.0, Config.CastPower, function(val)
         Config.CastPower = val
-    end, 0.1, 1.0)
+    end)
     
-    createLabel(featuresContainer, "ROD SELECTION")
+    createLabel(featuresContainer, "🎣 FISHING SUPPORT")
+    
+    createToggle(featuresContainer, "Walk On Water", false, function(state)
+        isWalkOnWater = state
+        if state then
+            WoW()
+        else
+            isWalkOnWater = false
+            if walkOnWaterConnection then walkOnWaterConnection:Disconnect() walkOnWaterConnection = nil end
+            if waterPlatform then waterPlatform:Destroy() waterPlatform = nil end
+        end
+    end)
+    
+    createToggle(featuresContainer, "Disable Animation", isNoAnimationActive, function(state)
+        isNoAnimationActive = state
+        if state then
+            DisableAnimations()
+        else
+            EnableAnimations()
+        end
+    end)
+    
+    createToggle(featuresContainer, "Disable Fish Notif", false, function(state)
+        pcall(function()
+            local notif = player.PlayerGui:FindFirstChild("Small Notification")
+            if notif and notif:FindFirstChild("Display") then
+                notif.Display.Visible = not state
+            end
+        end)
+    end)
+    
+    createLabel(featuresContainer, "🔄 ROD SELECTION")
     local rods = findFishingRods()
     local rodNames = {"any"}
     for _, rod in ipairs(rods) do
@@ -1164,7 +1700,7 @@ local function showFavorite()
     clearFeatures()
     contentTitle.Text = "Favorite Features"
     
-    createLabel(featuresContainer, "AUTO FAVORITE")
+    createLabel(featuresContainer, "⭐ AUTO FAVORITE")
     
     autoFavoriteToggle = createToggle(featuresContainer, "Auto Favorite", false, function(state)
         if state then
@@ -1209,12 +1745,163 @@ local function showFavorite()
     statusText.Parent = statusFrame
 end
 
--- ===== TELEPORT MENU =====
+-- ===== ABILITIES MENU (DARI VEL.LUA) =====
+local function showAbilities()
+    clearFeatures()
+    contentTitle.Text = "Abilities"
+    
+    createLabel(featuresContainer, "🏃 MOVEMENT")
+    
+    local DEFAULT_SPEED = 18
+    local DEFAULT_JUMP = 50
+    
+    createSlider(featuresContainer, "WalkSpeed", 16, 200, DEFAULT_SPEED, function(val)
+        local humanoid = GetHumanoid()
+        if humanoid then
+            humanoid.WalkSpeed = val
+        end
+    end)
+    
+    createSlider(featuresContainer, "JumpPower", 50, 200, DEFAULT_JUMP, function(val)
+        local humanoid = GetHumanoid()
+        if humanoid then
+            humanoid.JumpPower = val
+        end
+    end)
+    
+    createButton(featuresContainer, "Reset Movement", function()
+        local humanoid = GetHumanoid()
+        if humanoid then
+            humanoid.WalkSpeed = DEFAULT_SPEED
+            humanoid.JumpPower = DEFAULT_JUMP
+        end
+    end)
+    
+    createToggle(featuresContainer, "Freeze Player", false, function(state)
+        local character = player.Character
+        if not character then return end
+        
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.Anchored = state
+            if state then
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                hrp.Velocity = Vector3.new(0, 0, 0)
+            end
+        end
+    end)
+    
+    createLabel(featuresContainer, "✨ ABILITIES")
+    
+    local infinityJumpConnection = nil
+    createToggle(featuresContainer, "Infinite Jump", false, function(state)
+        if state then
+            infinityJumpConnection = UserInputService.JumpRequest:Connect(function()
+                local humanoid = GetHumanoid()
+                if humanoid and humanoid.Health > 0 then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end)
+        else
+            if infinityJumpConnection then
+                infinityJumpConnection:Disconnect()
+                infinityJumpConnection = nil
+            end
+        end
+    end)
+    
+    local noclipConnection = nil
+    local isNoClipActive = false
+    createToggle(featuresContainer, "No Clip", false, function(state)
+        isNoClipActive = state
+        local character = player.Character
+        
+        if state then
+            noclipConnection = RunService.Stepped:Connect(function()
+                if isNoClipActive and character then
+                    for _, part in ipairs(character:GetDescendants()) do
+                        if part:IsA("BasePart") and part.CanCollide then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+        else
+            if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+            if character then
+                for _, part in ipairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+    end)
+    
+    local flyConnection = nil
+    local isFlying = false
+    local flySpeed = 60
+    local bodyGyro, bodyVel
+    createToggle(featuresContainer, "Fly Mode", false, function(state)
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        local humanoid = character:WaitForChild("Humanoid")
+
+        if state then
+            isFlying = true
+
+            bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.P = 9e4
+            bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+            bodyGyro.CFrame = humanoidRootPart.CFrame
+            bodyGyro.Parent = humanoidRootPart
+
+            bodyVel = Instance.new("BodyVelocity")
+            bodyVel.Velocity = Vector3.zero
+            bodyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+            bodyVel.Parent = humanoidRootPart
+
+            local cam = workspace.CurrentCamera
+            local moveDir = Vector3.zero
+            local jumpPressed = false
+
+            UserInputService.JumpRequest:Connect(function()
+                if isFlying then jumpPressed = true task.delay(0.2, function() jumpPressed = false end) end
+            end)
+
+            flyConnection = RunService.RenderStepped:Connect(function()
+                if not isFlying or not humanoidRootPart or not bodyGyro or not bodyVel then return end
+                
+                bodyGyro.CFrame = cam.CFrame
+                moveDir = humanoid.MoveDirection
+
+                if jumpPressed then
+                    moveDir = moveDir + Vector3.new(0, 1, 0)
+                elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                    moveDir = moveDir - Vector3.new(0, 1, 0)
+                end
+
+                if moveDir.Magnitude > 0 then moveDir = moveDir.Unit * flySpeed end
+
+                bodyVel.Velocity = moveDir
+            end)
+
+        else
+            isFlying = false
+
+            if flyConnection then flyConnection:Disconnect() flyConnection = nil end
+            if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+            if bodyVel then bodyVel:Destroy() bodyVel = nil end
+        end
+    end)
+end
+
+-- ===== TELEPORT MENU (DARI GUI.LUA + VEL.LUA) =====
 local function showTeleport()
     clearFeatures()
     contentTitle.Text = "Teleport"
     
-    createLabel(featuresContainer, "TELEPORT TO LOCATION")
+    createLabel(featuresContainer, "📍 TELEPORT TO LOCATION")
     
     local selectedLoc = TeleportLocations[1]
     
@@ -1226,11 +1913,11 @@ local function showTeleport()
         teleportTo(selectedLoc)
     end)
     
-    createLabel(featuresContainer, "TELEPORT TO PLAYER")
+    createLabel(featuresContainer, "👤 TELEPORT TO PLAYER")
     
     local function getPlayerList()
         local players = {}
-        for _, p in ipairs(game.Players:GetPlayers()) do
+        for _, p in ipairs(Players:GetPlayers()) do
             if p ~= player then
                 table.insert(players, p.Name)
             end
@@ -1247,29 +1934,472 @@ local function showTeleport()
     
     createButton(featuresContainer, "REFRESH PLAYERS", function()
         local newPlayerList = getPlayerList()
+        local dropdown = featuresContainer:FindFirstChildWhichIsA("Frame")
+        if dropdown then
+            -- Refresh dropdown logic here if needed
+        end
         notify("Players", #newPlayerList .. " online", 1)
     end)
     
     createButton(featuresContainer, "TELEPORT TO PLAYER", function()
         if selectedPlayer and selectedPlayer ~= "No players" then
-            local target = game.Players:FindFirstChild(selectedPlayer)
+            local target = Players:FindFirstChild(selectedPlayer)
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
                 local char = player.Character
                 if char and char:FindFirstChild("HumanoidRootPart") then
-                    char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+                    char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
                     notify("Teleport", "Teleported to " .. selectedPlayer)
                 end
             end
+        end
+    end)
+    
+    createLabel(featuresContainer, "⚡ STEALTH MODE")
+    
+    local stealthHeight = 110
+    local stealthMode = false
+    local pos_saved = nil
+    local look_saved = nil
+    
+    createInput(featuresContainer, "Stealth Height", stealthHeight, function(val)
+        stealthHeight = val
+    end, 10, 500)
+    
+    createToggle(featuresContainer, "Stealth Mode", false, function(state)
+        local hrp = GetHRP()
+        if not hrp then return end
+        
+        pos_saved = hrp.Position
+        look_saved = hrp.CFrame.LookVector
+        
+        stealthMode = state
+        if state then
+            hrp.CFrame = CFrame.new(pos_saved, pos_saved + look_saved) * CFrame.new(0, stealthHeight, 0)
+            hrp.Anchored = true
+        else
+            hrp.Anchored = false
+            hrp.CFrame = CFrame.new(pos_saved, pos_saved + look_saved) * CFrame.new(0, 0.5, 0)
+        end
+    end)
+end
+
+-- ===== WEBHOOK MENU =====
+local function showWebhook()
+    clearFeatures()
+    contentTitle.Text = "Discord Webhook"
+    
+    createLabel(featuresContainer, "🔗 WEBHOOK SETTINGS")
+    
+    local urlFrame = Instance.new("Frame")
+    urlFrame.Size = UDim2.new(1, 0, 0, 60)
+    urlFrame.BackgroundTransparency = 1
+    urlFrame.Parent = featuresContainer
+    
+    local urlLabel = Instance.new("TextLabel")
+    urlLabel.Size = UDim2.new(1, 0, 0, 25)
+    urlLabel.BackgroundTransparency = 1
+    urlLabel.Text = "Webhook URL"
+    urlLabel.TextColor3 = Color3.new(1, 1, 1)
+    urlLabel.TextSize = 13
+    urlLabel.Font = Enum.Font.GothamBold
+    urlLabel.TextXAlignment = Enum.TextXAlignment.Left
+    urlLabel.Parent = urlFrame
+    
+    local urlInput = Instance.new("TextBox")
+    urlInput.Size = UDim2.new(1, 0, 0, 30)
+    urlInput.Position = UDim2.new(0, 0, 0, 25)
+    urlInput.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    urlInput.Text = Config.WebhookURL
+    urlInput.TextColor3 = Color3.new(1, 1, 1)
+    urlInput.PlaceholderText = "https://discord.com/api/webhooks/..."
+    urlInput.PlaceholderColor3 = Color3.new(0.5, 0.5, 0.5)
+    urlInput.Font = Enum.Font.Gotham
+    urlInput.TextSize = 12
+    urlInput.Parent = urlFrame
+    
+    local urlCorner = Instance.new("UICorner")
+    urlCorner.CornerRadius = UDim.new(0, 6)
+    urlCorner.Parent = urlInput
+    
+    urlInput.FocusLost:Connect(function()
+        Config.WebhookURL = urlInput.Text
+    end)
+    
+    createToggle(featuresContainer, "Enable Webhook", Config.WebhookEnabled, function(state)
+        Config.WebhookEnabled = state
+        if state and Config.WebhookURL ~= "" then
+            sendWebhook("✅ **Webhook Connected**\nMoe V1.0 is now sending notifications to this channel.")
+            setupWebhookListeners()
+        end
+    end)
+    
+    createLabel(featuresContainer, "📢 NOTIFICATION SETTINGS")
+    
+    local rarityFrame = Instance.new("Frame")
+    rarityFrame.Size = UDim2.new(1, 0, 0, 60)
+    rarityFrame.BackgroundTransparency = 1
+    rarityFrame.Parent = featuresContainer
+    
+    local rarityLabel = Instance.new("TextLabel")
+    rarityLabel.Size = UDim2.new(1, 0, 0, 25)
+    rarityLabel.BackgroundTransparency = 1
+    rarityLabel.Text = "Notify Rarities (Separate with commas)"
+    rarityLabel.TextColor3 = Color3.new(1, 1, 1)
+    rarityLabel.TextSize = 13
+    rarityLabel.Font = Enum.Font.Gotham
+    rarityLabel.TextXAlignment = Enum.TextXAlignment.Left
+    rarityLabel.Parent = rarityFrame
+    
+    local rarityInput = Instance.new("TextBox")
+    rarityInput.Size = UDim2.new(1, 0, 0, 30)
+    rarityInput.Position = UDim2.new(0, 0, 0, 25)
+    rarityInput.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    rarityInput.Text = table.concat(Config.WebhookNotifyRarity, ", ")
+    rarityInput.TextColor3 = Color3.new(1, 1, 1)
+    rarityInput.PlaceholderText = "Legendary, Mythic, Secret"
+    rarityInput.Font = Enum.Font.Gotham
+    rarityInput.TextSize = 12
+    rarityInput.Parent = rarityFrame
+    
+    local rarityCorner = Instance.new("UICorner")
+    rarityCorner.CornerRadius = UDim.new(0, 6)
+    rarityCorner.Parent = rarityInput
+    
+    rarityInput.FocusLost:Connect(function()
+        local rarities = {}
+        for rarity in string.gmatch(rarityInput.Text, "([^,]+)") do
+            local trimmed = rarity:match("^%s*(.-)%s*$")
+            if trimmed ~= "" then
+                table.insert(rarities, trimmed)
+            end
+        end
+        if #rarities > 0 then
+            Config.WebhookNotifyRarity = rarities
+        end
+    end)
+    
+    createToggle(featuresContainer, "Notify on Sell", Config.WebhookNotifySell, function(state)
+        Config.WebhookNotifySell = state
+    end)
+    
+    createToggle(featuresContainer, "Notify on Favorite", Config.WebhookNotifyFavorite, function(state)
+        Config.WebhookNotifyFavorite = state
+    end)
+    
+    createLabel(featuresContainer, "🧪 TEST WEBHOOK")
+    
+    local testBtn = Instance.new("TextButton")
+    testBtn.Size = UDim2.new(1, 0, 0, 40)
+    testBtn.BackgroundColor3 = Color3.new(0, 0.5, 1)
+    testBtn.Text = "SEND TEST MESSAGE"
+    testBtn.TextColor3 = Color3.new(1, 1, 1)
+    testBtn.TextSize = 14
+    testBtn.Font = Enum.Font.GothamBold
+    testBtn.Parent = featuresContainer
+    
+    local testCorner = Instance.new("UICorner")
+    testCorner.CornerRadius = UDim.new(0, 6)
+    testCorner.Parent = testBtn
+    
+    testBtn.MouseButton1Click:Connect(function()
+        if Config.WebhookURL == "" then
+            notify("Webhook", "Please enter a webhook URL first!", 3)
+            return
+        end
+        
+        local testEmbed = {
+            ["title"] = "🧪 Test Notification",
+            ["description"] = "Moe V1.0 webhook is working properly!",
+            ["color"] = 3066993,
+            ["fields"] = {
+                {
+                    ["name"] = "Player",
+                    ["value"] = player.Name,
+                    ["inline"] = true
+                },
+                {
+                    ["name"] = "Status",
+                    ["value"] = "✅ Connected",
+                    ["inline"] = true
+                }
+            },
+            ["footer"] = {
+                ["text"] = "Moe V1.0 • " .. os.date("%H:%M:%S")
+            }
+        }
+        
+        sendWebhook(nil, testEmbed)
+        notify("Webhook", "Test message sent!", 2)
+    end)
+    
+    local infoFrame = Instance.new("Frame")
+    infoFrame.Size = UDim2.new(1, 0, 0, 80)
+    infoFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
+    infoFrame.BackgroundTransparency = 0.2
+    infoFrame.Parent = featuresContainer
+    
+    local infoCorner = Instance.new("UICorner")
+    infoCorner.CornerRadius = UDim.new(0, 6)
+    infoCorner.Parent = infoFrame
+    
+    local infoText = Instance.new("TextLabel")
+    infoText.Size = UDim2.new(1, -10, 1, -10)
+    infoText.Position = UDim2.new(0, 5, 0, 5)
+    infoText.BackgroundTransparency = 1
+    infoText.Text = "📌 **Webhook Info:**\n• Sends notifications for rare fish catches\n• Notifies when items are sold\n• Can be tested with the button above\n• Supports multiple rarity filters"
+    infoText.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    infoText.TextSize = 11
+    infoText.Font = Enum.Font.Gotham
+    infoText.TextXAlignment = Enum.TextXAlignment.Left
+    infoText.TextWrapped = true
+    infoText.RichText = true
+    infoText.Parent = infoFrame
+end
+
+-- ===== MISC MENU =====
+local function showMisc()
+    clearFeatures()
+    contentTitle.Text = "Miscellaneous"
+    
+    createLabel(featuresContainer, "🛡️ BYPASSES")
+    
+    createToggle(featuresContainer, "Bypass Oxygen", false, function(state)
+        if state then
+            if Remote.RF_EquipOxygenTank then
+                pcall(function() Remote.RF_EquipOxygenTank:InvokeServer(105) end)
+            end
+        else
+            if Remote.RF_UnequipOxygenTank then
+                pcall(function() Remote.RF_UnequipOxygenTank:InvokeServer() end)
+            end
+        end
+    end)
+    
+    createToggle(featuresContainer, "Bypass Radar", false, function(state)
+        if Remote.RF_UpdateFishingRadar then
+            pcall(function() Remote.RF_UpdateFishingRadar:InvokeServer(state) end)
+        end
+    end)
+    
+    createLabel(featuresContainer, "🎥 CINEMATIC")
+    
+    createToggle(featuresContainer, "Infinite Zoom", false, function(state)
+        if state then
+            player.CameraMaxZoomDistance = 100000
+        else
+            player.CameraMaxZoomDistance = 128
+        end
+    end)
+    
+    createToggle(featuresContainer, "Disable 3D Rendering", false, function(state)
+        local PlayerGui = player:WaitForChild("PlayerGui")
+        local Camera = workspace.CurrentCamera
+        
+        if state then
+            if not _G.BlackScreenGUI then
+                _G.BlackScreenGUI = Instance.new("ScreenGui")
+                _G.BlackScreenGUI.Name = "AutoFish_BlackBackground"
+                _G.BlackScreenGUI.IgnoreGuiInset = true
+                _G.BlackScreenGUI.DisplayOrder = -999
+                _G.BlackScreenGUI.Parent = PlayerGui
+                
+                local Frame = Instance.new("Frame")
+                Frame.Size = UDim2.new(1, 0, 1, 0)
+                Frame.BackgroundColor3 = Color3.new(0, 0, 0)
+                Frame.BorderSizePixel = 0
+                Frame.Parent = _G.BlackScreenGUI
+            end
+            
+            _G.BlackScreenGUI.Enabled = true
+            _G.OldCamType = Camera.CameraType
+            Camera.CameraType = Enum.CameraType.Scriptable
+            Camera.CFrame = CFrame.new(0, 100000, 0) 
+        else
+            if _G.OldCamType then
+                Camera.CameraType = _G.OldCamType
+            else
+                Camera.CameraType = Enum.CameraType.Custom
+            end
+            
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                Camera.CameraSubject = player.Character.Humanoid
+            end
+            
+            if _G.BlackScreenGUI then
+                _G.BlackScreenGUI.Enabled = false
+            end
+        end
+    end)
+    
+    createLabel(featuresContainer, "📊 PERFORMANCE")
+    
+    local monitorEnabled = false
+    local monitorGui = nil
+    local monitorConnection = nil
+    
+    local function createMonitorGui()
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "PerformanceMonitor"
+        screenGui.ResetOnSpawn = false
+        screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        screenGui.Parent = player:WaitForChild("PlayerGui")
+        
+        local mainFrame = Instance.new("Frame")
+        mainFrame.Name = "MainFrame"
+        mainFrame.Size = UDim2.new(0, 90, 0, 80)
+        mainFrame.Position = UDim2.new(1, -220, 0, 20)
+        mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+        mainFrame.BorderSizePixel = 0
+        mainFrame.Parent = screenGui
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = mainFrame
+        
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(60, 60, 80)
+        stroke.Thickness = 2
+        stroke.Parent = mainFrame
+        
+        local titleLabel = Instance.new("TextLabel")
+        titleLabel.Name = "Title"
+        titleLabel.Size = UDim2.new(1, 0, 0, 25)
+        titleLabel.Position = UDim2.new(0, 0, 0, 0)
+        titleLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+        titleLabel.BorderSizePixel = 0
+        titleLabel.Text = "Monitor"
+        titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        titleLabel.TextSize = 14
+        titleLabel.Font = Enum.Font.GothamBold
+        titleLabel.Parent = mainFrame
+        
+        local titleCorner = Instance.new("UICorner")
+        titleCorner.CornerRadius = UDim.new(0, 8)
+        titleCorner.Parent = titleLabel
+        
+        local separator = Instance.new("Frame")
+        separator.Name = "Separator"
+        separator.Size = UDim2.new(1, -10, 0, 1)
+        separator.Position = UDim2.new(0, 5, 0, 25)
+        separator.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        separator.BorderSizePixel = 0
+        separator.Parent = mainFrame
+        
+        local pingLabel = Instance.new("TextLabel")
+        pingLabel.Name = "PingLabel"
+        pingLabel.Size = UDim2.new(1, -20, 0, 20)
+        pingLabel.Position = UDim2.new(0, 10, 0, 32)
+        pingLabel.BackgroundTransparency = 1
+        pingLabel.Text = "Ping : 0 ms"
+        pingLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        pingLabel.TextSize = 12
+        pingLabel.Font = Enum.Font.GothamMedium
+        pingLabel.TextXAlignment = Enum.TextXAlignment.Left
+        pingLabel.Parent = mainFrame
+        
+        local cpuLabel = Instance.new("TextLabel")
+        cpuLabel.Name = "CPULabel"
+        cpuLabel.Size = UDim2.new(1, -20, 0, 20)
+        cpuLabel.Position = UDim2.new(0, 10, 0, 52)
+        cpuLabel.BackgroundTransparency = 1
+        cpuLabel.Text = "CPU  : 0 ms"
+        cpuLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        cpuLabel.TextSize = 12
+        cpuLabel.Font = Enum.Font.GothamMedium
+        cpuLabel.TextXAlignment = Enum.TextXAlignment.Left
+        cpuLabel.Parent = mainFrame
+        
+        return screenGui
+    end
+    
+    createToggle(featuresContainer, "Performance Monitor", false, function(state)
+        if state then
+            if monitorEnabled then return end
+            monitorEnabled = true
+            monitorGui = createMonitorGui()
+            
+            monitorConnection = RunService.Heartbeat:Connect(function()
+                if not monitorEnabled or not monitorGui then return end
+                
+                local mainFrame = monitorGui:FindFirstChild("MainFrame")
+                if not mainFrame then return end
+                
+                local pingLabel = mainFrame:FindFirstChild("PingLabel")
+                local cpuLabel = mainFrame:FindFirstChild("CPULabel")
+                
+                if pingLabel and cpuLabel then
+                    local ping = math.floor(player:GetNetworkPing() * 1000)
+                    local cpu = math.floor(Stats.PerformanceStats.CPU:GetValue())
+                    
+                    pingLabel.Text = string.format("Ping : %d ms", ping)
+                    cpuLabel.Text = string.format("CPU  : %d ms", cpu)
+                    
+                    if ping <= 50 then
+                        pingLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+                    elseif ping <= 100 then
+                        pingLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+                    elseif ping <= 300 then
+                        pingLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
+                    else
+                        pingLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+                    end
+                    
+                    if cpu <= 50 then
+                        cpuLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+                    elseif cpu <= 100 then
+                        cpuLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+                    elseif cpu <= 300 then
+                        cpuLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
+                    else
+                        cpuLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+                    end
+                end
+            end)
+        else
+            if not monitorEnabled then return end
+            monitorEnabled = false
+            if monitorConnection then monitorConnection:Disconnect() monitorConnection = nil end
+            if monitorGui then monitorGui:Destroy() monitorGui = nil end
+        end
+    end)
+    
+    createLabel(featuresContainer, "🔄 MISC")
+    
+    createButton(featuresContainer, "Reset Character", function()
+        local character = player.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        
+        if not character or not hrp or not humanoid then
+            notify("Error", "Character not found!", 3)
+            return
+        end
+        
+        local lastPos = hrp.Position
+        notify("Reset", "Respawning...", 2)
+        humanoid:TakeDamage(999999)
+        
+        player.CharacterAdded:Wait()
+        task.wait(0.5)
+        local newChar = player.Character
+        local newHRP = newChar:WaitForChild("HumanoidRootPart", 5)
+        
+        if newHRP then
+            newHRP.CFrame = CFrame.new(lastPos + Vector3.new(0, 3, 0))
+            notify("Success", "Character reset!", 2)
         end
     end)
 end
 
 -- ===== LEFT MENU BUTTONS =====
 local menuButtons = {
-    {name = "Fishing", func = showFishing},
+    {name = "Main", func = showMain},
     {name = "Sell", func = showSell},
     {name = "Favorite", func = showFavorite},
-    {name = "Teleport", func = showTeleport}
+    {name = "Abilities", func = showAbilities},
+    {name = "Teleport", func = showTeleport},
+    {name = "Webhook", func = showWebhook},
+    {name = "Misc", func = showMisc}
 }
 
 local currentMenu = ""
@@ -1315,9 +2445,9 @@ for _, btnData in ipairs(menuButtons) do
     end)
 end
 
--- Show Fishing menu by default
+-- Show Main menu by default
 task.wait(0.1)
-showFishing()
+showMain()
 
 -- ===== DRAG FUNCTIONALITY =====
 local dragging = false
@@ -1350,6 +2480,16 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
+-- Setup webhook listeners
+setupWebhookListeners()
+
+-- Auto Reload saat Respawn
+player.CharacterAdded:Connect(function(char)
+    if type(OnCharacterAdded) == "function" then
+        OnCharacterAdded(char)
+    end
+end)
+
 -- Status remote di console
 print("=== MOE V1.0 REMOTE STATUS ===")
 print("ChargeFishingRod:", Remote.ChargeFishingRod ~= nil and "✅" or "❌")
@@ -1359,4 +2499,4 @@ print("FishingMinigameChanged:", Remote.FishingMinigameChanged ~= nil and "✅" 
 print("SellAllItems:", Remote.SellAllItems ~= nil and "✅" or "❌")
 print("===============================")
 
-notify("Moe V1.0", "Updated with new hashes!", 3)
+notify("Moe V1.0", "Merged with VEL.lua features + Webhook!", 3)
