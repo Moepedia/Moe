@@ -1,4 +1,4 @@
--- Moe V1.0 GUI for FISH IT - FIXED WITH SWITCH TOGGLE
+-- Moe V1.0 GUI for FISH IT - UPDATED WITH NEW HASHES
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -62,32 +62,32 @@ local Net = Packages and Packages:FindFirstChild("_Index") and
            Packages._Index:FindFirstChild("sleitnick_net@0.2.0") and 
            Packages._Index["sleitnick_net@0.2.0"].net
 
--- ===== REMOTE YANG DIGUNAKAN =====
+-- ===== REMOTE YANG DIGUNAKAN (DENGAN HASH TERBARU) =====
 local Remote = {
-    -- Equip Rod (HASH DARI RSPY)
-    EquipTool = Net and Net["RE/EquipToolFromHotbar"],
+    -- Equip Rod
+    EquipTool = Net and Net["RE/c6dd8019183b4837632988a186ea356b21b8ff046bb0151182a1167e3936bc9f"],
     
-    -- Fishing Remotes (dari FishingController)
-    CancelFishingInputs = Net and Net["RF/CancelFishingInputs"],
-    ChargeFishingRod = Net and Net["RF/ChargeFishingRod"],
-    RequestFishingMinigame = Net and Net["RF/RequestFishingMinigameStarted"],
-    FishingMinigameChanged = Net and Net["RE/FishingMinigameChanged"],
-    FishingStopped = Net and Net["RE/FishingStopped"],
-    UpdateChargeState = Net and Net["RE/UpdateChargeState"],
-    CatchFishCompleted = Net and Net["RF/CatchFishCompleted"],
-    FishCaught = Net and Net["RE/FishCaught"],
+    -- Fishing Remotes (HASHED)
+    CancelFishingInputs = Net and Net["RF/f9a876154b063e332e1667cef846eeab3bd7fe8485cf1491fc927f0f9718b436"],
+    ChargeFishingRod = Net and Net["RF/e4017e43355f4661b1e07f77fe2bfe13b5a48f4eff9ba55b0398ec0ef3c66765"],
+    RequestFishingMinigame = Net and Net["RF/4d6dc93c9ecb915a8ae6425c83c8bb597b015e0bc4f874181ea308dcc7ae5015"],
+    FishingMinigameChanged = Net and Net["RE/7c2a0bc8cd87d3e65a3d502bac59e416b8b1254902a83b5694a5648f80d817a0"],
+    FishingStopped = Net and Net["RE/0192cc0d52f0942ba3d7889284f1bf758985abcad37cc1d781f9f4c90270d5d3"],
+    UpdateChargeState = Net and Net["RE/8667b244d7c57a62d1c5fe72d42edc5726adb4ca70a4cad7a303c3bf396eafcb"],
+    CatchFishCompleted = Net and Net["RF/76a108e0c7fed0fe6174984ba5c748621c6d347466644a819a806ed594a344b4"],
+    FishCaught = Net and Net["RE/26bf5726781d1f44792109ce394bcf1e11fa41ae5bf157bb143ae79cbe6d44da"],
     
-    -- Anti-Cheat
-    UpdateAutoFishingState = Net and Net["RF/UpdateAutoFishingState"],
-    MarkAutoFishingUsed = Net and Net["RF/MarkAutoFishingUsed"],
+    -- Anti-Cheat (HASHED)
+    UpdateAutoFishingState = Net and Net["RF/c68d9e2817eb664656e9e9076a0591c6b9e1a2ab03d8b8b8bce02bfe0af47fe0"],
+    MarkAutoFishingUsed = Net and Net["RF/3369617d84c7299bdf2c8122e364d61a9f03d680e8faec8dfcb77529ef57d841"],
     
-    -- Sell
-    SellAllItems = Net and Net["RF/SellAllItems"],
-    SellItem = Net and Net["RF/SellItem"],
+    -- Sell (HASHED)
+    SellAllItems = Net and Net["RF/4417ef209575b73e441890816440faf3f5fa6a503ff1805d70afa5cf2b6d1453"],
+    SellItem = Net and Net["RF/ca4e553b1bac1d59fea0f81bf7a3cedb46f0e11a90e7f72755009716dda575e9"],
     
-    -- Favorite
-    FavoriteItem = Net and Net["RE/FavoriteItem"],
-    PromptFavoriteGame = Net and Net["RF/PromptFavoriteGame"]
+    -- Favorite (HASHED)
+    FavoriteItem = Net and Net["RE/f0e8ec714246b48fc2056f81a5106252267b280570723e12fef90d8cf1c4cc8e"],
+    PromptFavoriteGame = Net and Net["RF/faec503b4c4a1859c79435903a10bed7e880cb893277e19692fa37d10991b011"]
 }
 
 -- ===== NOTIFY =====
@@ -183,7 +183,7 @@ local function showConfirmDialog(title, message, callback)
     end)
 end
 
--- ===== EQUIP ROD SYSTEM (PAKAI HASH) =====
+-- ===== EQUIP ROD SYSTEM =====
 local function findFishingRods()
     local rods = {}
     for _, tool in ipairs(player.Backpack:GetChildren()) do
@@ -217,13 +217,11 @@ local function equipRod(rodName)
     for _, rod in ipairs(rods) do
         if rod.Name == rodName or rodName == "any" then
             if rod.Location == "Backpack" then
-                -- Coba remote equip dulu (pakai hash)
                 if equipRodViaRemote(1) then
                     Config.CurrentRod = rod.Name
-                    notify("Equip", "Equipped: " .. rod.Name .. " (via remote)", 1)
+                    notify("Equip", "Equipped: " .. rod.Name, 1)
                     return true
                 else
-                    -- Fallback ke manual
                     rod.Instance.Parent = player.Character
                     Config.CurrentRod = rod.Name
                     notify("Equip", "Equipped: " .. rod.Name .. " (manual)", 1)
@@ -284,7 +282,6 @@ local function setupMinigameListener()
                 isMinigameActive = false
                 print("✅ Minigame completed")
                 
-                -- Langsung catch setelah minigame selesai
                 if autoFishing and Remote.CatchFishCompleted then
                     task.spawn(function()
                         pcall(function()
@@ -303,7 +300,7 @@ local function startFishing()
     
     local serverTime = workspace:GetServerTimeNow()
     
-    -- 1. CHARGE ROD (nil, nil, serverTime, nil)
+    -- Charge rod
     local chargeSuccess = pcall(function()
         return Remote.ChargeFishingRod:InvokeServer(nil, nil, serverTime, nil)
     end)
@@ -313,14 +310,12 @@ local function startFishing()
         return false 
     end
     
-    -- Tunggu charge animation
     task.wait(0.5)
     
-    -- Dapatkan posisi air
     local waterY = getWaterHeight()
     if waterY == 0 then waterY = -50 end
     
-    -- 2. REQUEST MINIGAME (posY, power, serverTime)
+    -- Request minigame
     local minigameSuccess = pcall(function()
         return Remote.RequestFishingMinigame:InvokeServer(waterY, Config.CastPower, serverTime)
     end)
@@ -368,7 +363,6 @@ end
 local function startAutoFishing()
     if autoFishing or guiClosed then return end
     
-    -- Setup listener
     setupMinigameListener()
     
     if autoEquip and not Config.CurrentRod then
@@ -385,10 +379,8 @@ local function startAutoFishing()
         cancelFishing()
         task.wait(0.2)
         
-        -- Start fishing (charge + request minigame)
         startFishing()
         
-        -- Tunggu sesuai delay sebelum next cycle
         task.wait(Config.FishDelay + Config.CatchDelay)
     end)
 end
@@ -447,7 +439,7 @@ local function stopAutoFavorite()
     end
 end
 
--- ===== EXIT FUNCTION (PASTI CLOSE) =====
+-- ===== EXIT FUNCTION =====
 local function exitGUI()
     if guiClosed then return end
     
@@ -455,29 +447,26 @@ local function exitGUI()
         if confirmed then
             guiClosed = true
             
-            -- Stop semua loops
             stopAutoFishing()
             stopAutoSell()
             stopAutoFavorite()
             
-            -- Close dropdowns
             if activeDropdown then
                 activeDropdown.Visible = false
                 activeDropdown = nil
             end
             
-            -- Destroy GUI dengan paksa
             task.wait(0.1)
             pcall(function() gui:Destroy() end)
         end
     end)
 end
 
--- ===== MAIN FRAME (UKURAN DIUBAH MENJADI 650x400) =====
+-- ===== MAIN FRAME =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 650, 0, 400)  -- Diubah dari 500 menjadi 400
-mainFrame.Position = UDim2.new(0.5, -325, 0.5, -200)  -- Disesuaikan (setengah dari 400)
+mainFrame.Size = UDim2.new(0, 650, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -325, 0.5, -200)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
@@ -931,7 +920,7 @@ local function createLabel(parent, text)
     label.ZIndex = 20
 end
 
--- ===== FUNGSI CREATE TOGGLE SWITCH (MODERN) =====
+-- ===== FUNGSI CREATE TOGGLE SWITCH =====
 local function createToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 35)
@@ -981,7 +970,7 @@ local function createToggle(parent, text, default, callback)
     knobCorner.CornerRadius = UDim.new(0, 10)
     knobCorner.Parent = knob
     
-    -- TOMBOL TRANSPARENT UNTUK KLIK
+    -- TOMBOL TRANSPARENT
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(1, 0, 1, 0)
     toggleBtn.BackgroundTransparency = 1
@@ -1361,4 +1350,13 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
-notify("Moe V1.0", "GUI Loaded with Switch Toggles", 3)
+-- Status remote di console
+print("=== MOE V1.0 REMOTE STATUS ===")
+print("ChargeFishingRod:", Remote.ChargeFishingRod ~= nil and "✅" or "❌")
+print("RequestFishingMinigame:", Remote.RequestFishingMinigame ~= nil and "✅" or "❌")
+print("CatchFishCompleted:", Remote.CatchFishCompleted ~= nil and "✅" or "❌")
+print("FishingMinigameChanged:", Remote.FishingMinigameChanged ~= nil and "✅" or "❌")
+print("SellAllItems:", Remote.SellAllItems ~= nil and "✅" or "❌")
+print("===============================")
+
+notify("Moe V1.0", "Updated with new hashes!", 3)
