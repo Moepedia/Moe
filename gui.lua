@@ -1,4 +1,4 @@
--- Moe V1.0 GUI for FISH IT - MERGED WITH VEL.LUA FEATURES
+-- Moe V1.0 GUI for FISH IT - MERGED WITH VEL.LUA FEATURES (NO EMOJI WEBHOOK)
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -260,7 +260,7 @@ pcall(function()
     end
 end)
 
--- ===== WEBHOOK FUNCTIONS =====
+-- ===== WEBHOOK FUNCTIONS (NO EMOJI) =====
 local function sendWebhook(message, embedData)
     if not Config.WebhookEnabled or Config.WebhookURL == "" then return end
     
@@ -289,7 +289,7 @@ local function sendWebhook(message, embedData)
     end)
     
     if not success then
-        print("❌ Failed to send webhook")
+        print("Failed to send webhook")
     end
 end
 
@@ -307,8 +307,8 @@ local function createFishEmbed(fishData)
     local color = rarityColors[fishData.rarity] or 3092790
     
     local embed = {
-        ["title"] = "🎣 Fish Caught!",
-        ["description"] = "**" .. fishData.name .. "**",
+        ["title"] = "Fish Caught!",
+        ["description"] = fishData.name,
         ["color"] = color,
         ["fields"] = {
             {
@@ -340,13 +340,13 @@ end
 
 local function createSellEmbed(totalAmount, itemCount)
     local embed = {
-        ["title"] = "💰 Items Sold",
-        ["description"] = "Sold **" .. itemCount .. "** items",
+        ["title"] = "Items Sold",
+        ["description"] = "Sold " .. itemCount .. " items",
         ["color"] = 16776960,
         ["fields"] = {
             {
                 ["name"] = "Total Value",
-                ["value"] = "**$" .. tostring(totalAmount) .. "**",
+                ["value"] = "$" .. tostring(totalAmount),
                 ["inline"] = true
             },
             {
@@ -365,8 +365,8 @@ end
 
 local function createFavoriteEmbed(itemData)
     local embed = {
-        ["title"] = "⭐ Item Favorited",
-        ["description"] = "**" .. itemData.name .. "** has been favorited!",
+        ["title"] = "Item Favorited",
+        ["description"] = itemData.name .. " has been favorited!",
         ["color"] = 16744703,
         ["fields"] = {
             {
@@ -1569,7 +1569,7 @@ local function showMain()
     clearFeatures()
     contentTitle.Text = "Main Features"
     
-    createLabel(featuresContainer, "🎣 AUTO FISHING")
+    createLabel(featuresContainer, "AUTO FISHING")
     
     autoFishToggle = createToggle(featuresContainer, "Auto Fish", false, function(state)
         if state then
@@ -1586,7 +1586,7 @@ local function showMain()
         end
     end)
     
-    createLabel(featuresContainer, "⚙️ FISHING SETTINGS")
+    createLabel(featuresContainer, "FISHING SETTINGS")
     
     createInput(featuresContainer, "Fish Delay (s)", Config.FishDelay, function(val)
         Config.FishDelay = val
@@ -1600,7 +1600,7 @@ local function showMain()
         Config.CastPower = val
     end)
     
-    createLabel(featuresContainer, "🎣 FISHING SUPPORT")
+    createLabel(featuresContainer, "FISHING SUPPORT")
     
     createToggle(featuresContainer, "Walk On Water", false, function(state)
         isWalkOnWater = state
@@ -1631,7 +1631,7 @@ local function showMain()
         end)
     end)
     
-    createLabel(featuresContainer, "🔄 ROD SELECTION")
+    createLabel(featuresContainer, "ROD SELECTION")
     local rods = findFishingRods()
     local rodNames = {"any"}
     for _, rod in ipairs(rods) do
@@ -1651,7 +1651,7 @@ local function showSell()
     clearFeatures()
     contentTitle.Text = "Sell Features"
     
-    createLabel(featuresContainer, "💰 AUTO SELL")
+    createLabel(featuresContainer, "AUTO SELL")
     
     autoSellToggle = createToggle(featuresContainer, "Auto Sell", false, function(state)
         if state then
@@ -1661,12 +1661,12 @@ local function showSell()
         end
     end)
     
-    createLabel(featuresContainer, "⏱️ SELL DELAY (Default: 60s)")
+    createLabel(featuresContainer, "SELL DELAY (Default: 60s)")
     createInput(featuresContainer, "Sell Delay (s)", Config.SellDelay, function(val)
         Config.SellDelay = val
     end, 10, 300)
     
-    createLabel(featuresContainer, "⚡ MANUAL SELL")
+    createLabel(featuresContainer, "MANUAL SELL")
     createButton(featuresContainer, "SELL ALL NOW", function()
         sellAllItems()
     end)
@@ -1700,7 +1700,7 @@ local function showFavorite()
     clearFeatures()
     contentTitle.Text = "Favorite Features"
     
-    createLabel(featuresContainer, "⭐ AUTO FAVORITE")
+    createLabel(featuresContainer, "AUTO FAVORITE")
     
     autoFavoriteToggle = createToggle(featuresContainer, "Auto Favorite", false, function(state)
         if state then
@@ -1750,7 +1750,7 @@ local function showAbilities()
     clearFeatures()
     contentTitle.Text = "Abilities"
     
-    createLabel(featuresContainer, "🏃 MOVEMENT")
+    createLabel(featuresContainer, "MOVEMENT")
     
     local DEFAULT_SPEED = 18
     local DEFAULT_JUMP = 50
@@ -1791,7 +1791,7 @@ local function showAbilities()
         end
     end)
     
-    createLabel(featuresContainer, "✨ ABILITIES")
+    createLabel(featuresContainer, "ABILITIES")
     
     local infinityJumpConnection = nil
     createToggle(featuresContainer, "Infinite Jump", false, function(state)
@@ -1901,7 +1901,7 @@ local function showTeleport()
     clearFeatures()
     contentTitle.Text = "Teleport"
     
-    createLabel(featuresContainer, "📍 TELEPORT TO LOCATION")
+    createLabel(featuresContainer, "TELEPORT TO LOCATION")
     
     local selectedLoc = TeleportLocations[1]
     
@@ -1913,7 +1913,7 @@ local function showTeleport()
         teleportTo(selectedLoc)
     end)
     
-    createLabel(featuresContainer, "👤 TELEPORT TO PLAYER")
+    createLabel(featuresContainer, "TELEPORT TO PLAYER")
     
     local function getPlayerList()
         local players = {}
@@ -1954,7 +1954,7 @@ local function showTeleport()
         end
     end)
     
-    createLabel(featuresContainer, "⚡ STEALTH MODE")
+    createLabel(featuresContainer, "STEALTH MODE")
     
     local stealthHeight = 110
     local stealthMode = false
@@ -1983,12 +1983,12 @@ local function showTeleport()
     end)
 end
 
--- ===== WEBHOOK MENU =====
+-- ===== WEBHOOK MENU (NO EMOJI) =====
 local function showWebhook()
     clearFeatures()
     contentTitle.Text = "Discord Webhook"
     
-    createLabel(featuresContainer, "🔗 WEBHOOK SETTINGS")
+    createLabel(featuresContainer, "WEBHOOK SETTINGS")
     
     local urlFrame = Instance.new("Frame")
     urlFrame.Size = UDim2.new(1, 0, 0, 60)
@@ -2028,12 +2028,12 @@ local function showWebhook()
     createToggle(featuresContainer, "Enable Webhook", Config.WebhookEnabled, function(state)
         Config.WebhookEnabled = state
         if state and Config.WebhookURL ~= "" then
-            sendWebhook("✅ **Webhook Connected**\nMoe V1.0 is now sending notifications to this channel.")
+            sendWebhook("Webhook Connected - Moe V1.0 is now sending notifications to this channel.")
             setupWebhookListeners()
         end
     end)
     
-    createLabel(featuresContainer, "📢 NOTIFICATION SETTINGS")
+    createLabel(featuresContainer, "NOTIFICATION SETTINGS")
     
     local rarityFrame = Instance.new("Frame")
     rarityFrame.Size = UDim2.new(1, 0, 0, 60)
@@ -2086,7 +2086,7 @@ local function showWebhook()
         Config.WebhookNotifyFavorite = state
     end)
     
-    createLabel(featuresContainer, "🧪 TEST WEBHOOK")
+    createLabel(featuresContainer, "TEST WEBHOOK")
     
     local testBtn = Instance.new("TextButton")
     testBtn.Size = UDim2.new(1, 0, 0, 40)
@@ -2108,7 +2108,7 @@ local function showWebhook()
         end
         
         local testEmbed = {
-            ["title"] = "🧪 Test Notification",
+            ["title"] = "Test Notification",
             ["description"] = "Moe V1.0 webhook is working properly!",
             ["color"] = 3066993,
             ["fields"] = {
@@ -2119,7 +2119,7 @@ local function showWebhook()
                 },
                 {
                     ["name"] = "Status",
-                    ["value"] = "✅ Connected",
+                    ["value"] = "Connected",
                     ["inline"] = true
                 }
             },
@@ -2146,13 +2146,12 @@ local function showWebhook()
     infoText.Size = UDim2.new(1, -10, 1, -10)
     infoText.Position = UDim2.new(0, 5, 0, 5)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "📌 **Webhook Info:**\n• Sends notifications for rare fish catches\n• Notifies when items are sold\n• Can be tested with the button above\n• Supports multiple rarity filters"
+    infoText.Text = "Webhook Info:\n• Sends notifications for rare fish catches\n• Notifies when items are sold\n• Can be tested with the button above\n• Supports multiple rarity filters"
     infoText.TextColor3 = Color3.new(0.8, 0.8, 0.8)
     infoText.TextSize = 11
     infoText.Font = Enum.Font.Gotham
     infoText.TextXAlignment = Enum.TextXAlignment.Left
     infoText.TextWrapped = true
-    infoText.RichText = true
     infoText.Parent = infoFrame
 end
 
@@ -2161,7 +2160,7 @@ local function showMisc()
     clearFeatures()
     contentTitle.Text = "Miscellaneous"
     
-    createLabel(featuresContainer, "🛡️ BYPASSES")
+    createLabel(featuresContainer, "BYPASSES")
     
     createToggle(featuresContainer, "Bypass Oxygen", false, function(state)
         if state then
@@ -2181,7 +2180,7 @@ local function showMisc()
         end
     end)
     
-    createLabel(featuresContainer, "🎥 CINEMATIC")
+    createLabel(featuresContainer, "CINEMATIC")
     
     createToggle(featuresContainer, "Infinite Zoom", false, function(state)
         if state then
@@ -2231,7 +2230,7 @@ local function showMisc()
         end
     end)
     
-    createLabel(featuresContainer, "📊 PERFORMANCE")
+    createLabel(featuresContainer, "PERFORMANCE")
     
     local monitorEnabled = false
     local monitorGui = nil
@@ -2363,7 +2362,7 @@ local function showMisc()
         end
     end)
     
-    createLabel(featuresContainer, "🔄 MISC")
+    createLabel(featuresContainer, "MISC")
     
     createButton(featuresContainer, "Reset Character", function()
         local character = player.Character
@@ -2499,4 +2498,4 @@ print("FishingMinigameChanged:", Remote.FishingMinigameChanged ~= nil and "✅" 
 print("SellAllItems:", Remote.SellAllItems ~= nil and "✅" or "❌")
 print("===============================")
 
-notify("Moe V1.0", "Merged with VEL.lua features + Webhook!", 3)
+notify("Moe V1.0", "Merged with VEL.lua features + Webhook (No Emoji)!", 3)
