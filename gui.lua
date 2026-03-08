@@ -1,6 +1,7 @@
--- Moe V1.0 GUI with VEL.lua Features (Optimized Version)
+-- Moe V1.0 GUI (Simple Version)
 
 local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
 local gui = Instance.new("ScreenGui")
 gui.Name = "MoeGUI"
 gui.ResetOnSpawn = false
@@ -9,13 +10,63 @@ gui.DisplayOrder = 999
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- ===== SERVICES =====
+-- Services
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
 
--- ===== NOTIFY =====
+-- ===== VARIABLES =====
+local RF_Charge = nil
+local RF_StartGame = nil
+local RF_Complete = nil
+local RE_EquipToolFromHotbar = nil
+local RF_SellAllItems = nil
+local RE_FavoriteItem = nil
+
+-- State variables
+local autoFishing = false
+local autoSell = false
+local autoSellDelay = 60
+local flyEnabled = false
+local speedEnabled = false
+local flySpeed = 50
+local walkspeed = 16
+local jumppower = 50
+local flyConnection = nil
+local speedConnection = nil
+local bodyGyro, bodyVel = nil, nil
+
+-- Get remotes
+local function GetRemote(name)
+    local netFolder = ReplicatedStorage:FindFirstChild("Packages")
+    if netFolder then
+        local index = netFolder:FindFirstChild("_Index")
+        if index then
+            for _, folder in ipairs(index:GetChildren()) do
+                if folder.Name:find("sleitnick_net") then
+                    local net = folder:FindFirstChild("net")
+                    if net then
+                        return net:FindFirstChild(name)
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+-- Initialize remotes
+RF_Charge = GetRemote("RF/ChargeFishingRod")
+RF_StartGame = GetRemote("RF/RequestFishingMinigameStarted")
+RF_Complete = GetRemote("RF/CatchFishCompleted")
+RE_EquipToolFromHotbar = ReplicatedStorage:FindFirstChild("RE") and ReplicatedStorage.RE:FindFirstChild("EquipToolFromHotbar")
+RF_SellAllItems = GetRemote("RF/SellAllItems")
+RE_FavoriteItem = ReplicatedStorage:FindFirstChild("RE") and ReplicatedStorage.RE:FindFirstChild("FavoriteItem")
+
+-- ===== NOTIFY FUNCTION =====
 local function notify(title, text, duration)
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = title,
@@ -35,9 +86,9 @@ local function showConfirmDialog(title, message, callback)
     dialogFrame.Parent = gui
     dialogFrame.ZIndex = 1000
     
-    local dialogCorner = Instance.new("UICorner")
-    dialogCorner.CornerRadius = UDim.new(0, 8)
-    dialogCorner.Parent = dialogFrame
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = dialogFrame
     
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, 0, 0, 40)
@@ -102,155 +153,8 @@ local function showConfirmDialog(title, message, callback)
     end)
 end
 
--- ===== GET REMOTE FUNCTION =====
-local function GetRemote(name)
-    local success, result = pcall(function()
-        local Packages = ReplicatedStorage:FindFirstChild("Packages")
-        if not Packages then return nil end
-        local Index = Packages:FindFirstChild("_Index")
-        if not Index then return nil end
-        local NetFolder = Index:FindFirstChild("sleitnick_net@0.2.0")
-        if not NetFolder then return nil end
-        local Net = NetFolder:FindFirstChild("net")
-        if not Net then return nil end
-        return Net:FindFirstChild(name)
-    end)
-    return success and result or nil
-end
-
--- ===== REMOTES =====
-local Remote = {
-    ChargeFishingRod = GetRemote("RF/e4017e43355f4661b1e07f77fe2bfe13b5a48f4eff9ba55b0398ec0ef3c66765"),
-    RequestFishingMinigame = GetRemote("RF/4d6dc93c9ecb915a8ae6425c83c8bb597b015e0bc4f874181ea308dcc7ae5015"),
-    CatchFishCompleted = GetRemote("RF/76a108e0c7fed0fe6174984ba5c748621c6d347466644a819a806ed594a344b4"),
-    SellAllItems = GetRemote("RF/4417ef209575b73e441890816440faf3f5fa6a503ff1805d70afa5cf2b6d1453"),
-}
-
--- ===== HELPER FUNCTIONS =====
-local function GetHRP()
-    local Character = player.Character
-    if not Character then
-        Character = player.CharacterAdded:Wait()
-    end
-    return Character:FindFirstChild("HumanoidRootPart")
-end
-
--- ===== FISHING LOCATIONS =====
-local FishingAreas = {
-    ["Ancient Jungle"] = CFrame.new(1896.9, 8.4, -578.7),
-    ["Coral Reefs"] = CFrame.new(-2935.1,4.8,2050.9),
-    ["Crater Island"] = CFrame.new(1077.6, 2.8, 5080.9),
-    ["Esoteric Deep"] = CFrame.new(3202.2, -1302.9, 1432.7),
-    ["Kohana"] = CFrame.new(-367.8, 6.8, 521.9),
-    ["Sacred Temple"] = CFrame.new(1466.6, -22.8, -618.8),
-    ["Sisyphus Statue"] = CFrame.new(-3715.1, -136.8, -1010.6),
-    ["Treasure Room"] = CFrame.new(-3604.2, -283.2, -1613.7),
-    ["Tropical Grove"] = CFrame.new(-2173.3,53.5,3632.3),
-    ["Underground Cellar"] = CFrame.new(2136.0, -91.2, -699.0)
-}
-
-local AreaNames = {}
-for name, _ in pairs(FishingAreas) do
-    table.insert(AreaNames, name)
-end
-table.sort(AreaNames)
-
--- ===== AUTO FISHING VARIABLES =====
-local autoFishing = false
-local autoSell = false
-local autoEquip = false
-local fishingConnection = nil
-local sellConnection = nil
-
-local Config = {
-    FishDelay = 2.0,
-    CatchDelay = 1.0,
-    SellDelay = 60,
-}
-
--- ===== AUTO FISHING FUNCTIONS =====
-local function instantFish()
-    if not Remote.ChargeFishingRod or not Remote.RequestFishingMinigame or not Remote.CatchFishCompleted then 
-        return false 
-    end
-    
-    local success = pcall(function()
-        Remote.ChargeFishingRod:InvokeServer(1, 0.5)
-        task.wait(0.1)
-        Remote.RequestFishingMinigame:InvokeServer()
-        task.wait(Config.CatchDelay)
-        Remote.CatchFishCompleted:InvokeServer()
-    end)
-    return success
-end
-
-local function startAutoFishing()
-    if autoFishing then return end
-    autoFishing = true
-    
-    fishingConnection = RunService.Heartbeat:Connect(function()
-        if not autoFishing then return end
-        instantFish()
-        task.wait(Config.FishDelay)
-    end)
-    
-    notify("Auto Fish", "Started!", 2)
-end
-
-local function stopAutoFishing()
-    autoFishing = false
-    if fishingConnection then
-        fishingConnection:Disconnect()
-        fishingConnection = nil
-    end
-    notify("Auto Fish", "Stopped!", 2)
-end
-
--- ===== AUTO SELL =====
-local function sellAllItems()
-    if Remote.SellAllItems then
-        pcall(function() Remote.SellAllItems:InvokeServer() end)
-        notify("Sell", "Items sold!", 1)
-    end
-end
-
-local function startAutoSell()
-    if autoSell then return end
-    autoSell = true
-    
-    sellConnection = RunService.Heartbeat:Connect(function()
-        if not autoSell then return end
-        task.wait(Config.SellDelay)
-        sellAllItems()
-    end)
-    
-    notify("Auto Sell", "Started!", 2)
-end
-
-local function stopAutoSell()
-    autoSell = false
-    if sellConnection then
-        sellConnection:Disconnect()
-        sellConnection = nil
-    end
-    notify("Auto Sell", "Stopped!", 2)
-end
-
--- ===== TELEPORT =====
-local function teleportTo(locationName)
-    local cframe = FishingAreas[locationName]
-    if not cframe then return end
-    
-    local hrp = GetHRP()
-    if hrp then
-        hrp.CFrame = cframe
-        notify("Teleport", "Teleported to " .. locationName, 1.5)
-    end
-end
-
 -- ===== EXIT FUNCTION =====
 local guiClosed = false
-local activeDropdown = nil
 
 local function exitGUI()
     if guiClosed then return end
@@ -258,27 +162,62 @@ local function exitGUI()
     showConfirmDialog("Exit GUI", "Are you sure you want to close?", function(confirmed)
         if confirmed then
             guiClosed = true
-            stopAutoFishing()
-            stopAutoSell()
-            if activeDropdown then
-                activeDropdown.Visible = false
-                activeDropdown = nil
-            end
             task.wait(0.1)
             pcall(function() gui:Destroy() end)
         end
     end)
 end
 
+-- ===== HELPER FUNCTIONS =====
+local function GetHRP()
+    local Character = LocalPlayer.Character
+    if not Character then
+        Character = LocalPlayer.CharacterAdded:Wait()
+    end
+    return Character:FindFirstChild("HumanoidRootPart")
+end
+
+local function GetHumanoid()
+    local Character = LocalPlayer.Character
+    if not Character then
+        Character = LocalPlayer.CharacterAdded:Wait()
+    end
+    return Character:FindFirstChildOfClass("Humanoid")
+end
+
+-- ===== FISHING FUNCTIONS =====
+local function CastRod()
+    pcall(function() RE_EquipToolFromHotbar:FireServer(1) end)
+    task.wait(0.1)
+    
+    if RF_Charge then
+        pcall(function() RF_Charge:InvokeServer(1) end)
+    end
+    
+    task.wait(2)
+    
+    if RF_StartGame then
+        pcall(function() RF_StartGame:InvokeServer() end)
+    end
+    
+    task.wait(1)
+    
+    if RF_Complete then
+        pcall(function() RF_Complete:InvokeServer() end)
+    end
+end
+
 -- ===== MAIN FRAME =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 700, 0, 450)
-mainFrame.Position = UDim2.new(0.5, -350, 0.5, -225)
+mainFrame.Size = UDim2.new(0, 600, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
 mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 mainFrame.BackgroundTransparency = 0.15
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = gui
+mainFrame.Active = true
+mainFrame.Selectable = true
 
 local corners = Instance.new("UICorner")
 corners.CornerRadius = UDim.new(0, 12)
@@ -296,16 +235,41 @@ headerFrame.Size = UDim2.new(1, 0, 0, 35)
 headerFrame.BackgroundTransparency = 1
 headerFrame.Parent = mainFrame
 
+local logo = Instance.new("ImageLabel")
+logo.Size = UDim2.new(0, 25, 0, 25)
+logo.Position = UDim2.new(0, 8, 0.5, -12.5)
+logo.BackgroundTransparency = 1
+logo.Image = "rbxassetid://115935586997848"
+logo.ScaleType = Enum.ScaleType.Fit
+logo.Parent = headerFrame
+
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(0, 150, 1, 0)
-title.Position = UDim2.new(0, 10, 0, 0)
+title.Size = UDim2.new(0, 100, 1, 0)
+title.Position = UDim2.new(0, 38, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "Moe V1.0 - Full Features"
+title.Text = "Moe V1.0"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.TextSize = 16
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = headerFrame
+
+-- Minimize button
+local minButton = Instance.new("TextButton")
+minButton.Size = UDim2.new(0, 25, 0, 25)
+minButton.Position = UDim2.new(1, -60, 0.5, -12.5)
+minButton.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+minButton.BackgroundTransparency = 0.3
+minButton.Text = "—"
+minButton.TextColor3 = Color3.new(1, 1, 1)
+minButton.TextSize = 16
+minButton.Font = Enum.Font.GothamBold
+minButton.Parent = headerFrame
+minButton.ZIndex = 5
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 4)
+minCorner.Parent = minButton
 
 -- Close button
 local closeBtn = Instance.new("TextButton")
@@ -318,12 +282,54 @@ closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.TextSize = 14
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Parent = headerFrame
+closeBtn.ZIndex = 5
 
 local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 4)
 closeCorner.Parent = closeBtn
 
 closeBtn.MouseButton1Click:Connect(exitGUI)
+
+-- ===== FLOATING LOGO =====
+local floatingLogo = Instance.new("Frame")
+floatingLogo.Size = UDim2.new(0, 50, 0, 50)
+floatingLogo.Position = UDim2.new(0.9, -25, 0.9, -25)
+floatingLogo.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+floatingLogo.BackgroundTransparency = 0.2
+floatingLogo.Parent = gui
+floatingLogo.Visible = false
+floatingLogo.ZIndex = 1000
+floatingLogo.Active = true
+floatingLogo.Selectable = true
+
+local floatCorner = Instance.new("UICorner")
+floatCorner.CornerRadius = UDim.new(0, 25)
+floatCorner.Parent = floatingLogo
+
+local floatLogoImg = Instance.new("ImageLabel")
+floatLogoImg.Size = UDim2.new(1, -10, 1, -10)
+floatLogoImg.Position = UDim2.new(0, 5, 0, 5)
+floatLogoImg.BackgroundTransparency = 1
+floatLogoImg.Image = "rbxassetid://115935586997848"
+floatLogoImg.ScaleType = Enum.ScaleType.Fit
+floatLogoImg.Parent = floatingLogo
+
+local floatButton = Instance.new("TextButton")
+floatButton.Size = UDim2.new(1, 0, 1, 0)
+floatButton.BackgroundTransparency = 1
+floatButton.Text = ""
+floatButton.Parent = floatingLogo
+floatButton.ZIndex = 1001
+
+minButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    floatingLogo.Visible = true
+end)
+
+floatButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = true
+    floatingLogo.Visible = false
+end)
 
 local hLine = Instance.new("Frame")
 hLine.Size = UDim2.new(1, -20, 0, 1)
@@ -365,25 +371,26 @@ contentArea.Position = UDim2.new(0, 140, 0, 0)
 contentArea.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
 contentArea.BackgroundTransparency = 0.3
 contentArea.Parent = contentContainer
+contentArea.ClipsDescendants = true
 
 local contentCorner = Instance.new("UICorner")
 contentCorner.CornerRadius = UDim.new(0, 8)
 contentCorner.Parent = contentArea
 
 local contentTitle = Instance.new("TextLabel")
-contentTitle.Size = UDim2.new(1, -10, 0, 30)
+contentTitle.Size = UDim2.new(1, -10, 0, 25)
 contentTitle.Position = UDim2.new(0, 5, 0, 5)
 contentTitle.BackgroundTransparency = 1
-contentTitle.Text = "Main Features"
+contentTitle.Text = "Moe Fish Hub"
 contentTitle.TextColor3 = Color3.new(1, 1, 1)
-contentTitle.TextSize = 16
+contentTitle.TextSize = 14
 contentTitle.Font = Enum.Font.GothamBold
 contentTitle.TextXAlignment = Enum.TextXAlignment.Left
 contentTitle.Parent = contentArea
 
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, -10, 1, -40)
-scrollFrame.Position = UDim2.new(0, 5, 0, 35)
+scrollFrame.Size = UDim2.new(1, -10, 1, -35)
+scrollFrame.Position = UDim2.new(0, 5, 0, 30)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 4
@@ -400,37 +407,25 @@ featuresContainer.AutomaticSize = Enum.AutomaticSize.Y
 local featuresLayout = Instance.new("UIListLayout")
 featuresLayout.FillDirection = Enum.FillDirection.Vertical
 featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-featuresLayout.Padding = UDim.new(0, 10)
+featuresLayout.Padding = UDim.new(0, 8)
 featuresLayout.Parent = featuresContainer
 
--- ===== UI ELEMENT CREATORS =====
-local function createSection(title)
-    local section = Instance.new("Frame")
-    section.Size = UDim2.new(1, 0, 0, 30)
-    section.BackgroundTransparency = 1
-    section.Parent = featuresContainer
-    
-    local line = Instance.new("Frame")
-    line.Size = UDim2.new(1, 0, 0, 1)
-    line.Position = UDim2.new(0, 0, 1, -1)
-    line.BackgroundColor3 = Color3.new(1, 1, 1)
-    line.BackgroundTransparency = 0.7
-    line.Parent = section
-    
+-- ===== UI HELPER FUNCTIONS =====
+local function createLabel(text)
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Size = UDim2.new(1, 0, 0, 25)
     label.BackgroundTransparency = 1
-    label.Text = title
-    label.TextColor3 = Color3.new(0.4, 0.8, 1)
-    label.TextSize = 16
+    label.Text = text
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextSize = 14
     label.Font = Enum.Font.GothamBold
     label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = section
+    label.Parent = featuresContainer
 end
 
-local function createToggle(text, default, callback)
+local function createToggle(title, defaultValue, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 35)
+    frame.Size = UDim2.new(1, -10, 0, 35)
     frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
     frame.BackgroundTransparency = 0.2
     frame.Parent = featuresContainer
@@ -439,206 +434,192 @@ local function createToggle(text, default, callback)
     corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = frame
     
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0, 200, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextSize = 13
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-    
-    local switchBg = Instance.new("Frame")
-    switchBg.Size = UDim2.new(0, 50, 0, 25)
-    switchBg.Position = UDim2.new(1, -60, 0.5, -12.5)
-    switchBg.BackgroundColor3 = default and Color3.new(0, 0.6, 0) or Color3.new(0.4, 0.4, 0.4)
-    switchBg.Parent = frame
-    
-    local switchCorner = Instance.new("UICorner")
-    switchCorner.CornerRadius = UDim.new(0, 15)
-    switchCorner.Parent = switchBg
-    
-    local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 21, 0, 21)
-    knob.Position = default and UDim2.new(1, -25, 0.5, -10.5) or UDim2.new(0, 4, 0.5, -10.5)
-    knob.BackgroundColor3 = Color3.new(1, 1, 1)
-    knob.Parent = switchBg
-    
-    local knobCorner = Instance.new("UICorner")
-    knobCorner.CornerRadius = UDim.new(0, 10)
-    knobCorner.Parent = knob
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(0, 200, 1, 0)
+    titleLabel.Position = UDim2.new(0, 10, 0, 0)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.TextSize = 14
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = frame
     
     local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(1, 0, 1, 0)
-    toggleBtn.BackgroundTransparency = 1
+    toggleBtn.Size = UDim2.new(0, 40, 0, 20)
+    toggleBtn.Position = UDim2.new(1, -50, 0.5, -10)
+    toggleBtn.BackgroundColor3 = defaultValue and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(100, 100, 100)
     toggleBtn.Text = ""
-    toggleBtn.Parent = switchBg
+    toggleBtn.Parent = frame
     
-    local state = default
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 10)
+    toggleCorner.Parent = toggleBtn
+    
+    local state = defaultValue
     
     toggleBtn.MouseButton1Click:Connect(function()
         state = not state
-        switchBg.BackgroundColor3 = state and Color3.new(0, 0.6, 0) or Color3.new(0.4, 0.4, 0.4)
-        knob.Position = state and UDim2.new(1, -25, 0.5, -10.5) or UDim2.new(0, 4, 0.5, -10.5)
-        callback(state)
+        toggleBtn.BackgroundColor3 = state and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(100, 100, 100)
+        pcall(callback, state)
     end)
+    
+    return {
+        Set = function(val)
+            state = val
+            toggleBtn.BackgroundColor3 = state and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(100, 100, 100)
+        end
+    }
 end
 
-local function createInput(label, default, callback, placeholder)
+local function createSlider(title, min, max, default, step, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 45)
-    frame.BackgroundTransparency = 1
+    frame.Size = UDim2.new(1, -10, 0, 45)
+    frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    frame.BackgroundTransparency = 0.2
     frame.Parent = featuresContainer
     
-    local labelObj = Instance.new("TextLabel")
-    labelObj.Size = UDim2.new(0.4, 0, 0, 20)
-    labelObj.Position = UDim2.new(0, 0, 0, 0)
-    labelObj.BackgroundTransparency = 1
-    labelObj.Text = label
-    labelObj.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    labelObj.TextSize = 13
-    labelObj.Font = Enum.Font.Gotham
-    labelObj.TextXAlignment = Enum.TextXAlignment.Left
-    labelObj.Parent = frame
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = frame
     
-    local input = Instance.new("TextBox")
-    input.Size = UDim2.new(0.5, 0, 0, 30)
-    input.Position = UDim2.new(0.5, 0, 0, 0)
-    input.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    input.Text = tostring(default)
-    input.TextColor3 = Color3.new(1, 1, 1)
-    input.PlaceholderText = placeholder or ""
-    input.Font = Enum.Font.Gotham
-    input.Parent = frame
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(0, 150, 0, 20)
+    titleLabel.Position = UDim2.new(0, 10, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.TextSize = 14
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = frame
+    
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Size = UDim2.new(0, 50, 0, 20)
+    valueLabel.Position = UDim2.new(1, -60, 0, 5)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(default)
+    valueLabel.TextColor3 = Color3.new(0, 1, 0)
+    valueLabel.TextSize = 14
+    valueLabel.Font = Enum.Font.GothamBold
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    valueLabel.Parent = frame
+    
+    local sliderBg = Instance.new("Frame")
+    sliderBg.Size = UDim2.new(1, -20, 0, 4)
+    sliderBg.Position = UDim2.new(0, 10, 0, 30)
+    sliderBg.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    sliderBg.Parent = frame
+    
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+    sliderFill.Parent = sliderBg
+    
+    local sliderButton = Instance.new("TextButton")
+    sliderButton.Size = UDim2.new(0, 12, 0, 12)
+    sliderButton.Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6)
+    sliderButton.BackgroundColor3 = Color3.new(1, 1, 1)
+    sliderButton.Text = ""
+    sliderButton.Parent = sliderBg
+    
+    local dragging = false
+    local currentValue = default
+    
+    sliderButton.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePos = UserInputService:GetMouseLocation()
+            local absPos = sliderBg.AbsolutePosition
+            local absSize = sliderBg.AbsoluteSize.X
+            
+            local percent = math.clamp((mousePos.X - absPos.X) / absSize, 0, 1)
+            currentValue = min + (max - min) * percent
+            currentValue = math.floor(currentValue / step + 0.5) * step
+            
+            sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+            sliderButton.Position = UDim2.new(percent, -6, 0.5, -6)
+            valueLabel.Text = tostring(currentValue)
+            
+            pcall(callback, currentValue)
+        end
+    end)
+    
+    return {
+        Set = function(val)
+            currentValue = math.clamp(val, min, max)
+            local percent = (currentValue - min) / (max - min)
+            sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+            sliderButton.Position = UDim2.new(percent, -6, 0.5, -6)
+            valueLabel.Text = tostring(currentValue)
+        end
+    }
+end
+
+local function createInput(title, placeholder, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 50)
+    frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+    frame.BackgroundTransparency = 0.2
+    frame.Parent = featuresContainer
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = frame
+    
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(0, 200, 0, 20)
+    titleLabel.Position = UDim2.new(0, 10, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.TextSize = 14
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = frame
+    
+    local inputBox = Instance.new("TextBox")
+    inputBox.Size = UDim2.new(1, -20, 0, 25)
+    inputBox.Position = UDim2.new(0, 10, 0, 25)
+    inputBox.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    inputBox.Text = default or ""
+    inputBox.PlaceholderText = placeholder or ""
+    inputBox.TextColor3 = Color3.new(1, 1, 1)
+    inputBox.PlaceholderColor3 = Color3.new(0.5, 0.5, 0.5)
+    inputBox.TextSize = 13
+    inputBox.Font = Enum.Font.Gotham
+    inputBox.ClearTextOnFocus = false
+    inputBox.Parent = frame
     
     local inputCorner = Instance.new("UICorner")
     inputCorner.CornerRadius = UDim.new(0, 4)
-    inputCorner.Parent = input
+    inputCorner.Parent = inputBox
     
-    input.FocusLost:Connect(function()
-        local val = tonumber(input.Text) or default
-        input.Text = tostring(val)
-        callback(val)
+    inputBox.FocusLost:Connect(function()
+        pcall(callback, inputBox.Text)
     end)
+    
+    return {
+        Set = function(text) inputBox.Text = text end
+    }
 end
 
-local function createDropdown(text, options, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 45)
-    frame.BackgroundTransparency = 1
-    frame.Parent = featuresContainer
-    
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.4, 0, 0, 20)
-    label.Position = UDim2.new(0, 0, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    label.TextSize = 13
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-    
+local function createButton(title, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.5, 0, 0, 30)
-    btn.Position = UDim2.new(0.5, 0, 0, 0)
-    btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    btn.Text = default or options[1]
+    btn.Size = UDim2.new(1, -10, 0, 35)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
+    btn.Text = title
     btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.TextSize = 13
-    btn.Font = Enum.Font.Gotham
-    btn.Parent = frame
-    
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 4)
-    btnCorner.Parent = btn
-    
-    local arrow = Instance.new("TextLabel")
-    arrow.Size = UDim2.new(0, 20, 1, 0)
-    arrow.Position = UDim2.new(1, -20, 0, 0)
-    arrow.BackgroundTransparency = 1
-    arrow.Text = "▼"
-    arrow.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    arrow.TextSize = 12
-    arrow.Parent = btn
-    
-    local dropdownFrame = Instance.new("Frame")
-    dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    dropdownFrame.Visible = false
-    dropdownFrame.Parent = gui
-    dropdownFrame.ZIndex = 100
-    dropdownFrame.BorderSizePixel = 1
-    dropdownFrame.BorderColor3 = Color3.new(0.3, 0.3, 0.3)
-    
-    local dropdownCorner = Instance.new("UICorner")
-    dropdownCorner.CornerRadius = UDim.new(0, 6)
-    dropdownCorner.Parent = dropdownFrame
-    
-    local optionsScrolling = Instance.new("ScrollingFrame")
-    optionsScrolling.Size = UDim2.new(1, 0, 1, 0)
-    optionsScrolling.BackgroundTransparency = 1
-    optionsScrolling.ScrollBarThickness = 4
-    optionsScrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
-    optionsScrolling.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    optionsScrolling.Parent = dropdownFrame
-    
-    local optionsContainer = Instance.new("Frame")
-    optionsContainer.Size = UDim2.new(1, 0, 0, 0)
-    optionsContainer.BackgroundTransparency = 1
-    optionsContainer.Parent = optionsScrolling
-    optionsContainer.AutomaticSize = Enum.AutomaticSize.Y
-    
-    for _, opt in ipairs(options) do
-        local optBtn = Instance.new("TextButton")
-        optBtn.Size = UDim2.new(1, 0, 0, 30)
-        optBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
-        optBtn.Text = opt
-        optBtn.TextColor3 = Color3.new(1, 1, 1)
-        optBtn.TextSize = 13
-        optBtn.Font = Enum.Font.Gotham
-        optBtn.Parent = optionsContainer
-        optBtn.BorderSizePixel = 0
-        
-        local optCorner = Instance.new("UICorner")
-        optCorner.CornerRadius = UDim.new(0, 4)
-        optCorner.Parent = optBtn
-        
-        optBtn.MouseButton1Click:Connect(function()
-            btn.Text = opt
-            dropdownFrame.Visible = false
-            activeDropdown = nil
-            callback(opt)
-        end)
-    end
-    
-    local function updateDropdownPosition()
-        if not frame or not frame:IsDescendantOf(gui) then return end
-        local absPos = btn.AbsolutePosition
-        local absSize = btn.AbsoluteSize
-        dropdownFrame.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
-        dropdownFrame.Size = UDim2.new(0, absSize.X, 0, math.min(#options * 32, 150))
-    end
-    
-    btn.MouseButton1Click:Connect(function()
-        if activeDropdown and activeDropdown ~= dropdownFrame then
-            activeDropdown.Visible = false
-        end
-        updateDropdownPosition()
-        dropdownFrame.Visible = not dropdownFrame.Visible
-        activeDropdown = dropdownFrame.Visible and dropdownFrame or nil
-    end)
-end
-
-local function createButton(text, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 35)
-    btn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
-    btn.BackgroundTransparency = 0.2
-    btn.Text = text
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.TextSize = 13
+    btn.TextSize = 14
     btn.Font = Enum.Font.GothamBold
     btn.Parent = featuresContainer
     
@@ -651,109 +632,322 @@ end
 
 local function clearFeatures()
     for _, child in pairs(featuresContainer:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy()
-        end
+        child:Destroy()
     end
 end
 
 -- ===== MENU FUNCTIONS =====
-local function showMain()
+
+-- Fishing Menu
+local function showFishing()
     clearFeatures()
-    contentTitle.Text = "Main Features"
+    contentTitle.Text = "Fishing"
     
-    createSection("Auto Fishing")
-    createToggle("Enable Auto Fish", autoFishing, function(state)
-        if state then startAutoFishing() else stopAutoFishing() end
+    createLabel("Auto Fishing")
+    
+    local fishingThread = nil
+    local fishingToggle = createToggle("Auto Fish", false, function(state)
+        autoFishing = state
+        if state then
+            fishingThread = task.spawn(function()
+                while autoFishing do
+                    CastRod()
+                    task.wait(5)
+                end
+            end)
+            notify("Auto Fish", "Started", 2)
+        else
+            if fishingThread then task.cancel(fishingThread) end
+            notify("Auto Fish", "Stopped", 2)
+        end
     end)
     
-    createInput("Fish Delay", Config.FishDelay, function(val) Config.FishDelay = val end, "2.0")
-    createInput("Catch Delay", Config.CatchDelay, function(val) Config.CatchDelay = val end, "1.0")
-    
-    createSection("Auto Sell")
-    createToggle("Enable Auto Sell", autoSell, function(state)
-        if state then startAutoSell() else stopAutoSell() end
+    createButton("Cast Once", function()
+        CastRod()
+        notify("Casting", "Fishing rod casted", 1)
     end)
-    
-    createInput("Sell Delay (s)", Config.SellDelay, function(val) Config.SellDelay = val end, "60")
-    createButton("Sell All Now", sellAllItems)
 end
 
+-- Auto Sell Menu
+local function showAutoSell()
+    clearFeatures()
+    contentTitle.Text = "Auto Sell"
+    
+    createLabel("Auto Sell Settings")
+    
+    local delayInput = createInput("Sell Delay (seconds)", "60", "60", function(text)
+        local num = tonumber(text)
+        if num and num > 0 then
+            autoSellDelay = num
+        end
+    end)
+    
+    local sellThread = nil
+    local sellToggle = createToggle("Enable Auto Sell", false, function(state)
+        autoSell = state
+        if state then
+            sellThread = task.spawn(function()
+                while autoSell do
+                    if RF_SellAllItems then
+                        pcall(function() RF_SellAllItems:InvokeServer() end)
+                        notify("Auto Sell", "Sold all items", 1)
+                    end
+                    task.wait(autoSellDelay)
+                end
+            end)
+            notify("Auto Sell", "Started", 2)
+        else
+            if sellThread then task.cancel(sellThread) end
+            notify("Auto Sell", "Stopped", 2)
+        end
+    end)
+    
+    createButton("Sell Now", function()
+        if RF_SellAllItems then
+            pcall(function() RF_SellAllItems:InvokeServer() end)
+            notify("Sell", "Items sold", 1)
+        end
+    end)
+end
+
+-- Movement Menu
+local function showMovement()
+    clearFeatures()
+    contentTitle.Text = "Movement"
+    
+    createLabel("Walkspeed")
+    
+    local speedSlider = createSlider("Speed", 16, 200, 16, 1, function(val)
+        walkspeed = val
+        local humanoid = GetHumanoid()
+        if humanoid then
+            humanoid.WalkSpeed = walkspeed
+        end
+    end)
+    
+    createLabel("Jump Power")
+    
+    local jumpSlider = createSlider("Jump", 50, 200, 50, 1, function(val)
+        jumppower = val
+        local humanoid = GetHumanoid()
+        if humanoid then
+            humanoid.JumpPower = jumppower
+        end
+    end)
+    
+    createButton("Reset", function()
+        local humanoid = GetHumanoid()
+        if humanoid then
+            humanoid.WalkSpeed = 16
+            humanoid.JumpPower = 50
+            speedSlider:Set(16)
+            jumpSlider:Set(50)
+        end
+    end)
+    
+    createLabel("Fly Mode")
+    
+    local speedInput = createInput("Fly Speed", "50", "50", function(text)
+        local num = tonumber(text)
+        if num then flySpeed = num end
+    end)
+    
+    local flyToggle = createToggle("Enable Fly", false, function(state)
+        flyEnabled = state
+        local character = LocalPlayer.Character
+        if not character then return end
+        
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character:FindFirstChild("Humanoid")
+        
+        if state then
+            if hrp and humanoid then
+                humanoid.PlatformStand = true
+                
+                bodyGyro = Instance.new("BodyGyro")
+                bodyGyro.P = 9e4
+                bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+                bodyGyro.CFrame = hrp.CFrame
+                bodyGyro.Parent = hrp
+                
+                bodyVel = Instance.new("BodyVelocity")
+                bodyVel.Velocity = Vector3.zero
+                bodyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                bodyVel.Parent = hrp
+                
+                local camera = workspace.CurrentCamera
+                
+                flyConnection = RunService.RenderStepped:Connect(function()
+                    if not flyEnabled or not hrp then return end
+                    
+                    bodyGyro.CFrame = camera.CFrame
+                    
+                    local moveDir = humanoid.MoveDirection
+                    if moveDir.Magnitude > 0 then
+                        bodyVel.Velocity = moveDir * flySpeed
+                    else
+                        bodyVel.Velocity = Vector3.zero
+                    end
+                end)
+            end
+        else
+            if flyConnection then
+                flyConnection:Disconnect()
+                flyConnection = nil
+            end
+            if bodyGyro then bodyGyro:Destroy() end
+            if bodyVel then bodyVel:Destroy() end
+            if humanoid then
+                humanoid.PlatformStand = false
+            end
+        end
+    end)
+end
+
+-- Teleport Menu
 local function showTeleport()
     clearFeatures()
-    contentTitle.Text = "Teleport Features"
+    contentTitle.Text = "Teleport"
     
-    createSection("Teleport to Area")
+    createLabel("Quick Teleports")
     
-    local selectedArea = AreaNames[1]
-    createDropdown("Select Area", AreaNames, selectedArea, function(selected)
-        selectedArea = selected
-    end)
+    local locations = {
+        {"Spawn", Vector3.new(0, 10, 0)},
+        {"Market", Vector3.new(100, 10, 50)},
+        {"Island", Vector3.new(500, 20, 300)},
+    }
     
-    createButton("Teleport Now", function()
-        teleportTo(selectedArea)
-    end)
+    for _, loc in ipairs(locations) do
+        createButton("Teleport to " .. loc[1], function()
+            local hrp = GetHRP()
+            if hrp then
+                hrp.CFrame = CFrame.new(loc[2])
+                notify("Teleport", "Moved to " .. loc[1], 1)
+            end
+        end)
+    end
+    
+    createLabel("Player Teleport")
+    
+    local players = {}
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            table.insert(players, plr.Name)
+        end
+    end
+    
+    if #players > 0 then
+        for i = 1, math.min(3, #players) do
+            local playerName = players[i]
+            createButton("TP to " .. playerName, function()
+                local target = Players:FindFirstChild(playerName)
+                local targetHRP = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                local hrp = GetHRP()
+                
+                if hrp and targetHRP then
+                    hrp.CFrame = targetHRP.CFrame + Vector3.new(0, 5, 0)
+                    notify("Teleport", "Moved to " .. playerName, 1)
+                end
+            end)
+        end
+    end
 end
 
+-- Misc Menu
 local function showMisc()
     clearFeatures()
-    contentTitle.Text = "Misc Features"
+    contentTitle.Text = "Misc"
     
-    createSection("Player Info")
+    createLabel("Character")
     
-    -- Remote status
-    local statusFrame = Instance.new("Frame")
-    statusFrame.Size = UDim2.new(1, 0, 0, 80)
-    statusFrame.BackgroundColor3 = Color3.new(0.12, 0.12, 0.12)
-    statusFrame.BackgroundTransparency = 0.2
-    statusFrame.Parent = featuresContainer
+    createButton("Reset Character", function()
+        local humanoid = GetHumanoid()
+        if humanoid then
+            humanoid.Health = 0
+            notify("Reset", "Character respawning", 1)
+        end
+    end)
     
-    local statusCorner = Instance.new("UICorner")
-    statusCorner.CornerRadius = UDim.new(0, 6)
-    statusCorner.Parent = statusFrame
+    createButton("Rejoin Game", function()
+        notify("Rejoining", "Please wait...", 2)
+        task.wait(1)
+        game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
+    end)
     
-    local statusText = Instance.new("TextLabel")
-    statusText.Size = UDim2.new(1, -10, 1, -10)
-    statusText.Position = UDim2.new(0, 5, 0, 5)
-    statusText.BackgroundTransparency = 1
-    statusText.Text = string.format(
-        "Charge Remote: %s\nRequest Remote: %s\nCatch Remote: %s\nSell Remote: %s",
-        Remote.ChargeFishingRod and "✅" or "❌",
-        Remote.RequestFishingMinigame and "✅" or "❌",
-        Remote.CatchFishCompleted and "✅" or "❌",
-        Remote.SellAllItems and "✅" or "❌"
-    )
-    statusText.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    statusText.TextSize = 12
-    statusText.Font = Enum.Font.Gotham
-    statusText.TextXAlignment = Enum.TextXAlignment.Left
-    statusText.TextWrapped = true
-    statusText.Parent = statusFrame
+    createLabel("Anti AFK")
+    
+    local afkToggle = createToggle("Anti AFK", true, function(state)
+        if state then
+            local connection
+            connection = LocalPlayer.Idled:Connect(function()
+                LocalPlayer:WaitForChild("Humanoid"):ChangeState(Enum.HumanoidStateType.GettingUp)
+                task.wait(1)
+            end)
+            _G.afkConnection = connection
+        else
+            if _G.afkConnection then
+                _G.afkConnection:Disconnect()
+                _G.afkConnection = nil
+            end
+        end
+    end)
+    
+    createLabel("Infinite Jump")
+    
+    local infJumpToggle = createToggle("Infinite Jump", false, function(state)
+        if state then
+            _G.infJump = UserInputService.JumpRequest:Connect(function()
+                local humanoid = GetHumanoid()
+                if humanoid then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end)
+        else
+            if _G.infJump then
+                _G.infJump:Disconnect()
+                _G.infJump = nil
+            end
+        end
+    end)
 end
 
 -- ===== LEFT MENU BUTTONS =====
 local menuButtons = {
-    {name = "Main", func = showMain},
+    {name = "Fishing", func = showFishing},
+    {name = "Auto Sell", func = showAutoSell},
+    {name = "Movement", func = showMovement},
     {name = "Teleport", func = showTeleport},
     {name = "Misc", func = showMisc},
 }
 
-local currentMenu = "Main"
+local currentMenu = ""
 
 for _, btnData in ipairs(menuButtons) do
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 100, 0, 40)
+    btn.Size = UDim2.new(0, 100, 0, 35)
     btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     btn.BackgroundTransparency = 0.3
     btn.Text = btnData.name
     btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.TextSize = 14
+    btn.TextSize = 13
     btn.Font = Enum.Font.GothamBold
     btn.Parent = leftMenu
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = btn
+    
+    btn.MouseEnter:Connect(function()
+        if currentMenu ~= btnData.name then
+            btn.BackgroundTransparency = 0.1
+        end
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        if currentMenu ~= btnData.name then
+            btn.BackgroundTransparency = 0.3
+        end
+    end)
     
     btn.MouseButton1Click:Connect(function()
         for _, b in pairs(leftMenu:GetChildren()) do
@@ -767,9 +961,9 @@ for _, btnData in ipairs(menuButtons) do
     end)
 end
 
--- Show Main menu by default
+-- Show Fishing menu by default
 task.wait(0.1)
-showMain()
+showFishing()
 
 -- ===== DRAG FUNCTIONALITY =====
 local dragging = false
@@ -802,4 +996,4 @@ mainFrame.InputEnded:Connect(function(input)
     end
 end)
 
-notify("Moe V1.0", "Optimized version loaded!", 3)
+notify("Moe V1.0", "Simple Fish Hub loaded!", 3)
