@@ -19,6 +19,7 @@ local Stats = game:GetService("Stats")
 local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
 local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
 
 -- ===== NOTIFY =====
@@ -35,27 +36,27 @@ local function showConfirmDialog(title, message, callback)
     local dialogFrame = Instance.new("Frame")
     dialogFrame.Size = UDim2.new(0, 300, 0, 150)
     dialogFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
-    dialogFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-    dialogFrame.BackgroundTransparency = 0.1
+    dialogFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    dialogFrame.BackgroundTransparency = 0.05
     dialogFrame.BorderSizePixel = 0
     dialogFrame.Parent = gui
     dialogFrame.ZIndex = 1000
     
     local dialogCorner = Instance.new("UICorner")
-    dialogCorner.CornerRadius = UDim.new(0, 8)
+    dialogCorner.CornerRadius = UDim.new(0, 12)
     dialogCorner.Parent = dialogFrame
     
     local dialogStroke = Instance.new("UIStroke")
-    dialogStroke.Thickness = 1
-    dialogStroke.Color = Color3.new(1, 1, 1)
-    dialogStroke.Transparency = 0.5
+    dialogStroke.Thickness = 2
+    dialogStroke.Color = Color3.fromRGB(100, 150, 255)
+    dialogStroke.Transparency = 0.3
     dialogStroke.Parent = dialogFrame
     
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, 0, 0, 40)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = title
-    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleLabel.TextSize = 18
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.Parent = dialogFrame
@@ -66,7 +67,7 @@ local function showConfirmDialog(title, message, callback)
     msgLabel.Position = UDim2.new(0, 10, 0, 40)
     msgLabel.BackgroundTransparency = 1
     msgLabel.Text = message
-    msgLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    msgLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     msgLabel.TextSize = 14
     msgLabel.Font = Enum.Font.Gotham
     msgLabel.TextWrapped = true
@@ -76,7 +77,7 @@ local function showConfirmDialog(title, message, callback)
     local yesBtn = Instance.new("TextButton")
     yesBtn.Size = UDim2.new(0.4, -5, 0, 35)
     yesBtn.Position = UDim2.new(0.1, 0, 0, 95)
-    yesBtn.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+    yesBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
     yesBtn.Text = "YES"
     yesBtn.TextColor3 = Color3.new(1, 1, 1)
     yesBtn.TextSize = 14
@@ -85,13 +86,13 @@ local function showConfirmDialog(title, message, callback)
     yesBtn.ZIndex = 1001
     
     local yesCorner = Instance.new("UICorner")
-    yesCorner.CornerRadius = UDim.new(0, 6)
+    yesCorner.CornerRadius = UDim.new(0, 8)
     yesCorner.Parent = yesBtn
     
     local noBtn = Instance.new("TextButton")
     noBtn.Size = UDim2.new(0.4, -5, 0, 35)
     noBtn.Position = UDim2.new(0.5, 5, 0, 95)
-    noBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    noBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
     noBtn.Text = "NO"
     noBtn.TextColor3 = Color3.new(1, 1, 1)
     noBtn.TextSize = 14
@@ -100,7 +101,7 @@ local function showConfirmDialog(title, message, callback)
     noBtn.ZIndex = 1001
     
     local noCorner = Instance.new("UICorner")
-    noCorner.CornerRadius = UDim.new(0, 6)
+    noCorner.CornerRadius = UDim.new(0, 8)
     noCorner.Parent = noBtn
     
     yesBtn.MouseButton1Click:Connect(function()
@@ -331,6 +332,73 @@ local monitorEnabled = false
 local monitorGui = nil
 local monitorConnection = nil
 
+-- ===== DROPDOWN MANAGEMENT =====
+local activeDropdowns = {}
+local dropdownConnections = {}
+
+-- Fungsi untuk menutup semua dropdown
+local function closeAllDropdowns()
+    for _, dropdown in ipairs(activeDropdowns) do
+        if dropdown and dropdown.Parent then
+            dropdown.Visible = false
+        end
+    end
+    activeDropdowns = {}
+end
+
+-- Fungsi untuk menutup semua dropdown kecuali yang specified
+local function closeOtherDropdowns(exception)
+    local newActive = {}
+    for _, dropdown in ipairs(activeDropdowns) do
+        if dropdown == exception then
+            table.insert(newActive, dropdown)
+        elseif dropdown and dropdown.Parent then
+            dropdown.Visible = false
+        end
+    end
+    activeDropdowns = newActive
+end
+
+-- Setup global click handler untuk menutup dropdown
+local function setupGlobalClickHandler()
+    if dropdownConnections.global then
+        dropdownConnections.global:Disconnect()
+    end
+    
+    dropdownConnections.global = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            -- Tunggu sedikit untuk memastikan event button tidak ke-block
+            task.wait(0.05)
+            
+            -- Cek apakah klik di luar semua dropdown
+            local mousePos = Vector2.new(input.Position.X, input.Position.Y)
+            local clickedOnDropdown = false
+            
+            for _, dropdown in ipairs(activeDropdowns) do
+                if dropdown and dropdown.Visible and dropdown:IsDescendantOf(gui) then
+                    local absPos = dropdown.AbsolutePosition
+                    local absSize = dropdown.AbsoluteSize
+                    local dropdownRect = Rect.new(absPos.X, absPos.Y, absPos.X + absSize.X, absPos.Y + absSize.Y)
+                    
+                    if dropdownRect:Contains(mousePos) then
+                        clickedOnDropdown = true
+                        break
+                    end
+                end
+            end
+            
+            if not clickedOnDropdown then
+                closeAllDropdowns()
+            end
+        end
+    end)
+end
+
+-- Panggil setup global click handler
+setupGlobalClickHandler()
+
 -- ===== IMAGE CACHE =====
 local ImageURLCache = {}
 
@@ -343,17 +411,17 @@ local function FormatNumber(n)
 end
 
 local function GetPingColor(ping)
-    if ping <= 50 then return Color3.new(0,1,0)
-    elseif ping <= 100 then return Color3.new(1,1,0)
-    elseif ping <= 300 then return Color3.new(1,0.5,0)
-    else return Color3.new(1,0,0) end
+    if ping <= 50 then return Color3.fromRGB(0, 255, 0)
+    elseif ping <= 100 then return Color3.fromRGB(255, 255, 0)
+    elseif ping <= 300 then return Color3.fromRGB(255, 128, 0)
+    else return Color3.fromRGB(255, 0, 0) end
 end
 
 local function GetCPUColor(cpu)
-    if cpu <= 50 then return Color3.new(0,1,0)
-    elseif cpu <= 100 then return Color3.new(1,1,0)
-    elseif cpu <= 300 then return Color3.new(1,0.5,0)
-    else return Color3.new(1,0,0) end
+    if cpu <= 50 then return Color3.fromRGB(0, 255, 0)
+    elseif cpu <= 100 then return Color3.fromRGB(255, 255, 0)
+    elseif cpu <= 300 then return Color3.fromRGB(255, 128, 0)
+    else return Color3.fromRGB(255, 0, 0) end
 end
 
 -- ===== TELEPORT FUNCTIONS =====
@@ -772,7 +840,7 @@ local function createESP(targetPlayer)
     NameLabel.Size = UDim2.new(1, 0, 0.6, 0)
     NameLabel.BackgroundTransparency = 1
     NameLabel.Text = targetPlayer.DisplayName or targetPlayer.Name
-    NameLabel.TextColor3 = Color3.new(1, 0.9, 0.9)
+    NameLabel.TextColor3 = Color3.fromRGB(255, 230, 230)
     NameLabel.TextStrokeTransparency = 0.7
     NameLabel.Font = Enum.Font.GothamBold
     NameLabel.TextScaled = true
@@ -783,7 +851,7 @@ local function createESP(targetPlayer)
     DistanceLabel.Position = UDim2.new(0, 0, 0.6, 0)
     DistanceLabel.BackgroundTransparency = 1
     DistanceLabel.Text = "0.0 m"
-    DistanceLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    DistanceLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     DistanceLabel.Font = Enum.Font.GothamSemibold
     DistanceLabel.TextScaled = true
     
@@ -963,48 +1031,48 @@ local function createMonitor()
     
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
-    mainFrame.Size = UDim2.new(0, 90, 0, 80)
-    mainFrame.Position = UDim2.new(1, -100, 0, 20)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    mainFrame.Size = UDim2.new(0, 100, 0, 90)
+    mainFrame.Position = UDim2.new(1, -110, 0, 20)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     mainFrame.BorderSizePixel = 0
     mainFrame.Parent = screenGui
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = mainFrame
     
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(60, 60, 80)
+    stroke.Color = Color3.fromRGB(80, 80, 120)
     stroke.Thickness = 2
     stroke.Parent = mainFrame
     
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, 0, 0, 25)
-    titleLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    titleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
     titleLabel.BorderSizePixel = 0
-    titleLabel.Text = "Monitor"
+    titleLabel.Text = "⚡ Monitor"
     titleLabel.TextColor3 = Color3.new(1,1,1)
     titleLabel.TextSize = 14
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.Parent = mainFrame
     
     local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UDim.new(0, 8)
+    titleCorner.CornerRadius = UDim.new(0, 10)
     titleCorner.Parent = titleLabel
     
     local separator = Instance.new("Frame")
     separator.Size = UDim2.new(1, -10, 0, 1)
     separator.Position = UDim2.new(0, 5, 0, 25)
-    separator.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    separator.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
     separator.BorderSizePixel = 0
     separator.Parent = mainFrame
     
     local pingLabel = Instance.new("TextLabel")
     pingLabel.Name = "PingLabel"
-    pingLabel.Size = UDim2.new(1, -20, 0, 20)
+    pingLabel.Size = UDim2.new(1, -20, 0, 22)
     pingLabel.Position = UDim2.new(0, 10, 0, 32)
     pingLabel.BackgroundTransparency = 1
-    pingLabel.Text = "Ping : 0 ms"
+    pingLabel.Text = "📶 Ping: 0 ms"
     pingLabel.TextColor3 = Color3.new(0,1,0)
     pingLabel.TextSize = 12
     pingLabel.Font = Enum.Font.GothamMedium
@@ -1013,10 +1081,10 @@ local function createMonitor()
     
     local cpuLabel = Instance.new("TextLabel")
     cpuLabel.Name = "CPULabel"
-    cpuLabel.Size = UDim2.new(1, -20, 0, 20)
-    cpuLabel.Position = UDim2.new(0, 10, 0, 52)
+    cpuLabel.Size = UDim2.new(1, -20, 0, 22)
+    cpuLabel.Position = UDim2.new(0, 10, 0, 54)
     cpuLabel.BackgroundTransparency = 1
-    cpuLabel.Text = "CPU  : 0 ms"
+    cpuLabel.Text = "💻 CPU: 0 ms"
     cpuLabel.TextColor3 = Color3.new(0,1,0)
     cpuLabel.TextSize = 12
     cpuLabel.Font = Enum.Font.GothamMedium
@@ -1043,9 +1111,9 @@ local function toggleMonitor(state)
                 local ping = math.floor(player:GetNetworkPing() * 1000)
                 local cpu = math.floor(Stats.PerformanceStats.CPU:GetValue())
                 
-                pingLabel.Text = string.format("Ping : %d ms", ping)
+                pingLabel.Text = string.format("📶 Ping: %d ms", ping)
                 pingLabel.TextColor3 = GetPingColor(ping)
-                cpuLabel.Text = string.format("CPU  : %d ms", cpu)
+                cpuLabel.Text = string.format("💻 CPU: %d ms", cpu)
                 cpuLabel.TextColor3 = GetCPUColor(cpu)
             end
         end)
@@ -1063,7 +1131,6 @@ end
 
 -- ===== EXIT FUNCTION =====
 local guiClosed = false
-local activeDropdown = nil
 
 local function exitGUI()
     if guiClosed then return end
@@ -1079,9 +1146,13 @@ local function exitGUI()
             stopAutoWeather()
             toggleMonitor(false)
             
-            if activeDropdown then
-                activeDropdown.Visible = false
-                activeDropdown = nil
+            -- Tutup semua dropdown
+            closeAllDropdowns()
+            
+            -- Hapus global click handler
+            if dropdownConnections.global then
+                dropdownConnections.global:Disconnect()
+                dropdownConnections.global = nil
             end
             
             task.wait(0.1)
@@ -1093,92 +1164,92 @@ end
 -- ===== MAIN FRAME =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 750, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -375, 0.5, -250)
-mainFrame.BackgroundColor3 = Color3.new(0, 0, 0)
-mainFrame.BackgroundTransparency = 0.15
+mainFrame.Size = UDim2.new(0, 800, 0, 550)
+mainFrame.Position = UDim2.new(0.5, -400, 0.5, -275)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+mainFrame.BackgroundTransparency = 0.05
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = gui
 mainFrame.Active = true
 mainFrame.Selectable = true
 
 local corners = Instance.new("UICorner")
-corners.CornerRadius = UDim.new(0, 12)
+corners.CornerRadius = UDim.new(0, 16)
 corners.Parent = mainFrame
 
 local stroke = Instance.new("UIStroke")
-stroke.Thickness = 1.2
-stroke.Color = Color3.new(1, 1, 1)
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(100, 150, 255)
 stroke.Transparency = 0.3
 stroke.Parent = mainFrame
 
 -- ===== HEADER =====
 local headerFrame = Instance.new("Frame")
-headerFrame.Size = UDim2.new(1, 0, 0, 35)
+headerFrame.Size = UDim2.new(1, 0, 0, 45)
 headerFrame.BackgroundTransparency = 1
 headerFrame.Parent = mainFrame
 
 local logo = Instance.new("ImageLabel")
-logo.Size = UDim2.new(0, 25, 0, 25)
-logo.Position = UDim2.new(0, 8, 0.5, -12.5)
+logo.Size = UDim2.new(0, 30, 0, 30)
+logo.Position = UDim2.new(0, 10, 0.5, -15)
 logo.BackgroundTransparency = 1
 logo.Image = "rbxassetid://115935586997848"
 logo.ScaleType = Enum.ScaleType.Fit
 logo.Parent = headerFrame
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(0, 100, 1, 0)
-title.Position = UDim2.new(0, 38, 0, 0)
+title.Size = UDim2.new(0, 150, 1, 0)
+title.Position = UDim2.new(0, 45, 0, 0)
 title.BackgroundTransparency = 1
 title.Text = "Moe V1.0"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.TextSize = 16
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 20
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = headerFrame
 
 -- Minimize button
 local minButton = Instance.new("TextButton")
-minButton.Size = UDim2.new(0, 25, 0, 25)
-minButton.Position = UDim2.new(1, -60, 0.5, -12.5)
-minButton.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-minButton.BackgroundTransparency = 0.3
+minButton.Size = UDim2.new(0, 32, 0, 32)
+minButton.Position = UDim2.new(1, -74, 0.5, -16)
+minButton.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
+minButton.BackgroundTransparency = 0.2
 minButton.Text = "—"
 minButton.TextColor3 = Color3.new(1, 1, 1)
-minButton.TextSize = 16
+minButton.TextSize = 20
 minButton.Font = Enum.Font.GothamBold
 minButton.Parent = headerFrame
 minButton.ZIndex = 5
 
 local minCorner = Instance.new("UICorner")
-minCorner.CornerRadius = UDim.new(0, 4)
+minCorner.CornerRadius = UDim.new(0, 8)
 minCorner.Parent = minButton
 
 -- Close button
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 25, 0, 25)
-closeBtn.Position = UDim2.new(1, -30, 0.5, -12.5)
-closeBtn.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
-closeBtn.BackgroundTransparency = 0.3
-closeBtn.Text = "X"
+closeBtn.Size = UDim2.new(0, 32, 0, 32)
+closeBtn.Position = UDim2.new(1, -38, 0.5, -16)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+closeBtn.BackgroundTransparency = 0.2
+closeBtn.Text = "✕"
 closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.TextSize = 14
+closeBtn.TextSize = 18
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Parent = headerFrame
 closeBtn.ZIndex = 5
 
 local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 4)
+closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeBtn
 
 closeBtn.MouseButton1Click:Connect(exitGUI)
 
 -- ===== FLOATING LOGO =====
 local floatingLogo = Instance.new("Frame")
-floatingLogo.Size = UDim2.new(0, 60, 0, 60)
-floatingLogo.Position = UDim2.new(0.9, -30, 0.9, -30)
-floatingLogo.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-floatingLogo.BackgroundTransparency = 0.2
+floatingLogo.Size = UDim2.new(0, 70, 0, 70)
+floatingLogo.Position = UDim2.new(0.9, -35, 0.9, -35)
+floatingLogo.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+floatingLogo.BackgroundTransparency = 0.1
 floatingLogo.Parent = gui
 floatingLogo.Visible = false
 floatingLogo.ZIndex = 1000
@@ -1186,27 +1257,27 @@ floatingLogo.Active = true
 floatingLogo.Selectable = true
 
 local floatFrameCorner = Instance.new("UICorner")
-floatFrameCorner.CornerRadius = UDim.new(1, 0) -- Membuat lingkaran sempurna
+floatFrameCorner.CornerRadius = UDim.new(1, 0)
 floatFrameCorner.Parent = floatingLogo
 
 local floatStroke = Instance.new("UIStroke")
-floatStroke.Thickness = 1
-floatStroke.Color = Color3.new(1, 1, 1)
-floatStroke.Transparency = 0.5
+floatStroke.Thickness = 2
+floatStroke.Color = Color3.fromRGB(100, 150, 255)
+floatStroke.Transparency = 0.3
 floatStroke.Parent = floatingLogo
 
--- Ganti dengan logo dari link yang diberikan, di-crop lingkaran
+-- Logo dari link
 local floatLogoImg = Instance.new("ImageLabel")
-floatLogoImg.Size = UDim2.new(1, -10, 1, -10)
-floatLogoImg.Position = UDim2.new(0, 5, 0, 5)
+floatLogoImg.Size = UDim2.new(1, -12, 1, -12)
+floatLogoImg.Position = UDim2.new(0, 6, 0, 6)
 floatLogoImg.BackgroundTransparency = 1
 floatLogoImg.Image = "https://i.ibb.co.com/fYZH6gqn/file-000000007f1871fa90b3365d3849f71f.png"
 floatLogoImg.ScaleType = Enum.ScaleType.Fit
 floatLogoImg.Parent = floatingLogo
 
--- Buat ImageLabel menjadi lingkaran dengan menggunakan UICorner
+-- Buat ImageLabel menjadi lingkaran
 local logoCorner = Instance.new("UICorner")
-logoCorner.CornerRadius = UDim.new(1, 0) -- Membuat lingkaran sempurna
+logoCorner.CornerRadius = UDim.new(1, 0)
 logoCorner.Parent = floatLogoImg
 
 local floatButton = Instance.new("TextButton")
@@ -1219,79 +1290,84 @@ floatButton.ZIndex = 1001
 minButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
     floatingLogo.Visible = true
+    -- Tutup semua dropdown saat minimize
+    closeAllDropdowns()
 end)
 
 floatButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = true
     floatingLogo.Visible = false
+    -- Tutup semua dropdown saat maximize
+    closeAllDropdowns()
 end)
 
 local hLine = Instance.new("Frame")
-hLine.Size = UDim2.new(1, -20, 0, 1)
-hLine.Position = UDim2.new(0, 10, 0, 35)
-hLine.BackgroundColor3 = Color3.new(1, 1, 1)
+hLine.Size = UDim2.new(1, -20, 0, 2)
+hLine.Position = UDim2.new(0, 10, 0, 45)
+hLine.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
 hLine.BackgroundTransparency = 0.3
 hLine.Parent = mainFrame
 
 -- ===== CONTENT CONTAINER =====
 local contentContainer = Instance.new("Frame")
-contentContainer.Size = UDim2.new(1, -20, 1, -45)
-contentContainer.Position = UDim2.new(0, 10, 0, 40)
+contentContainer.Size = UDim2.new(1, -20, 1, -55)
+contentContainer.Position = UDim2.new(0, 10, 0, 50)
 contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = mainFrame
 contentContainer.Active = true
 
 -- ===== LEFT MENU =====
 local leftMenu = Instance.new("Frame")
-leftMenu.Size = UDim2.new(0, 140, 1, 0)
+leftMenu.Size = UDim2.new(0, 150, 1, 0)
 leftMenu.BackgroundTransparency = 1
 leftMenu.Parent = contentContainer
 
 local menuLayout = Instance.new("UIListLayout")
 menuLayout.FillDirection = Enum.FillDirection.Vertical
 menuLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-menuLayout.Padding = UDim.new(0, 6)
+menuLayout.Padding = UDim.new(0, 8)
 menuLayout.Parent = leftMenu
 
 local vLine = Instance.new("Frame")
-vLine.Size = UDim2.new(0, 1, 1, 0)
-vLine.Position = UDim2.new(0, 150, 0, 0)
-vLine.BackgroundColor3 = Color3.new(1, 1, 1)
+vLine.Size = UDim2.new(0, 2, 1, 0)
+vLine.Position = UDim2.new(0, 160, 0, 0)
+vLine.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
 vLine.BackgroundTransparency = 0.3
 vLine.Parent = contentContainer
 
 -- ===== RIGHT CONTENT AREA =====
 local contentArea = Instance.new("Frame")
-contentArea.Size = UDim2.new(1, -160, 1, 0)
-contentArea.Position = UDim2.new(0, 160, 0, 0)
-contentArea.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-contentArea.BackgroundTransparency = 0.3
+contentArea.Size = UDim2.new(1, -170, 1, 0)
+contentArea.Position = UDim2.new(0, 170, 0, 0)
+contentArea.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+contentArea.BackgroundTransparency = 0.1
 contentArea.Parent = contentContainer
 contentArea.Active = true
 contentArea.ClipsDescendants = true
 
 local contentCorner = Instance.new("UICorner")
-contentCorner.CornerRadius = UDim.new(0, 8)
+contentCorner.CornerRadius = UDim.new(0, 12)
 contentCorner.Parent = contentArea
 
 local contentTitle = Instance.new("TextLabel")
-contentTitle.Size = UDim2.new(1, -10, 0, 30)
-contentTitle.Position = UDim2.new(0, 5, 0, 5)
+contentTitle.Size = UDim2.new(1, -15, 0, 35)
+contentTitle.Position = UDim2.new(0, 8, 0, 8)
 contentTitle.BackgroundTransparency = 1
 contentTitle.Text = "Main Features"
-contentTitle.TextColor3 = Color3.new(1, 1, 1)
-contentTitle.TextSize = 16
+contentTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+contentTitle.TextSize = 18
 contentTitle.Font = Enum.Font.GothamBold
 contentTitle.TextXAlignment = Enum.TextXAlignment.Left
 contentTitle.Parent = contentArea
 contentTitle.ZIndex = 5
 
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, -10, 1, -40)
-scrollFrame.Position = UDim2.new(0, 5, 0, 35)
+scrollFrame.Size = UDim2.new(1, -20, 1, -50)
+scrollFrame.Position = UDim2.new(0, 10, 0, 45)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.BorderSizePixel = 0
-scrollFrame.ScrollBarThickness = 4
+scrollFrame.ScrollBarThickness = 6
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 150, 255)
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scrollFrame.Parent = contentArea
@@ -1307,29 +1383,29 @@ featuresContainer.ZIndex = 10
 local featuresLayout = Instance.new("UIListLayout")
 featuresLayout.FillDirection = Enum.FillDirection.Vertical
 featuresLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-featuresLayout.Padding = UDim.new(0, 10)
+featuresLayout.Padding = UDim.new(0, 12)
 featuresLayout.Parent = featuresContainer
 
 -- ===== UI ELEMENT CREATORS =====
 local function createSection(parent, title)
     local section = Instance.new("Frame")
-    section.Size = UDim2.new(1, 0, 0, 30)
+    section.Size = UDim2.new(1, 0, 0, 35)
     section.BackgroundTransparency = 1
     section.Parent = parent
     
     local line = Instance.new("Frame")
-    line.Size = UDim2.new(1, 0, 0, 1)
-    line.Position = UDim2.new(0, 0, 1, -1)
-    line.BackgroundColor3 = Color3.new(1, 1, 1)
-    line.BackgroundTransparency = 0.7
+    line.Size = UDim2.new(1, 0, 0, 2)
+    line.Position = UDim2.new(0, 0, 1, -2)
+    line.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
+    line.BackgroundTransparency = 0.5
     line.Parent = section
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, 0, 1, 0)
     label.BackgroundTransparency = 1
     label.Text = title
-    label.TextColor3 = Color3.new(0.4, 0.8, 1)
-    label.TextSize = 16
+    label.TextColor3 = Color3.fromRGB(100, 200, 255)
+    label.TextSize = 18
     label.Font = Enum.Font.GothamBold
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = section
@@ -1339,48 +1415,48 @@ end
 
 local function createToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 35)
-    frame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
-    frame.BackgroundTransparency = 0.2
+    frame.Size = UDim2.new(1, 0, 0, 40)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    frame.BackgroundTransparency = 0.1
     frame.Parent = parent
     frame.ZIndex = 20
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = frame
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0, 200, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Size = UDim2.new(0, 250, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
     label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextSize = 13
+    label.TextSize = 14
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     label.ZIndex = 21
     
     local switchBg = Instance.new("Frame")
-    switchBg.Size = UDim2.new(0, 50, 0, 25)
-    switchBg.Position = UDim2.new(1, -60, 0.5, -12.5)
-    switchBg.BackgroundColor3 = default and Color3.new(0, 0.6, 0) or Color3.new(0.4, 0.4, 0.4)
+    switchBg.Size = UDim2.new(0, 55, 0, 28)
+    switchBg.Position = UDim2.new(1, -65, 0.5, -14)
+    switchBg.BackgroundColor3 = default and Color3.fromRGB(70, 200, 70) or Color3.fromRGB(80, 80, 100)
     switchBg.Parent = frame
     switchBg.ZIndex = 21
     
     local switchCorner = Instance.new("UICorner")
-    switchCorner.CornerRadius = UDim.new(0, 15)
+    switchCorner.CornerRadius = UDim.new(0, 14)
     switchCorner.Parent = switchBg
     
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 21, 0, 21)
-    knob.Position = default and UDim2.new(1, -25, 0.5, -10.5) or UDim2.new(0, 4, 0.5, -10.5)
+    knob.Size = UDim2.new(0, 24, 0, 24)
+    knob.Position = default and UDim2.new(1, -27, 0.5, -12) or UDim2.new(0, 4, 0.5, -12)
     knob.BackgroundColor3 = Color3.new(1, 1, 1)
     knob.Parent = switchBg
     knob.ZIndex = 22
     
     local knobCorner = Instance.new("UICorner")
-    knobCorner.CornerRadius = UDim.new(0, 10)
+    knobCorner.CornerRadius = UDim.new(0, 12)
     knobCorner.Parent = knob
     
     local toggleBtn = Instance.new("TextButton")
@@ -1394,11 +1470,11 @@ local function createToggle(parent, text, default, callback)
     
     local function updateSwitch()
         if state then
-            switchBg.BackgroundColor3 = Color3.new(0, 0.6, 0)
-            knob:TweenPosition(UDim2.new(1, -25, 0.5, -10.5), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+            switchBg.BackgroundColor3 = Color3.fromRGB(70, 200, 70)
+            knob:TweenPosition(UDim2.new(1, -27, 0.5, -12), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
         else
-            switchBg.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
-            knob:TweenPosition(UDim2.new(0, 4, 0.5, -10.5), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+            switchBg.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
+            knob:TweenPosition(UDim2.new(0, 4, 0.5, -12), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
         end
     end
     
@@ -1413,36 +1489,37 @@ end
 
 local function createInput(parent, label, default, callback, placeholder)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 45)
+    frame.Size = UDim2.new(1, 0, 0, 50)
     frame.BackgroundTransparency = 1
     frame.Parent = parent
     frame.ZIndex = 20
     
     local labelObj = Instance.new("TextLabel")
-    labelObj.Size = UDim2.new(0.4, 0, 0, 20)
+    labelObj.Size = UDim2.new(0.4, 0, 0, 22)
     labelObj.Position = UDim2.new(0, 0, 0, 0)
     labelObj.BackgroundTransparency = 1
     labelObj.Text = label
-    labelObj.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    labelObj.TextSize = 13
+    labelObj.TextColor3 = Color3.fromRGB(200, 200, 200)
+    labelObj.TextSize = 14
     labelObj.Font = Enum.Font.Gotham
     labelObj.TextXAlignment = Enum.TextXAlignment.Left
     labelObj.Parent = frame
     labelObj.ZIndex = 21
     
     local input = Instance.new("TextBox")
-    input.Size = UDim2.new(0.5, 0, 0, 30)
-    input.Position = UDim2.new(0.5, 0, 0, 0)
-    input.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    input.Size = UDim2.new(0.55, 0, 0, 35)
+    input.Position = UDim2.new(0.45, 0, 0, 0)
+    input.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
     input.Text = tostring(default)
     input.TextColor3 = Color3.new(1, 1, 1)
+    input.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
     input.PlaceholderText = placeholder or ""
     input.Font = Enum.Font.Gotham
     input.Parent = frame
     input.ZIndex = 21
     
     local inputCorner = Instance.new("UICorner")
-    inputCorner.CornerRadius = UDim.new(0, 4)
+    inputCorner.CornerRadius = UDim.new(0, 8)
     inputCorner.Parent = input
     
     input.FocusLost:Connect(function()
@@ -1456,64 +1533,71 @@ end
 
 local function createDropdown(parent, text, options, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 45)
+    frame.Size = UDim2.new(1, 0, 0, 50)
     frame.BackgroundTransparency = 1
     frame.Parent = parent
     frame.ZIndex = 20
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.4, 0, 0, 20)
+    label.Size = UDim2.new(0.4, 0, 0, 22)
     label.Position = UDim2.new(0, 0, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
-    label.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    label.TextSize = 13
+    label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    label.TextSize = 14
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     label.ZIndex = 21
     
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.5, 0, 0, 30)
-    btn.Position = UDim2.new(0.5, 0, 0, 0)
-    btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    btn.Size = UDim2.new(0.55, 0, 0, 35)
+    btn.Position = UDim2.new(0.45, 0, 0, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
     btn.Text = default or options[1]
     btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.TextSize = 13
+    btn.TextSize = 14
     btn.Font = Enum.Font.Gotham
     btn.Parent = frame
     btn.ZIndex = 21
     
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 4)
+    btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
     
     local arrow = Instance.new("TextLabel")
-    arrow.Size = UDim2.new(0, 20, 1, 0)
-    arrow.Position = UDim2.new(1, -20, 0, 0)
+    arrow.Size = UDim2.new(0, 25, 1, 0)
+    arrow.Position = UDim2.new(1, -25, 0, 0)
     arrow.BackgroundTransparency = 1
     arrow.Text = "▼"
-    arrow.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    arrow.TextSize = 12
+    arrow.TextColor3 = Color3.fromRGB(200, 200, 200)
+    arrow.TextSize = 14
     arrow.Parent = btn
     arrow.ZIndex = 22
     
     local dropdownFrame = Instance.new("Frame")
-    dropdownFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    dropdownFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
     dropdownFrame.Visible = false
     dropdownFrame.Parent = gui
     dropdownFrame.ZIndex = 100
-    dropdownFrame.BorderSizePixel = 1
-    dropdownFrame.BorderColor3 = Color3.new(0.3, 0.3, 0.3)
+    dropdownFrame.BorderSizePixel = 0
+    dropdownFrame.ClipsDescendants = true
     
     local dropdownCorner = Instance.new("UICorner")
-    dropdownCorner.CornerRadius = UDim.new(0, 6)
+    dropdownCorner.CornerRadius = UDim.new(0, 10)
     dropdownCorner.Parent = dropdownFrame
+    
+    local dropdownStroke = Instance.new("UIStroke")
+    dropdownStroke.Thickness = 2
+    dropdownStroke.Color = Color3.fromRGB(100, 150, 255)
+    dropdownStroke.Transparency = 0.3
+    dropdownStroke.Parent = dropdownFrame
     
     local optionsScrolling = Instance.new("ScrollingFrame")
     optionsScrolling.Size = UDim2.new(1, 0, 1, 0)
     optionsScrolling.BackgroundTransparency = 1
     optionsScrolling.ScrollBarThickness = 4
+    optionsScrolling.ScrollBarImageColor3 = Color3.fromRGB(100, 150, 255)
     optionsScrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
     optionsScrolling.AutomaticCanvasSize = Enum.AutomaticSize.Y
     optionsScrolling.Parent = dropdownFrame
@@ -1533,32 +1617,38 @@ local function createDropdown(parent, text, options, default, callback)
     
     for _, opt in ipairs(options) do
         local optBtn = Instance.new("TextButton")
-        optBtn.Size = UDim2.new(1, 0, 0, 30)
-        optBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+        optBtn.Size = UDim2.new(1, 0, 0, 35)
+        optBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
         optBtn.Text = opt
         optBtn.TextColor3 = Color3.new(1, 1, 1)
-        optBtn.TextSize = 13
+        optBtn.TextSize = 14
         optBtn.Font = Enum.Font.Gotham
         optBtn.Parent = optionsContainer
         optBtn.ZIndex = 102
         optBtn.BorderSizePixel = 0
         
         local optCorner = Instance.new("UICorner")
-        optCorner.CornerRadius = UDim.new(0, 4)
+        optCorner.CornerRadius = UDim.new(0, 6)
         optCorner.Parent = optBtn
         
         optBtn.MouseEnter:Connect(function()
-            optBtn.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+            optBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
         end)
         
         optBtn.MouseLeave:Connect(function()
-            optBtn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
+            optBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
         end)
         
         optBtn.MouseButton1Click:Connect(function()
             btn.Text = opt
             dropdownFrame.Visible = false
-            activeDropdown = nil
+            -- Hapus dari active dropdowns
+            for i, d in ipairs(activeDropdowns) do
+                if d == dropdownFrame then
+                    table.remove(activeDropdowns, i)
+                    break
+                end
+            end
             callback(opt)
         end)
     end
@@ -1572,44 +1662,120 @@ local function createDropdown(parent, text, options, default, callback)
         local absPos = btn.AbsolutePosition
         local absSize = btn.AbsoluteSize
         
-        dropdownFrame.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y)
-        dropdownFrame.Size = UDim2.new(0, absSize.X, 0, math.min(#options * 32, 150))
+        dropdownFrame.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 5)
+        dropdownFrame.Size = UDim2.new(0, absSize.X, 0, math.min(#options * 37, 200))
     end
     
     btn.MouseButton1Click:Connect(function()
-        if activeDropdown and activeDropdown ~= dropdownFrame then
-            activeDropdown.Visible = false
-        end
+        -- Tutup dropdown lain
+        closeOtherDropdowns(dropdownFrame)
         
-        updateDropdownPosition()
-        dropdownFrame.Visible = not dropdownFrame.Visible
-        activeDropdown = dropdownFrame.Visible and dropdownFrame or nil
+        if dropdownFrame.Visible then
+            dropdownFrame.Visible = false
+            -- Hapus dari active dropdowns
+            for i, d in ipairs(activeDropdowns) do
+                if d == dropdownFrame then
+                    table.remove(activeDropdowns, i)
+                    break
+                end
+            end
+        else
+            updateDropdownPosition()
+            dropdownFrame.Visible = true
+            table.insert(activeDropdowns, dropdownFrame)
+        end
+    end)
+    
+    -- Cleanup saat frame dihapus
+    frame.AncestryChanged:Connect(function()
+        if not frame:IsDescendantOf(gui) and dropdownFrame.Parent then
+            dropdownFrame:Destroy()
+            -- Hapus dari active dropdowns
+            for i, d in ipairs(activeDropdowns) do
+                if d == dropdownFrame then
+                    table.remove(activeDropdowns, i)
+                    break
+                end
+            end
+        end
     end)
     
     return frame
 end
 
-local function createButton(parent, text, callback)
+local function createButton(parent, text, callback, color)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 35)
-    btn.BackgroundColor3 = Color3.new(0.25, 0.25, 0.25)
-    btn.BackgroundTransparency = 0.2
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = color or Color3.fromRGB(70, 130, 200)
+    btn.BackgroundTransparency = 0.1
     btn.Text = text
     btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.TextSize = 13
+    btn.TextSize = 14
     btn.Font = Enum.Font.GothamBold
     btn.Parent = parent
     btn.ZIndex = 20
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = btn
+    
+    btn.MouseEnter:Connect(function()
+        btn.BackgroundTransparency = 0
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        btn.BackgroundTransparency = 0.1
+    end)
     
     btn.MouseButton1Click:Connect(function()
         callback()
     end)
     
     return btn
+end
+
+local function createButtonRow(parent, buttons)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, 50)
+    row.BackgroundTransparency = 1
+    row.Parent = parent
+    row.ZIndex = 20
+    
+    local layout = Instance.new("UIListLayout")
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.VerticalAlignment = Enum.VerticalAlignment.Center
+    layout.Padding = UDim.new(0, 10)
+    layout.Parent = row
+    
+    for _, btnData in ipairs(buttons) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, btnData.width or 120, 0, 35)
+        btn.BackgroundColor3 = btnData.color or Color3.fromRGB(70, 130, 200)
+        btn.BackgroundTransparency = 0.1
+        btn.Text = btnData.text
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.TextSize = 13
+        btn.Font = Enum.Font.GothamBold
+        btn.Parent = row
+        btn.ZIndex = 21
+        
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 8)
+        btnCorner.Parent = btn
+        
+        btn.MouseEnter:Connect(function()
+            btn.BackgroundTransparency = 0
+        end)
+        
+        btn.MouseLeave:Connect(function()
+            btn.BackgroundTransparency = 0.1
+        end)
+        
+        btn.MouseButton1Click:Connect(btnData.callback)
+    end
+    
+    return row
 end
 
 local function clearFeatures()
@@ -1625,10 +1791,10 @@ end
 -- MAIN MENU (Fishing Features)
 local function showMain()
     clearFeatures()
-    contentTitle.Text = "Main Features"
+    contentTitle.Text = "⚡ Main Features"
     
     -- Fishing Support Section
-    createSection(featuresContainer, "Fishing Support")
+    createSection(featuresContainer, "🎣 Fishing Support")
     
     createToggle(featuresContainer, "Walk On Water", isWalkOnWater, function(state)
         isWalkOnWater = state
@@ -1684,7 +1850,7 @@ local function showMain()
     end)
     
     -- Auto Fish Legit Section
-    createSection(featuresContainer, "Auto Fish (Legit)")
+    createSection(featuresContainer, "🎣 Auto Fish (Legit)")
     
     createInput(featuresContainer, "Click Speed (Delay)", 0.05, function(val)
         -- Click speed
@@ -1695,7 +1861,7 @@ local function showMain()
     end)
     
     -- Instant Fishing Section
-    createSection(featuresContainer, "Instant Fishing")
+    createSection(featuresContainer, "⚡ Instant Fishing")
     
     createInput(featuresContainer, "Fish Delay", Config.FishDelay, function(val)
         Config.FishDelay = val
@@ -1721,23 +1887,25 @@ end
 -- TRADE MENU
 local function showTrade()
     clearFeatures()
-    contentTitle.Text = "Trade Features"
+    contentTitle.Text = "💰 Trade Features"
     
-    createSection(featuresContainer, "Trade Support")
+    createSection(featuresContainer, "🤝 Trade Support")
     
     createToggle(featuresContainer, "Auto Accept Trade", autoAcceptTrade, function(state)
         autoAcceptTrade = state
         _G.BloxFish_AutoAcceptTradeEnabled = state
     end)
     
-    createSection(featuresContainer, "Auto Favorite / Unfavorite")
+    createSection(featuresContainer, "⭐ Auto Favorite / Unfavorite")
     
     createDropdown(featuresContainer, "Filter by Rarity", RarityList, "Secret", function(selected)
         table.insert(Config.FavoriteRarity, selected)
+        notify("Rarity", "Added: " .. selected, 1)
     end)
     
     createDropdown(featuresContainer, "Filter by Mutation", MutationList, "Shiny", function(selected)
         table.insert(Config.FavoriteMutations, selected)
+        notify("Mutation", "Added: " .. selected, 1)
     end)
     
     createToggle(featuresContainer, "Enable Auto Favorite", autoFavorite, function(state)
@@ -1760,9 +1928,9 @@ end
 -- TELEPORT MENU
 local function showTeleport()
     clearFeatures()
-    contentTitle.Text = "Teleport Features"
+    contentTitle.Text = "🌍 Teleport Features"
     
-    createSection(featuresContainer, "Teleport to Player")
+    createSection(featuresContainer, "👤 Teleport to Player")
     
     local playerList = {}
     for _, plr in ipairs(Players:GetPlayers()) do
@@ -1771,36 +1939,51 @@ local function showTeleport()
         end
     end
     
-    local selectedPlayer = playerList[1] or "None"
+    if #playerList == 0 then
+        table.insert(playerList, "No Players")
+    end
+    
+    local selectedPlayer = playerList[1]
     
     createDropdown(featuresContainer, "Select Player", playerList, selectedPlayer, function(selected)
         selectedPlayer = selected
     end)
     
-    createButton(featuresContainer, "Refresh Player List", function()
-        local newList = {}
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= player then
-                table.insert(newList, plr.Name)
+    createButtonRow(featuresContainer, {
+        {
+            text = "🔄 Refresh",
+            width = 120,
+            color = Color3.fromRGB(100, 100, 150),
+            callback = function()
+                local newList = {}
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr ~= player then
+                        table.insert(newList, plr.Name)
+                    end
+                end
+                notify("Players", #newList .. " online", 1)
             end
-        end
-        notify("Players", #newList .. " online", 1)
-    end)
-    
-    createButton(featuresContainer, "Teleport to Player", function()
-        if selectedPlayer and selectedPlayer ~= "None" then
-            local target = Players:FindFirstChild(selectedPlayer)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local hrp = GetHRP()
-                if hrp then
-                    hrp.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0,5,0)
-                    notify("Teleport", "Teleported to " .. selectedPlayer, 1)
+        },
+        {
+            text = "✨ Teleport",
+            width = 120,
+            color = Color3.fromRGB(70, 200, 70),
+            callback = function()
+                if selectedPlayer and selectedPlayer ~= "No Players" then
+                    local target = Players:FindFirstChild(selectedPlayer)
+                    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                        local hrp = GetHRP()
+                        if hrp then
+                            hrp.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
+                            notify("Teleport", "Teleported to " .. selectedPlayer, 1)
+                        end
+                    end
                 end
             end
-        end
-    end)
+        }
+    })
     
-    createSection(featuresContainer, "Teleport to Fishing Area")
+    createSection(featuresContainer, "📍 Teleport to Fishing Area")
     
     local selectedArea = AreaNames[1]
     
@@ -1808,23 +1991,30 @@ local function showTeleport()
         selectedArea = selected
     end)
     
-    createButton(featuresContainer, "Teleport to Area", function()
-        if selectedArea and FishingAreas[selectedArea] then
-            local hrp = GetHRP()
-            if hrp then
-                hrp.CFrame = FishingAreas[selectedArea]
-                notify("Teleport", "Teleported to " .. selectedArea, 1)
+    createButtonRow(featuresContainer, {
+        {
+            text = "🚀 Teleport",
+            width = 150,
+            color = Color3.fromRGB(70, 200, 70),
+            callback = function()
+                if selectedArea and FishingAreas[selectedArea] then
+                    local hrp = GetHRP()
+                    if hrp then
+                        hrp.CFrame = FishingAreas[selectedArea]
+                        notify("Teleport", "Teleported to " .. selectedArea, 1)
+                    end
+                end
             end
-        end
-    end)
+        }
+    })
 end
 
 -- SHOP MENU
 local function showShop()
     clearFeatures()
-    contentTitle.Text = "Shop Features"
+    contentTitle.Text = "🏪 Shop Features"
     
-    createSection(featuresContainer, "Auto Sell Fish")
+    createSection(featuresContainer, "💰 Auto Sell Fish")
     
     createDropdown(featuresContainer, "Sell Method", {"Delay", "Count"}, Config.SellMethod, function(selected)
         Config.SellMethod = selected
@@ -1846,7 +2036,19 @@ local function showShop()
         end
     end)
     
-    createSection(featuresContainer, "Auto Buy Weather")
+    createButtonRow(featuresContainer, {
+        {
+            text = "💰 Sell All Now",
+            width = 200,
+            color = Color3.fromRGB(255, 150, 50),
+            callback = function()
+                sellAllItems()
+                notify("Sell", "Sold all items!", 1)
+            end
+        }
+    })
+    
+    createSection(featuresContainer, "🌤️ Auto Buy Weather")
     
     createDropdown(featuresContainer, "Select Weather", WeatherList, "Storm", function(selected)
         Config.SelectedWeather = {selected}
@@ -1859,19 +2061,15 @@ local function showShop()
             stopAutoWeather()
         end
     end)
-    
-    createButton(featuresContainer, "Sell All Now", function()
-        sellAllItems()
-    end)
 end
 
 -- MISC MENU
 local function showMisc()
     clearFeatures()
-    contentTitle.Text = "Misc Features"
+    contentTitle.Text = "🔧 Misc Features"
     
     -- Movement Section
-    createSection(featuresContainer, "Movement")
+    createSection(featuresContainer, "🏃 Movement")
     
     createInput(featuresContainer, "Walk Speed", Config.WalkSpeed, function(val)
         Config.WalkSpeed = val
@@ -1885,15 +2083,23 @@ local function showMisc()
         if hum then hum.JumpPower = val end
     end, "50")
     
-    createButton(featuresContainer, "Reset Movement", function()
-        local hum = GetHumanoid()
-        if hum then
-            hum.WalkSpeed = 16
-            hum.JumpPower = 50
-            Config.WalkSpeed = 16
-            Config.JumpPower = 50
-        end
-    end)
+    createButtonRow(featuresContainer, {
+        {
+            text = "🔄 Reset Movement",
+            width = 150,
+            color = Color3.fromRGB(200, 100, 100),
+            callback = function()
+                local hum = GetHumanoid()
+                if hum then
+                    hum.WalkSpeed = 16
+                    hum.JumpPower = 50
+                    Config.WalkSpeed = 16
+                    Config.JumpPower = 50
+                    notify("Movement", "Reset to default", 1)
+                end
+            end
+        }
+    })
     
     createToggle(featuresContainer, "Freeze Player", isFreezePlayer, function(state)
         isFreezePlayer = state
@@ -1901,7 +2107,7 @@ local function showMisc()
     end)
     
     -- Abilities Section
-    createSection(featuresContainer, "Abilities")
+    createSection(featuresContainer, "⚡ Abilities")
     
     createToggle(featuresContainer, "Infinite Jump", isInfiniteJump, function(state)
         isInfiniteJump = state
@@ -1937,7 +2143,7 @@ local function showMisc()
     end)
     
     -- Other Section
-    createSection(featuresContainer, "Other")
+    createSection(featuresContainer, "👁️ Other")
     
     createToggle(featuresContainer, "Player ESP", isESPEnabled, function(state)
         toggleESP(state)
@@ -1948,25 +2154,32 @@ local function showMisc()
         setupHideUsernames()
     end)
     
-    createButton(featuresContainer, "Reset Character", function()
-        local hrp = GetHRP()
-        if hrp then
-            local pos = hrp.Position
-            local hum = GetHumanoid()
-            if hum then
-                hum:TakeDamage(999999)
-                player.CharacterAdded:Wait()
-                task.wait(0.5)
-                local newHRP = GetHRP()
-                if newHRP then
-                    newHRP.CFrame = CFrame.new(pos + Vector3.new(0,3,0))
+    createButtonRow(featuresContainer, {
+        {
+            text = "🔄 Reset Character",
+            width = 150,
+            color = Color3.fromRGB(200, 100, 100),
+            callback = function()
+                local hrp = GetHRP()
+                if hrp then
+                    local pos = hrp.Position
+                    local hum = GetHumanoid()
+                    if hum then
+                        hum:TakeDamage(999999)
+                        player.CharacterAdded:Wait()
+                        task.wait(0.5)
+                        local newHRP = GetHRP()
+                        if newHRP then
+                            newHRP.CFrame = CFrame.new(pos + Vector3.new(0,3,0))
+                        end
+                    end
                 end
             end
-        end
-    end)
+        }
+    })
     
     -- Utility Section
-    createSection(featuresContainer, "Utility")
+    createSection(featuresContainer, "🛠️ Utility")
     
     createToggle(featuresContainer, "FPS Ultra Boost", isFPSBoost, function(state)
         isFPSBoost = state
@@ -1997,7 +2210,7 @@ local function showMisc()
     end)
     
     -- Performance Monitor
-    createSection(featuresContainer, "Performance")
+    createSection(featuresContainer, "📊 Performance")
     
     createToggle(featuresContainer, "Show Performance Monitor", monitorEnabled, function(state)
         toggleMonitor(state)
@@ -2007,9 +2220,9 @@ end
 -- CONFIG MENU
 local function showConfig()
     clearFeatures()
-    contentTitle.Text = "Config Manager"
+    contentTitle.Text = "⚙️ Config Manager"
     
-    createSection(featuresContainer, "Configuration")
+    createSection(featuresContainer, "💾 Configuration")
     
     createInput(featuresContainer, "Config Name", "AutoFish", function(val)
         -- Config name
@@ -2017,58 +2230,87 @@ local function showConfig()
     
     createDropdown(featuresContainer, "Available Configs", {"AutoFish", "Legit", "Blatant"}, "AutoFish", function(selected)
         -- Load config
+        notify("Config", "Loaded: " .. selected, 1)
     end)
     
-    createButton(featuresContainer, "Save Config", function()
-        notify("Config", "Config saved!", 1)
-    end)
-    
-    createButton(featuresContainer, "Load Config", function()
-        notify("Config", "Config loaded!", 1)
-    end)
-    
-    createButton(featuresContainer, "Delete Config", function()
-        notify("Config", "Config deleted!", 1)
-    end)
+    createButtonRow(featuresContainer, {
+        {
+            text = "💾 Save Config",
+            width = 120,
+            color = Color3.fromRGB(70, 200, 70),
+            callback = function()
+                notify("Config", "Config saved!", 1)
+            end
+        },
+        {
+            text = "📂 Load Config",
+            width = 120,
+            color = Color3.fromRGB(100, 150, 255),
+            callback = function()
+                notify("Config", "Config loaded!", 1)
+            end
+        },
+        {
+            text = "🗑️ Delete Config",
+            width = 120,
+            color = Color3.fromRGB(200, 70, 70),
+            callback = function()
+                notify("Config", "Config deleted!", 1)
+            end
+        }
+    })
 end
 
 -- ===== MENU TENTANG =====
 local function showTentang()
     clearFeatures()
-    contentTitle.Text = "Tentang Script Ini"
+    contentTitle.Text = "ℹ️ Tentang Script Ini"
     
-    createSection(featuresContainer, "Informasi")
+    createSection(featuresContainer, "📝 Informasi")
     
-    -- Informasi pembuat
+    -- Informasi pembuat dengan background
+    local infoFrame = Instance.new("Frame")
+    infoFrame.Size = UDim2.new(1, -10, 0, 150)
+    infoFrame.Position = UDim2.new(0, 5, 0, 10)
+    infoFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    infoFrame.BackgroundTransparency = 0.1
+    infoFrame.Parent = featuresContainer
+    infoFrame.ZIndex = 25
+    
+    local infoCorner = Instance.new("UICorner")
+    infoCorner.CornerRadius = UDim.new(0, 12)
+    infoCorner.Parent = infoFrame
+    
     local aboutText = Instance.new("TextLabel")
-    aboutText.Size = UDim2.new(1, -10, 0, 120)
-    aboutText.Position = UDim2.new(0, 5, 0, 10)
+    aboutText.Size = UDim2.new(1, -20, 1, -20)
+    aboutText.Position = UDim2.new(0, 10, 0, 10)
     aboutText.BackgroundTransparency = 1
-    aboutText.Text = "Script ini dibuat oleh moe\n\nCopyright © 2024 Moe. All rights reserved.\n\nDilarang memperjualbelikan script ini tanpa izin."
+    aboutText.Text = "✨ Script ini dibuat oleh moe\n\n© 2024 Moe. All rights reserved.\n\n🚫 Dilarang memperjualbelikan script ini tanpa izin."
     aboutText.TextColor3 = Color3.new(1, 1, 1)
-    aboutText.TextSize = 14
+    aboutText.TextSize = 15
     aboutText.Font = Enum.Font.Gotham
     aboutText.TextWrapped = true
     aboutText.TextXAlignment = Enum.TextXAlignment.Left
     aboutText.TextYAlignment = Enum.TextYAlignment.Top
-    aboutText.Parent = featuresContainer
-    aboutText.ZIndex = 25
+    aboutText.Parent = infoFrame
+    aboutText.ZIndex = 26
     
     -- Link Discord
     local discordFrame = Instance.new("Frame")
-    discordFrame.Size = UDim2.new(1, 0, 0, 40)
-    discordFrame.BackgroundColor3 = Color3.fromRGB(88, 101, 242) -- Warna Discord
+    discordFrame.Size = UDim2.new(1, -10, 0, 70)
+    discordFrame.Position = UDim2.new(0, 5, 0, 180)
+    discordFrame.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
     discordFrame.BackgroundTransparency = 0.1
     discordFrame.Parent = featuresContainer
     discordFrame.ZIndex = 25
     
     local discordCorner = Instance.new("UICorner")
-    discordCorner.CornerRadius = UDim.new(0, 8)
+    discordCorner.CornerRadius = UDim.new(0, 12)
     discordCorner.Parent = discordFrame
     
     local discordIcon = Instance.new("ImageLabel")
-    discordIcon.Size = UDim2.new(0, 30, 0, 30)
-    discordIcon.Position = UDim2.new(0, 5, 0.5, -15)
+    discordIcon.Size = UDim2.new(0, 40, 0, 40)
+    discordIcon.Position = UDim2.new(0, 15, 0.5, -20)
     discordIcon.BackgroundTransparency = 1
     discordIcon.Image = "rbxassetid://115935586997848"
     discordIcon.ScaleType = Enum.ScaleType.Fit
@@ -2076,24 +2318,24 @@ local function showTentang()
     discordIcon.ZIndex = 26
     
     local discordText = Instance.new("TextLabel")
-    discordText.Size = UDim2.new(1, -50, 1, 0)
-    discordText.Position = UDim2.new(0, 40, 0, 0)
+    discordText.Size = UDim2.new(1, -70, 0, 25)
+    discordText.Position = UDim2.new(0, 60, 0, 10)
     discordText.BackgroundTransparency = 1
     discordText.Text = "Join Discord Server"
     discordText.TextColor3 = Color3.new(1, 1, 1)
-    discordText.TextSize = 16
+    discordText.TextSize = 18
     discordText.Font = Enum.Font.GothamBold
     discordText.TextXAlignment = Enum.TextXAlignment.Left
     discordText.Parent = discordFrame
     discordText.ZIndex = 26
     
     local discordLink = Instance.new("TextLabel")
-    discordLink.Size = UDim2.new(1, -50, 0, 20)
-    discordLink.Position = UDim2.new(0, 40, 0, 20)
+    discordLink.Size = UDim2.new(1, -70, 0, 20)
+    discordLink.Position = UDim2.new(0, 60, 0, 35)
     discordLink.BackgroundTransparency = 1
     discordLink.Text = "discord.gg/NWD7QdKqrq"
-    discordLink.TextColor3 = Color3.fromRGB(200, 200, 255)
-    discordLink.TextSize = 12
+    discordLink.TextColor3 = Color3.fromRGB(220, 220, 255)
+    discordLink.TextSize = 14
     discordLink.Font = Enum.Font.Gotham
     discordLink.TextXAlignment = Enum.TextXAlignment.Left
     discordLink.Parent = discordFrame
@@ -2106,47 +2348,73 @@ local function showTentang()
     discordBtn.Parent = discordFrame
     discordBtn.ZIndex = 27
     
+    discordBtn.MouseEnter:Connect(function()
+        discordFrame.BackgroundTransparency = 0
+    end)
+    
+    discordBtn.MouseLeave:Connect(function()
+        discordFrame.BackgroundTransparency = 0.1
+    end)
+    
     discordBtn.MouseButton1Click:Connect(function()
         setclipboard("https://discord.gg/NWD7QdKqrq")
         notify("Discord", "Link Discord telah disalin ke clipboard!", 2)
     end)
     
     -- Logo preview
-    createSection(featuresContainer, "Logo Preview")
+    createSection(featuresContainer, "🖼️ Logo Preview")
+    
+    local logoPreviewFrame = Instance.new("Frame")
+    logoPreviewFrame.Size = UDim2.new(1, -10, 0, 140)
+    logoPreviewFrame.Position = UDim2.new(0, 5, 0, 270)
+    logoPreviewFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    logoPreviewFrame.BackgroundTransparency = 0.1
+    logoPreviewFrame.Parent = featuresContainer
+    logoPreviewFrame.ZIndex = 25
+    
+    local logoPreviewCorner = Instance.new("UICorner")
+    logoPreviewCorner.CornerRadius = UDim.new(0, 12)
+    logoPreviewCorner.Parent = logoPreviewFrame
     
     local logoPreview = Instance.new("ImageLabel")
     logoPreview.Size = UDim2.new(0, 100, 0, 100)
-    logoPreview.Position = UDim2.new(0.5, -50, 0, 10)
-    logoPreview.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    logoPreview.Position = UDim2.new(0.5, -50, 0.5, -50)
+    logoPreview.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
     logoPreview.BackgroundTransparency = 0.2
     logoPreview.Image = "https://i.ibb.co.com/fYZH6gqn/file-000000007f1871fa90b3365d3849f71f.png"
     logoPreview.ScaleType = Enum.ScaleType.Fit
-    logoPreview.Parent = featuresContainer
+    logoPreview.Parent = logoPreviewFrame
     logoPreview.ZIndex = 26
     
     local previewCorner = Instance.new("UICorner")
-    previewCorner.CornerRadius = UDim.new(0, 50) -- Membuat lingkaran
+    previewCorner.CornerRadius = UDim.new(0, 50)
     previewCorner.Parent = logoPreview
+    
+    local previewStroke = Instance.new("UIStroke")
+    previewStroke.Thickness = 2
+    previewStroke.Color = Color3.fromRGB(100, 150, 255)
+    previewStroke.Transparency = 0.3
+    previewStroke.Parent = logoPreview
 end
 
 -- ===== LEFT MENU BUTTONS =====
 local menuButtons = {
-    {name = "Main", func = showMain},
-    {name = "Trade", func = showTrade},
-    {name = "Teleport", func = showTeleport},
-    {name = "Shop", func = showShop},
-    {name = "Misc", func = showMisc},
-    {name = "Config", func = showConfig},
-    {name = "Tentang", func = showTentang} -- Menu "Tentang" menggantikan menu kosong
+    {name = "⚡ Main", func = showMain},
+    {name = "💰 Trade", func = showTrade},
+    {name = "🌍 Teleport", func = showTeleport},
+    {name = "🏪 Shop", func = showShop},
+    {name = "🔧 Misc", func = showMisc},
+    {name = "⚙️ Config", func = showConfig},
+    {name = "ℹ️ Tentang", func = showTentang}
 }
 
-local currentMenu = "Main"
+local currentMenu = "⚡ Main"
 
 for _, btnData in ipairs(menuButtons) do
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 120, 0, 40)
-    btn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-    btn.BackgroundTransparency = 0.3
+    btn.Size = UDim2.new(0, 130, 0, 45)
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+    btn.BackgroundTransparency = 0.2
     btn.Text = btnData.name
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.TextSize = 14
@@ -2155,30 +2423,36 @@ for _, btnData in ipairs(menuButtons) do
     btn.ZIndex = 20
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = btn
     
     btn.MouseEnter:Connect(function()
         if currentMenu ~= btnData.name then
-            btn.BackgroundTransparency = 0.1
+            btn.BackgroundTransparency = 0.05
+            btn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
         end
     end)
     
     btn.MouseLeave:Connect(function()
         if currentMenu ~= btnData.name then
-            btn.BackgroundTransparency = 0.3
+            btn.BackgroundTransparency = 0.2
+            btn.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
         end
     end)
     
     btn.MouseButton1Click:Connect(function()
         for _, b in pairs(leftMenu:GetChildren()) do
             if b:IsA("TextButton") then
-                b.BackgroundTransparency = 0.3
+                b.BackgroundTransparency = 0.2
+                b.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
             end
         end
         btn.BackgroundTransparency = 0
+        btn.BackgroundColor3 = Color3.fromRGB(70, 100, 200)
         currentMenu = btnData.name
         btnData.func()
+        -- Tutup semua dropdown saat ganti menu
+        closeAllDropdowns()
     end)
 end
 
@@ -2225,4 +2499,12 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
-notify("Moe V1.0", "All features loaded!", 3)
+-- Cleanup saat GUI dihapus
+gui.Destroying:Connect(function()
+    if dropdownConnections.global then
+        dropdownConnections.global:Disconnect()
+    end
+    closeAllDropdowns()
+end)
+
+notify("Moe V1.0", "✨ All features loaded! ✨", 3)
